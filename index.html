@@ -276,28 +276,34 @@ function render(){
 render();
 
 /* ---- acceso con código ---- */
-// Para cambiar los códigos: pídele a Claude la lista nueva (código + fecha de vencimiento).
-const CODES={ // hash del código : último día válido (hora de Caracas)
-  "2fjl09mpdkg":"2026-11-15",
-  "192e4omfg0f":"2026-11-21",
-  "ay52dn64j3":"2026-12-31"
-};
+// Cada código dura 7 días contados desde que la persona lo escribe por primera vez en su dispositivo.
+// ACTIVAR_ANTES: después de esta fecha ya no se puede activar un código nuevo (los activos siguen su semana).
+const DIAS=7, ACTIVAR_ANTES="2026-12-31";
+const CODES=new Set(["14gat7m66cu", "rqrxoytdtf", "gm6i7ht7jp", "10o6ajpujw1", "125d1selcsh", "1nhjhao2hs1", "26pm5tofx3f", "y6p8qnr1af", "359pq4oy10", "jkm9c38d1w", "2cq7u9phnu2", "xsdrqx0swc", "1lah7i3pm7z", "2e5t20hp67o", "22dgpgvjygj", "14q10rmpqh6", "wr6xje4hbc", "2c7qwhaaz1s", "1wnb7igg6sv", "1mhsyzq5p4q"]);
 const cyrb53=(str,seed=7)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return (4294967296*(2097151&h2)+(h1>>>0)).toString(36);};
-const AKEY="bot-animalitos-acceso"; let CUR=null;
-function venceMs(d){return Date.parse(d+"T23:59:59-04:00");}
-function check(code){
+const AKEY="bot-animalitos-acceso"; let CUR=null; const MEM={};
+const getAct=h=>{try{const v=localStorage.getItem("bot-act-"+h);if(v)return +v;}catch(e){} return MEM[h]||null;};
+const setAct=(h,t)=>{MEM[h]=t;try{localStorage.setItem("bot-act-"+h,String(t))}catch(e){}};
+function check(code,activar){
   const h=cyrb53(String(code||"").trim().toUpperCase());
-  const d=CODES[h]; if(!d) return {ok:false,msg:"Ese código no existe."};
-  if(Date.now()>venceMs(d)) return {ok:false,msg:"Ese código ya venció."};
-  return {ok:true,d};
+  if(!CODES.has(h)) return {ok:false,msg:"Ese código no existe."};
+  let t=getAct(h);
+  if(!t){
+    if(!activar) return {ok:false,msg:""};
+    if(Date.now()>Date.parse(ACTIVAR_ANTES+"T23:59:59-04:00")) return {ok:false,msg:"Ese código ya no se puede activar."};
+    t=Date.now(); setAct(h,t);
+  }
+  const fin=t+DIAS*86400000;
+  if(Date.now()>fin) return {ok:false,msg:"Tu semana de acceso con ese código ya terminó."};
+  return {ok:true,fin};
 }
-function fmtFecha(d){const [y,m,dd]=d.split("-");return dd+"/"+m+"/"+y;}
-function unlock(code,d){
+function fmtFecha(ms){return new Date(ms).toLocaleString("es-VE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"numeric",minute:"2-digit"});}
+function unlock(code,fin){
   CUR=code;
   try{localStorage.setItem(AKEY,code)}catch(e){}
   document.getElementById("gate").style.display="none";
   document.getElementById("app").style.display="";
-  document.getElementById("vence").textContent="Acceso válido hasta el "+fmtFecha(d);
+  document.getElementById("vence").textContent="Acceso válido hasta el "+fmtFecha(fin);
 }
 function lock(msg){
   CUR=null;
@@ -310,14 +316,14 @@ document.getElementById("gform").addEventListener("submit",e=>{
   e.preventDefault();
   const c=document.getElementById("gcode").value;
   if(!c.trim()){document.getElementById("gerr").textContent="Escribe un código.";return;}
-  const r=check(c); if(r.ok) unlock(c.trim().toUpperCase(),r.d); else document.getElementById("gerr").textContent=r.msg;
+  const r=check(c,true); if(r.ok) unlock(c.trim().toUpperCase(),r.fin); else document.getElementById("gerr").textContent=r.msg;
 });
 document.getElementById("gcode").addEventListener("input",()=>{document.getElementById("gerr").textContent="";});
 document.getElementById("salir").onclick=()=>lock("");
 (function(){let c=null;try{c=localStorage.getItem(AKEY)}catch(e){}
-  if(c){const r=check(c); if(r.ok) unlock(c,r.d); else lock(r.msg);} })();
+  if(c){const r=check(c,false); if(r.ok) unlock(c,r.fin); else lock(r.msg);} })();
 setInterval(()=>{const c=CUR;
-  if(document.getElementById("app").style.display!=="none"){const r=check(c); if(!r.ok) lock("Tu código venció.");}},60000);
+  if(document.getElementById("app").style.display!=="none"){const r=check(c,false); if(!r.ok) lock("Tu semana de acceso terminó.");}},60000);
 </script>
 </body>
 </html>
