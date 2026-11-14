@@ -255,6 +255,8 @@
   .ginfo .gl a{display:block;padding:10px;border-radius:12px;border:1px solid rgba(45,255,138,.45);background:rgba(45,255,138,.1);color:var(--grn);font:700 16px "Rajdhani",sans-serif;letter-spacing:.04em;text-decoration:none;box-shadow:0 0 14px rgba(45,255,138,.2)}
   .ginfo .gl a:hover{box-shadow:0 0 20px rgba(45,255,138,.45)}
   body.locked .bnav{display:none!important}
+  .mbar .undo.cp{border-color:rgba(46,242,255,.6);color:var(--cyan);background:rgba(46,242,255,.12)}
+  .mbar .undo.cp.ok{border-color:rgba(45,255,138,.6);color:var(--grn);background:rgba(45,255,138,.12)}
 </style>
 </head>
 <body class="locked">
@@ -623,9 +625,17 @@ function renderMbar(){
   else{
     const P=predict(g,last,h[h.length-2]); const cs=new Set(P.cont.map(c=>c[2]));
     const arr=[...P.now.entries()].sort((a,b)=>b[1]-a[1]||l.order.indexOf(a[0])-l.order.indexOf(b[0]));
-    mb.innerHTML=`<div class="top"><span>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b></span><button class="undo" id="mundo">↶ Deshacer</button></div>
+    mb.innerHTML=`<div class="top"><span>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b></span><button class="undo cp" id="mcopy">⧉ Copiar</button><button class="undo" id="mundo" style="margin-left:0">↶ Deshacer</button></div>
       <div class="pks">${arr.length?arr.map(([n,c])=>`<span class="${cs.has(n)?"c":""}">${l.A[n][1]} ${n}${c>1?" ×"+c:""}</span>`).join(""):'<span style="color:var(--muted);background:none;border:0;font-weight:500">Sin combinaciones para este animal</span>'}</div>`;
     $("mundo").onclick=()=>$("undo").click();
+    $("mcopy").onclick=()=>{
+      const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+(arr.length?"*Jugada según la guía:*\n"+arr.map(([n])=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n"):"Sin combinaciones para este animal")
+        +"\n\n━━━━━━━━━━━━\n💎 *Suscripciones y Recargas*\n🤝 Aliado Comercial: *Agencia Betcom*\n💬 WhatsApp de Soporte:\n+58 424-7467906\n+58 424-7616909";
+      const btn=$("mcopy");
+      const done=ok=>{btn.classList.toggle("ok",ok);btn.textContent=ok?"✓ ¡Copiado!":"No se pudo copiar";clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.classList.remove("ok");btn.textContent="⧉ Copiar";},2000);};
+      const fallback=()=>{try{const ta=document.createElement("textarea");ta.value=txt;ta.setAttribute("readonly","");ta.style.position="absolute";ta.style.left="-9999px";document.body.appendChild(ta);ta.select();const ok=document.execCommand("copy");ta.remove();done(ok);}catch(e){done(false);}};
+      try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(()=>done(true),fallback); else fallback(); }catch(e){fallback();}
+    };
   }
   const nj=l.order.filter(n=>jLevel(st,n)>0).length;
   const jb=document.querySelector('#bnav button[data-v="jaulas"]');
