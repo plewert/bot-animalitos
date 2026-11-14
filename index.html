@@ -257,6 +257,16 @@
   body.locked .bnav{display:none!important}
   .mbar .undo.cp{border-color:rgba(46,242,255,.6);color:var(--cyan);background:rgba(46,242,255,.12)}
   .mbar .undo.cp.ok{border-color:rgba(45,255,138,.6);color:var(--grn);background:rgba(45,255,138,.12)}
+
+  .soc{display:flex;gap:8px;margin-top:8px}
+  .soc a{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;padding:9px 4px;color:#fff;text-decoration:none;font:700 14px "Rajdhani",sans-serif;letter-spacing:.03em;transition:box-shadow .2s,transform .1s}
+  .soc a:active{transform:scale(.97)}
+  .soc a span{font-size:16px}
+  .soc .yt{background:rgba(255,40,40,.16);border:1px solid rgba(255,60,60,.6)} .soc .yt:hover{box-shadow:0 0 16px rgba(255,60,60,.5)}
+  .soc .ig{background:rgba(225,48,108,.16);border:1px solid rgba(225,80,160,.6)} .soc .ig:hover{box-shadow:0 0 16px rgba(225,80,160,.5)}
+  .soc .tt{background:rgba(46,242,255,.12);border:1px solid rgba(46,242,255,.55)} .soc .tt:hover{box-shadow:0 0 16px rgba(46,242,255,.5)}
+  .appsoc{margin:12px 0 4px;max-width:520px}
+  @media(max-width:700px){body.inapp .appsoc{margin:0 0 12px}}
 </style>
 </head>
 <body class="locked">
@@ -275,6 +285,12 @@
         <a href="https://wa.me/584247467906" target="_blank" rel="noopener">+58 424-7467906</a>
         <a href="https://wa.me/584247616909" target="_blank" rel="noopener">+58 424-7616909</a>
       </div>
+      <div class="gw" style="margin-top:14px">Síguenos</div>
+      <div class="soc">
+      <a class="yt" href="https://youtube.com/@rapronosticos" target="_blank" rel="noopener"><span>▶️</span>YouTube</a>
+      <a class="ig" href="https://www.instagram.com/ra.pronosticos" target="_blank" rel="noopener"><span>📸</span>Instagram</a>
+      <a class="tt" href="https://www.tiktok.com/@rapronosticos2" target="_blank" rel="noopener"><span>🎵</span>TikTok</a>
+    </div>
     </div>
   </div>
 </div>
@@ -285,6 +301,11 @@
   </div>
   <nav class="tabs" id="tabs"></nav>
   <div class="mbar" id="mbar"></div>
+  <div class="soc appsoc">
+      <a class="yt" href="https://youtube.com/@rapronosticos" target="_blank" rel="noopener"><span>▶️</span>YouTube</a>
+      <a class="ig" href="https://www.instagram.com/ra.pronosticos" target="_blank" rel="noopener"><span>📸</span>Instagram</a>
+      <a class="tt" href="https://www.tiktok.com/@rapronosticos2" target="_blank" rel="noopener"><span>🎵</span>TikTok</a>
+    </div>
   <p class="sub">Toca el animalito que <b>acaba de salir</b>. El bot marca las combinaciones de la guía de esa lotería y lleva la cuenta de si aciertan en los sorteos siguientes.</p>
 
   <div class="layout">
@@ -630,7 +651,8 @@ function renderMbar(){
     $("mundo").onclick=()=>$("undo").click();
     $("mcopy").onclick=()=>{
       const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+(arr.length?"*Jugada según la guía:*\n"+arr.map(([n])=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n"):"Sin combinaciones para este animal")
-        +"\n\n━━━━━━━━━━━━\n💎 *Suscripciones y Recargas*\n🤝 Aliado Comercial: *Agencia Betcom*\n💬 WhatsApp de Soporte:\n+58 424-7467906\n+58 424-7616909";
+        +"\n\n━━━━━━━━━━━━\n💎 *Suscripciones y Recargas*\n🤝 Aliado Comercial: *Agencia Betcom*\n💬 WhatsApp de Soporte:\n+58 424-7467906\n+58 424-7616909"
+        +"\n\n📲 *Síguenos:*\n▶️ YouTube: https://youtube.com/@rapronosticos\n📸 Instagram: https://www.instagram.com/ra.pronosticos\n🎵 TikTok: https://www.tiktok.com/@rapronosticos2";
       const btn=$("mcopy");
       const done=ok=>{btn.classList.toggle("ok",ok);btn.textContent=ok?"✓ ¡Copiado!":"No se pudo copiar";clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.classList.remove("ok");btn.textContent="⧉ Copiar";},2000);};
       const fallback=()=>{try{const ta=document.createElement("textarea");ta.value=txt;ta.setAttribute("readonly","");ta.style.position="absolute";ta.style.left="-9999px";document.body.appendChild(ta);ta.select();const ok=document.execCommand("copy");ta.remove();done(ok);}catch(e){done(false);}};
