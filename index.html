@@ -267,6 +267,13 @@
   .soc .tt{background:rgba(46,242,255,.12);border:1px solid rgba(46,242,255,.55)} .soc .tt:hover{box-shadow:0 0 16px rgba(46,242,255,.5)}
   .appsoc{margin:12px 0 4px;max-width:520px}
   @media(max-width:700px){body.inapp .appsoc{margin:0 0 12px}}
+
+  .mbar .acts{display:flex;gap:6px;margin-top:8px}
+  .mbar .acts .undo{flex:1;margin:0;padding:6px 4px;text-align:center}
+  .mbar .undo.lp{border-color:rgba(255,59,92,.55);color:#ff8ea0;background:rgba(255,59,92,.1)}
+  .mbar .acts.conf{align-items:center;flex-wrap:wrap}
+  .mbar .acts.conf span{flex:1 1 100%;font-size:14px;color:var(--ink)}
+  .mbar .undo.yes{background:var(--red);border-color:var(--red);color:#fff}
 </style>
 </head>
 <body class="locked">
@@ -646,9 +653,14 @@ function renderMbar(){
   else{
     const P=predict(g,last,h[h.length-2]); const cs=new Set(P.cont.map(c=>c[2]));
     const arr=[...P.now.entries()].sort((a,b)=>b[1]-a[1]||l.order.indexOf(a[0])-l.order.indexOf(b[0]));
-    mb.innerHTML=`<div class="top"><span>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b></span><button class="undo cp" id="mcopy">⧉ Copiar</button><button class="undo" id="mundo" style="margin-left:0">↶ Deshacer</button></div>
+    mb.innerHTML=`<div class="top"><span>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b></span></div>
+      <div class="acts" id="macts"><button class="undo cp" id="mcopy">⧉ Copiar</button><button class="undo" id="mundo">↶ Deshacer</button><button class="undo lp" id="mclear">🧹 Limpiar</button></div>
+      <div class="acts conf" id="mconf" style="display:none"><span>¿Borrar todo lo marcado en ${esc(l.name)}?</span><button class="undo" id="mno">Cancelar</button><button class="undo yes" id="myes">Sí, limpiar</button></div>
       <div class="pks">${arr.length?arr.map(([n,c])=>`<span class="${cs.has(n)?"c":""}">${l.A[n][1]} ${n}${c>1?" ×"+c:""}</span>`).join(""):'<span style="color:var(--muted);background:none;border:0;font-weight:500">Sin combinaciones para este animal</span>'}</div>`;
     $("mundo").onclick=()=>$("undo").click();
+    $("mclear").onclick=()=>{$("macts").style.display="none";$("mconf").style.display="flex";};
+    $("mno").onclick=()=>{$("mconf").style.display="none";$("macts").style.display="flex";};
+    $("myes").onclick=()=>{const st=S(); st.hist=[]; st.lastUndo=[]; save(); render();};
     $("mcopy").onclick=()=>{
       const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+(arr.length?"*Jugada según la guía:*\n"+arr.map(([n])=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n"):"Sin combinaciones para este animal")
         +"\n\n━━━━━━━━━━━━\n💎 *Suscripciones y Recargas*\n🤝 Aliado Comercial: *Agencia Betcom*\n💬 WhatsApp de Soporte:\n+58 424-7467906\n+58 424-7616909"
