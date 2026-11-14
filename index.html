@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bot de animalitos — según tu guía</title>
+<style>
+  :root{
+    --bg:#f6f4ee; --card:#fff; --ink:#1d1f1c; --muted:#6b6f68; --line:#e3e0d6;
+    --green:#1f7a4d; --green-soft:#e3f2e9; --red:#b23a2e; --red-soft:#fbe9e6; --gold:#c98a12; --gold-soft:#fdf3dc;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#141613; --card:#1d201c; --ink:#ecebe6; --muted:#a2a69e; --line:#2f332d;
+      --green:#58c08a; --green-soft:#1d3327; --red:#e57b6f; --red-soft:#3a2220; --gold:#e3b04b; --gold-soft:#3a3020; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:960px;margin:0 auto;padding:20px 16px 48px}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .layout{display:grid;grid-template-columns:1fr;gap:16px}
+  @media(min-width:820px){.layout{grid-template-columns:1.25fr 1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .card h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px}
+  .a{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:6px 2px;cursor:pointer;text-align:center;font:inherit;transition:transform .08s,border-color .15s}
+  .a:hover{border-color:var(--green)}
+  .a:active{transform:scale(.96)}
+  .a .e{font-size:22px;display:block;line-height:1.2}
+  .a .n{font-weight:700;font-size:12px}
+  .a .t{font-size:11px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .a.last{outline:2px solid var(--gold);background:var(--gold-soft)}
+  .a.pick{outline:2px solid var(--green);background:var(--green-soft)}
+  .pred .empty{color:var(--muted)}
+  .pred .from{font-size:14px;color:var(--muted);margin-bottom:8px}
+  .picks{display:flex;gap:8px;flex-wrap:wrap}
+  .pk{flex:1 1 90px;background:var(--green-soft);border-radius:12px;padding:10px;text-align:center}
+  .pk .e{font-size:34px;display:block}
+  .pk b{display:block}
+  .note{font-size:13px;color:var(--muted);margin-top:10px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .st{background:var(--bg);border-radius:10px;padding:10px}
+  .st .v{font-size:22px;font-weight:700}
+  .st .l{font-size:12px;color:var(--muted)}
+  .pos{color:var(--green)} .neg{color:var(--red)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+  label{font-size:13px;color:var(--muted)}
+  input[type=number]{width:90px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+  .btn{border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer;font:inherit}
+  .btn:hover{border-color:var(--ink)}
+  .hist{max-height:260px;overflow:auto;border-top:1px solid var(--line);margin-top:10px}
+  .hist div{display:flex;justify-content:space-between;padding:6px 2px;border-bottom:1px solid var(--line);font-size:14px}
+  .tag{font-size:12px;padding:1px 8px;border-radius:99px}
+  .tag.ok{background:var(--green-soft);color:var(--green)}
+  .tag.no{background:var(--red-soft);color:var(--red)}
+  .tag.na{color:var(--muted)}
+  .truth{margin-top:16px;background:var(--gold-soft);border-radius:14px;padding:14px 16px;font-size:14px}
+  .truth b{color:var(--gold)}
+  .confirm{display:none;gap:8px;align-items:center}
+  .confirm.on{display:flex}
+  textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+  select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+  .ok-t{color:var(--green)} .bad-t{color:var(--red)}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+  .chips span{font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:2px 8px}
+  .bad{font-size:13px;background:var(--red-soft);border-radius:10px;padding:8px 10px;margin:8px 0}
+  .gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .gate .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;max-width:360px;width:100%;text-align:center}
+  .gate input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:16px/1.4 inherit;text-align:center;letter-spacing:.06em;text-transform:uppercase;margin:12px 0 8px}
+  .gate .err{color:var(--red);font-size:13px;min-height:18px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:8px}
+  .linkbtn{background:none;border:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:12px}
+</style>
+</head>
+<body>
+<div class="gate" id="gate">
+  <div class="box">
+    <div style="font-size:34px">🔒</div>
+    <h1 style="margin:6px 0 2px">Bot de animalitos</h1>
+    <p class="sub" style="margin:0">Escribe tu código de acceso</p>
+    <form id="gform"><input id="gcode" autocomplete="off" placeholder="CÓDIGO"><div class="err" id="gerr"></div>
+    <button class="btn" type="submit" style="width:100%">Entrar</button></form>
+  </div>
+</div>
+<div class="wrap" id="app" style="display:none">
+  <div class="topbar"><span id="vence"></span><button class="linkbtn" id="salir">Salir</button></div>
+  <h1>🎰 Bot de animalitos</h1>
+  <p class="sub">Toca el animalito que <b>acaba de salir</b>. El bot te muestra sus compañeros según tu guía y lleva la cuenta de si la guía acierta en el siguiente sorteo.</p>
+
+  <div class="layout">
+    <div class="card">
+      <h2>¿Qué salió?</h2>
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card pred" id="pred">
+        <h2>Jugada según la guía</h2>
+        <div class="empty">Todavía no has marcado ningún resultado.</div>
+      </div>
+
+      <div class="card">
+        <h2>¿La guía funciona? (tus números)</h2>
+        <div class="stats">
+          <div class="st"><div class="v" id="sJug">0</div><div class="l">sorteos evaluados</div></div>
+          <div class="st"><div class="v" id="sAc">0</div><div class="l">aciertos de la guía</div></div>
+          <div class="st"><div class="v" id="sPct">—</div><div class="l">% de aciertos de la guía</div></div>
+          <div class="st"><div class="v" id="sAzar">—</div><div class="l">% que daría el puro azar</div></div>
+        </div>
+        <div class="row">
+          <label>Apuesta por animal <input type="number" id="bet" min="0" step="1" value="10"></label>
+          <label>Paga × <input type="number" id="pay" min="1" step="1" value="30"></label>
+          <label>Jugar los compañeros en los próximos
+            <select id="win"><option value="1">1 sorteo</option><option value="2">2 sorteos</option><option value="3">3 sorteos</option></select>
+          </label>
+        </div>
+        <div class="stats">
+          <div class="st"><div class="v" id="sInv">0</div><div class="l">total apostado</div></div>
+          <div class="st"><div class="v" id="sBal">0</div><div class="l">ganancia / pérdida</div></div>
+        </div>
+        <div class="row">
+          <button class="btn" id="undo">↶ Deshacer último</button>
+          <button class="btn" id="clear">Borrar historial</button>
+          <span class="confirm" id="confirm"><span style="font-size:13px">¿Seguro?</span><button class="btn" id="yes">Sí, borrar</button><button class="btn" id="no">No</button></span>
+        </div>
+        <div class="hist" id="hist"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2>Cargar resultados de golpe</h2>
+    <p class="note" style="margin-top:0">Pega aquí resultados pasados, copiados de una página de resultados o de tus notas. Pueden traer horas, fechas y otro texto: el bot busca los animalitos por nombre o por número.</p>
+    <textarea id="paste" rows="7" placeholder="9:00 AM  12 Caballo&#10;10:00 AM  0 Delfín&#10;11:00 AM  25 Gallina"></textarea>
+    <div class="row">
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="rev"> Están del más reciente al más viejo</label>
+      <button class="btn" id="parse">Procesar</button>
+    </div>
+    <div id="preview"></div>
+  </div>
+
+</div>
+
+<script>
+const A = {
+ "0":["Delfín","🐬"],"00":["Ballena","🐋"],"01":["Carnero","🐏"],"02":["Toro","🐂"],"03":["Ciempiés","🐛"],
+ "04":["Alacrán","🦂"],"05":["León","🦁"],"06":["Rana","🐸"],"07":["Perico","🦜"],"08":["Ratón","🐭"],
+ "09":["Águila","🦅"],"10":["Tigre","🐯"],"11":["Gato","🐱"],"12":["Caballo","🐴"],"13":["Mono","🐒"],
+ "14":["Paloma","🕊️"],"15":["Zorro","🦊"],"16":["Oso","🐻"],"17":["Pavo","🦃"],"18":["Burro","🫏"],
+ "19":["Chivo","🐐"],"20":["Cochino","🐷"],"21":["Gallo","🐓"],"22":["Camello","🐫"],"23":["Cebra","🦓"],
+ "24":["Iguana","🦎"],"25":["Gallina","🐔"],"26":["Vaca","🐄"],"27":["Perro","🐶"],"28":["Zamuro","🪶"],
+ "29":["Elefante","🐘"],"30":["Caimán","🐊"],"31":["Lapa","🐹"],"32":["Ardilla","🐿️"],"33":["Pescado","🐟"],
+ "34":["Venado","🦌"],"35":["Jirafa","🦒"],"36":["Culebra","🐍"]
+};
+const ORDER = ["0","00"].concat(Array.from({length:36},(_,i)=>String(i+1).padStart(2,"0")));
+const G = {
+ "0":["08","12","16"],"00":["05","09","29"],"01":["21","32","35"],"02":["05","30","33"],"03":["01","02","33"],
+ "04":["0","10","16"],"05":["14","17","32"],"06":["10","11","26"],"07":["00","15","24"],"08":["00","12","21"],
+ "09":["07","20","30"],"10":["15","32","33"],"11":["09","20","34"],"12":["0","29","31"],"13":["03","30","34"],
+ "14":["12","20","23"],"15":["10","16","32"],"16":["0","00","22"],"17":["0","02","14"],"18":["0","03","11"],
+ "19":["05","12","16"],"20":["07","12","24"],"21":["01","17","31"],"22":["02","09","25"],"23":["00","22","11"],
+ "24":["0","04","11"],"25":["02","24","32"],"26":["24","27","29"],"27":["03","04","30"],"28":["04","20","35"],
+ "29":["02","15","20"],"30":["31","33","36"],"31":["06","08","32"],"32":["05","06","23"],"33":["10","15","20"],
+ "34":["11","13","36"],"35":["11","25","36"],"36":["11","35"]
+};
+const KEY="bot-animalitos-v1";
+let hist=[]; // lista de números en orden
+let cfg={bet:10,pay:30,win:1};
+try{const s=JSON.parse(localStorage.getItem(KEY)||"null"); if(s){hist=s.hist||[]; cfg=Object.assign(cfg,s.cfg||{});}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({hist,cfg}))}catch(e){}}
+
+const $=id=>document.getElementById(id);
+const grid=$("grid");
+ORDER.forEach(n=>{
+  const b=document.createElement("button");
+  b.className="a"; b.dataset.n=n;
+  b.innerHTML=`<span class="e">${A[n][1]}</span><span class="n">${n}</span><span class="t">${A[n][0]}</span>`;
+  b.onclick=()=>{hist.push(n);save();render();};
+  grid.appendChild(b);
+});
+$("bet").value=cfg.bet; $("pay").value=cfg.pay;
+$("bet").oninput=e=>{cfg.bet=Math.max(0,+e.target.value||0);save();render();};
+$("pay").oninput=e=>{cfg.pay=Math.max(1,+e.target.value||1);save();render();};
+$("win").value=String(cfg.win);
+$("win").onchange=e=>{cfg.win=+e.target.value||1;save();render();};
+
+/* ---- cargar resultados de golpe ---- */
+const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const NAMES={};
+ORDER.forEach(n=>{NAMES[norm(A[n][0])]=n;});
+Object.assign(NAMES,{"cerdo":"20","chancho":"20","marrano":"20","serpiente":"36","pez":"33","cabra":"19","raton":"08","aguila":"09","caiman":"30","alacran":"04","ciempies":"03","delfin":"0","leon":"05"});
+const nameRe=new RegExp("\\b("+Object.keys(NAMES).sort((a,b)=>b.length-a.length).join("|")+")\\b","g");
+function parseText(txt){
+  const out=[],bad=[];
+  txt.split(/\r?\n/).forEach(raw=>{
+    const line=norm(raw).trim(); if(!line) return;
+    const byName=[...line.matchAll(nameRe)].map(m=>NAMES[m[1]]);
+    if(byName.length){out.push(...byName);return;}
+    const clean=line
+      .replace(/\b\d{1,2}[:.]\d{2}(\s*[ap]\.?\s*m\.?)?/g," ")
+      .replace(/\b\d{1,4}[\/-]\d{1,2}([\/-]\d{2,4})?\b/g," ")
+      .replace(/\b\d{1,2}\s*[ap]\.?\s*m\.?/g," ");
+    const nums=[...clean.matchAll(/\b(00|0?\d|[12]\d|3[0-6])\b/g)].map(m=>{
+      const t=m[1]; return t==="00"?"00":(+t===0?"0":String(+t).padStart(2,"0"));
+    });
+    if(nums.length) out.push(...nums); else bad.push(raw.trim());
+  });
+  return {out,bad};
+}
+let parsed=[];
+$("parse").onclick=()=>{
+  const {out,bad}=parseText($("paste").value);
+  parsed=$("rev").checked?out.slice().reverse():out;
+  const pv=$("preview");
+  if(!parsed.length){
+    pv.innerHTML='<div class="bad">No encontré ningún animalito en el texto. Revisa que cada resultado tenga el número o el nombre del animal.</div>';
+    return;
+  }
+  const show=parsed.length>40?parsed.slice(0,20).concat(["…"],parsed.slice(-20)):parsed;
+  pv.innerHTML=`<div class="ok-t" style="font-weight:600">Se encontraron ${parsed.length} sorteos, en este orden (del más viejo al más nuevo):</div>
+    <div class="chips">${show.map(n=>n==="…"?"<span>…</span>":`<span>${A[n][1]} ${n} ${A[n][0]}</span>`).join("")}</div>
+    ${bad.length?`<div class="bad">${bad.length} línea(s) sin animalito, no se usaron: ${bad.slice(0,5).map(b=>"«"+b.replace(/</g,"&lt;").slice(0,60)+"»").join(", ")}${bad.length>5?"…":""}</div>`:""}
+    <div class="row"><button class="btn" id="useRep">Usar estos (reemplazar historial)</button><button class="btn" id="useAdd">Agregar al final del historial</button></div>`;
+  $("useRep").onclick=()=>{hist=parsed.slice();save();render();pv.innerHTML='<div class="ok-t">Listo: el historial ahora tiene '+hist.length+' sorteos. Mira el resumen arriba.</div>';};
+  $("useAdd").onclick=()=>{hist=hist.concat(parsed);save();render();pv.innerHTML='<div class="ok-t">Listo: se agregaron '+parsed.length+' sorteos. El historial tiene '+hist.length+'.</div>';};
+};
+
+$("undo").onclick=()=>{hist.pop();save();render();};
+$("clear").onclick=()=>$("confirm").classList.add("on");
+$("no").onclick=()=>$("confirm").classList.remove("on");
+$("yes").onclick=()=>{hist=[];save();$("confirm").classList.remove("on");render();};
+
+const fmt=x=>(Math.round(x*100)/100).toLocaleString("es-VE");
+function render(){
+  const last=hist[hist.length-1];
+  const picks=last!=null?G[last]:[];
+  document.querySelectorAll(".a").forEach(b=>{
+    b.classList.toggle("last",b.dataset.n===last);
+    b.classList.toggle("pick",picks.includes(b.dataset.n));
+  });
+  const pred=$("pred");
+  if(last==null){
+    pred.innerHTML='<h2>Jugada según la guía</h2><div class="empty">Todavía no has marcado ningún resultado.</div>';
+  }else{
+    pred.innerHTML=`<h2>Jugada según la guía</h2>
+      <div class="from">Salió <b>${A[last][1]} ${last} ${A[last][0]}</b>. Sus compañeros son:</div>
+      <div class="picks">${picks.map(p=>`<div class="pk"><span class="e">${A[p][1]}</span><b>${p}</b>${A[p][0]}</div>`).join("")}</div>
+      <div class="note">Probabilidad real de que salga alguno en el próximo sorteo: <b>${picks.length} de 38 (${fmt(picks.length/38*100)} %)</b>, igual que con cualquier otro grupo de ${picks.length} animales.</div>`;
+  }
+  // evaluación: tras cada resultado se juegan sus compañeros en los próximos W sorteos
+  const W=cfg.win||1;
+  let ev=0,ac=0,inv=0,ganado=0,exp=0; const rows=[];
+  for(let i=0;i+W<hist.length;i++){
+    const c=G[hist[i]]; ev++; exp+=1-Math.pow(1-c.length/38,W);
+    let any=false;
+    for(let k=1;k<=W;k++){
+      inv+=c.length*cfg.bet;
+      if(c.includes(hist[i+k])){ganado+=cfg.bet*cfg.pay;any=true;}
+    }
+    if(any) ac++;
+  }
+  hist.forEach((n,i)=>{
+    if(i===0){rows.push({n,tag:'<span class="tag na">primer registro</span>'});return;}
+    let hit=false;
+    for(let k=1;k<=W&&i-k>=0;k++) if(G[hist[i-k]].includes(n)) hit=true;
+    rows.push({n,tag:hit?'<span class="tag ok">compañero ✓</span>':'<span class="tag no">no era compañero</span>'});
+  });
+  $("sJug").textContent=ev; $("sAc").textContent=ac;
+  $("sPct").textContent=ev?fmt(ac/ev*100)+" %":"—";
+  $("sAzar").textContent=fmt((ev?exp/ev:1-Math.pow(35/38,W))*100)+" %";
+  $("sInv").textContent=fmt(inv);
+  const bal=ganado-inv; const sb=$("sBal");
+  sb.textContent=(bal>0?"+":"")+fmt(bal); sb.className="v "+(bal>0?"pos":bal<0?"neg":"");
+  $("hist").innerHTML=rows.reverse().slice(0,300).map((r,k)=>`<div><span>#${rows.length-k} · ${A[r.n][1]} ${r.n} ${A[r.n][0]}</span>${r.tag}</div>`).join("");
+}
+render();
+
+/* ---- acceso con código ---- */
+// Para cambiar los códigos: pídele a Claude la lista nueva (código + fecha de vencimiento).
+const CODES={ // hash del código : último día válido (hora de Caracas)
+  "2fjl09mpdkg":"2026-11-15",
+  "192e4omfg0f":"2026-11-21",
+  "ay52dn64j3":"2026-12-31"
+};
+const cyrb53=(str,seed=7)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return (4294967296*(2097151&h2)+(h1>>>0)).toString(36);};
+const AKEY="bot-animalitos-acceso"; let CUR=null;
+function venceMs(d){return Date.parse(d+"T23:59:59-04:00");}
+function check(code){
+  const h=cyrb53(String(code||"").trim().toUpperCase());
+  const d=CODES[h]; if(!d) return {ok:false,msg:"Ese código no existe."};
+  if(Date.now()>venceMs(d)) return {ok:false,msg:"Ese código ya venció."};
+  return {ok:true,d};
+}
+function fmtFecha(d){const [y,m,dd]=d.split("-");return dd+"/"+m+"/"+y;}
+function unlock(code,d){
+  CUR=code;
+  try{localStorage.setItem(AKEY,code)}catch(e){}
+  document.getElementById("gate").style.display="none";
+  document.getElementById("app").style.display="";
+  document.getElementById("vence").textContent="Acceso válido hasta el "+fmtFecha(d);
+}
+function lock(msg){
+  CUR=null;
+  try{localStorage.removeItem(AKEY)}catch(e){}
+  document.getElementById("app").style.display="none";
+  document.getElementById("gate").style.display="";
+  document.getElementById("gerr").textContent=msg||"";
+}
+document.getElementById("gform").addEventListener("submit",e=>{
+  e.preventDefault();
+  const c=document.getElementById("gcode").value;
+  if(!c.trim()){document.getElementById("gerr").textContent="Escribe un código.";return;}
+  const r=check(c); if(r.ok) unlock(c.trim().toUpperCase(),r.d); else document.getElementById("gerr").textContent=r.msg;
+});
+document.getElementById("gcode").addEventListener("input",()=>{document.getElementById("gerr").textContent="";});
+document.getElementById("salir").onclick=()=>lock("");
+(function(){let c=null;try{c=localStorage.getItem(AKEY)}catch(e){}
+  if(c){const r=check(c); if(r.ok) unlock(c,r.d); else lock(r.msg);} })();
+setInterval(()=>{const c=CUR;
+  if(document.getElementById("app").style.display!=="none"){const r=check(c); if(!r.ok) lock("Tu código venció.");}},60000);
+</script>
+</body>
+</html>
