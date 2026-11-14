@@ -165,6 +165,22 @@
   .gi{border:1px solid var(--line);border-radius:14px;padding:10px;background:rgba(6,10,22,.55)}
   .gi h3{margin:0 0 6px;font:700 14px "Orbitron";color:var(--cyan)}
   .gi .ch{padding:4px 6px;font-size:14px;border:0;background:none}
+
+  /* jaulas */
+  .cage{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;
+    background:repeating-linear-gradient(90deg,transparent 0 13px,var(--jc) 13px 16px),linear-gradient(180deg,var(--jc) 0 3px,transparent 3px calc(100% - 3px),var(--jc) calc(100% - 3px));
+    opacity:.55;box-shadow:inset 0 0 18px color-mix(in srgb,var(--jc) 45%,transparent)}
+  .a.j1{--jc:#ff9f1c} .a.j2{--jc:#ff3b5c}
+  .a.j1,.a.j2{border-color:var(--jc)}
+  .a .jd{position:absolute;z-index:3;bottom:7px;right:5px;font:700 10px "Orbitron";color:#fff;background:var(--jc);border-radius:6px;padding:1px 4px;box-shadow:0 0 8px var(--jc)}
+  .a.pick .cage{opacity:.35}
+  .jl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+  .jit{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;border:1px solid var(--jc);background:color-mix(in srgb,var(--jc) 12%,rgba(6,10,22,.6));--jc:#ff9f1c}
+  .jit.j2{--jc:#ff3b5c}
+  .jit .e{font-size:22px}
+  .jit b{font-family:"Orbitron";font-size:13px}
+  .jit .d{margin-left:auto;font:700 13px "Orbitron";color:var(--jc);text-align:right;line-height:1.1}
+  .jit .d small{display:block;font:600 11px "Rajdhani";color:var(--muted)}
 </style>
 </head>
 <body>
@@ -226,6 +242,21 @@
       </div>
   </div>
 
+  <div class="card" style="margin-top:16px" id="jcard">
+    <h2>Jaulas · <span id="jLot"></span></h2>
+    <p class="note" style="margin-top:0" id="jInfo"></p>
+    <div class="row">
+      <label>Jaula desde <input type="number" id="jmin" min="1" step="1" value="5"> días</label>
+      <label>Jaula fuerte desde <input type="number" id="jmax" min="1" step="1" value="12"> días</label>
+    </div>
+    <div class="jl" id="jList"></div>
+    <details style="margin-top:12px"><summary style="cursor:pointer;color:var(--cyan)">Actualizar con la tabla de estadísticas</summary>
+      <p class="note">Abre la página de estadísticas de esta lotería (por ejemplo, <span id="jUrl"></span>), selecciona la tabla completa, cópiala y pégala aquí. El bot lee el animal y su <b>última fecha</b>.</p>
+      <textarea id="jpaste" rows="6" placeholder="3 Ciempies	2026-10-25	20&#10;8 Raton	2026-11-01	13&#10;34 Venado	2026-11-05	9"></textarea>
+      <div class="row"><button class="btn main" id="jparse">Actualizar jaulas</button><span id="jmsg" style="font-size:14px"></span></div>
+    </details>
+  </div>
+
   <div class="card" style="margin-top:16px">
     <h2>Cargar resultados de golpe · <span id="pasteLot"></span></h2>
     <p class="note" style="margin-top:0">Pega resultados pasados, copiados de una página de resultados o de tus notas. Pueden traer horas, fechas y otro texto: el bot busca los animalitos por nombre o por número.</p>
@@ -283,7 +314,7 @@ try{if(!ST.lots.activo){const o=JSON.parse(localStorage.getItem("bot-animalitos-
 if(location.hash&&LOTS.some(l=>"#"+l.id===location.hash)) ST.cur=location.hash.slice(1);
 function save(){try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
 const L=()=>LOTS.find(l=>l.id===ST.cur)||LOTS[0];
-function S(){const id=L().id; if(!ST.lots[id]) ST.lots[id]={hist:[],cfg:{}}; const st=ST.lots[id]; st.cfg=Object.assign({bet:10,pay:30,win:1,guide:L().guides[0].id},st.cfg); if(!L().guides.some(g=>g.id===st.cfg.guide)) st.cfg.guide=L().guides[0].id; return st;}
+function S(){const id=L().id; if(!ST.lots[id]) ST.lots[id]={hist:[],cfg:{}}; const st=ST.lots[id]; st.cfg=Object.assign({bet:10,pay:30,win:1,guide:L().guides[0].id,jmin:5,jmax:12},st.cfg); if(!st.last){st.last=Object.assign({},SEED[id]||{}); st.lastSrc=SEED[id]?SEED_DATE:null;} if(!L().guides.some(g=>g.id===st.cfg.guide)) st.cfg.guide=L().guides[0].id; return st;}
 const GD=()=>L().guides.find(g=>g.id===S().cfg.guide);
 
 /* predicción según la guía: qué jugar después de x (p = el anterior) */
@@ -298,6 +329,53 @@ function predict(g,x,p){
   }
   return {now,combos,cont};
 }
+
+/* ---- jaulas: días sin salir ---- */
+const pad2=x=>String(x).padStart(2,"0");
+function today(){const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());}
+function daysSince(ds){const [y,m,d]=ds.split("-").map(Number); const a=new Date(y,m-1,d), t=new Date(); const b=new Date(t.getFullYear(),t.getMonth(),t.getDate()); return Math.round((b-a)/86400000);}
+const fmtD=ds=>{const [y,m,d]=ds.split("-");return d+"/"+m+"/"+y;};
+// datos de lotoven.com/animalito/lottoactivo/estadisticas/ tomados el 14/11/2026
+const SEED_DATE="2026-11-14";
+const SEED={activo:{"03":"2026-10-25","08":"2026-11-01","34":"2026-11-05","19":"2026-11-08","17":"2026-11-08","06":"2026-11-09","10":"2026-11-10","12":"2026-11-10","21":"2026-11-10","31":"2026-11-11","30":"2026-11-11","33":"2026-11-11","01":"2026-11-11","22":"2026-11-11","0":"2026-11-11","29":"2026-11-12","15":"2026-11-12","28":"2026-11-12","00":"2026-11-12","24":"2026-11-12","11":"2026-11-12","07":"2026-11-13","20":"2026-11-13","32":"2026-11-13","25":"2026-11-13","23":"2026-11-13","35":"2026-11-13","26":"2026-11-13","04":"2026-11-13","09":"2026-11-13","16":"2026-11-13","02":"2026-11-14","13":"2026-11-14","27":"2026-11-14","36":"2026-11-14","18":"2026-11-14","05":"2026-11-14","14":"2026-11-14"}};
+const STATS_URL={activo:"lotoven.com/animalito/lottoactivo/estadisticas",granjita:"la página de estadísticas de La Granjita",guacharo:"la página de estadísticas del Guácharo",inter:"la página de estadísticas de Lotto Internacional"};
+function jLevel(st,n){const ds=st.last[n]; if(!ds) return 0; const d=daysSince(ds); return d>=st.cfg.jmax?2:(d>=st.cfg.jmin?1:0);}
+function renderJaulas(){
+  const l=L(), st=S();
+  $("jLot").textContent=l.name; $("jUrl").textContent=STATS_URL[l.id]||"";
+  $("jmin").value=st.cfg.jmin; $("jmax").value=st.cfg.jmax;
+  const known=l.order.filter(n=>st.last[n]);
+  if(!known.length){
+    $("jInfo").innerHTML="Todavía no hay fechas para "+esc(l.name)+". Pega la tabla de estadísticas abajo, o ve tocando los animales que salen: cada toque guarda la fecha de hoy.";
+    $("jList").innerHTML=""; return;
+  }
+  const faltan=l.order.length-known.length;
+  $("jInfo").innerHTML=`Se cuentan los días desde la última vez que salió cada animal${st.lastSrc?` (datos de estadísticas del ${fmtD(st.lastSrc)}, más lo que marques aquí)`:""}. Un animal con <b>${st.cfg.jmin} a ${st.cfg.jmax-1} días</b> sin salir queda en jaula, y desde <b>${st.cfg.jmax} días</b> en jaula fuerte.${faltan?` Hay ${faltan} animales sin fecha.`:""}`;
+  const items=known.map(n=>[n,daysSince(st.last[n])]).filter(x=>x[1]>=st.cfg.jmin).sort((a,b)=>b[1]-a[1]);
+  $("jList").innerHTML=items.length?items.map(([n,d])=>`<div class="jit ${d>=st.cfg.jmax?"j2":""}"><span class="e">${l.A[n][1]}</span><div><b>${n}</b><br>${esc(l.A[n][0])}</div><div class="d">${d} días<small>desde ${fmtD(st.last[n])}</small></div></div>`).join(""):'<div class="note">Ningún animal pasa de '+st.cfg.jmin+' días sin salir.</div>';
+}
+$("jmin").oninput=e=>{const st=S(); st.cfg.jmin=Math.max(1,+e.target.value||1); save(); render();};
+$("jmax").oninput=e=>{const st=S(); st.cfg.jmax=Math.max(1,+e.target.value||1); save(); render();};
+$("jparse").onclick=()=>{
+  const l=L(), st=S(), txt=$("jpaste").value, found={}; let bad=0;
+  const NAMES={}; l.order.forEach(n=>{NAMES[norm(l.A[n][0])]=n;}); Object.keys(ALIAS).forEach(k=>{if(l.A[ALIAS[k]]&&!NAMES[k]) NAMES[k]=ALIAS[k];});
+  const re=new RegExp("\\b("+Object.keys(NAMES).sort((a,b)=>b.length-a.length).map(k=>k.replace(/ /g,"\\s+")).join("|")+")\\b");
+  txt.split(/\r?\n/).forEach(raw=>{
+    const line=norm(raw); if(!line.trim()) return;
+    let m=line.match(/(\d{4})-(\d{1,2})-(\d{1,2})/), ds=null;
+    if(m) ds=m[1]+"-"+pad2(m[2])+"-"+pad2(m[3]);
+    else if((m=line.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/))) ds=m[3]+"-"+pad2(m[2])+"-"+pad2(m[1]);
+    if(!ds){bad++;return;}
+    const before=line.slice(0,line.indexOf(m[0]));
+    let n=null; const nm=before.match(re); if(nm) n=NAMES[nm[1].replace(/\s+/g," ")];
+    if(!n){const t=before.match(/\b(00|\d{1,2})\b/); if(t){const v=t[1]; n=v==="00"?"00":(+v===0?"0":pad2(+v)); if(!l.A[n]) n=null;}}
+    if(n) found[n]=ds; else bad++;
+  });
+  const k=Object.keys(found).length;
+  if(!k){$("jmsg").innerHTML='<span class="bad-t">No encontré animales con fecha. Copia la tabla completa, con la columna de última fecha.</span>';return;}
+  Object.assign(st.last,found); st.lastSrc=today(); st.lastUndo=[]; save(); render();
+  $("jmsg").innerHTML=`<span class="ok-t">Listo: ${k} animales actualizados.</span>`+(k<l.order.length?` <span style="color:var(--muted)">Faltaron ${l.order.length-k}.</span>`:"");
+};
 
 /* pestañas */
 const tabs=$("tabs");
@@ -314,13 +392,13 @@ function build(){
   gr.innerHTML=l.guides.length>1?`<span style="color:var(--muted);font-size:14px">Guía:</span><span class="seg">${l.guides.map(g=>`<button data-g="${g.id}" class="${g.id===st.cfg.guide?"on":""}">${g.name}</button>`).join("")}</span>`:"";
   gr.querySelectorAll("button").forEach(b=>b.onclick=()=>{st.cfg.guide=b.dataset.g;save();build();});
   const grid=$("grid"); grid.innerHTML=""; grid.classList.toggle("big",l.order.length>40);
-  $("legend").innerHTML=l.roulette?'<span><i style="background:var(--grn);box-shadow:0 0 8px var(--grn)"></i>0 y 00</span><span><i style="background:var(--red);box-shadow:0 0 8px var(--red)"></i>Rojos</span><span><i style="background:var(--vio);box-shadow:0 0 8px var(--vio)"></i>Negros</span><span><i style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></i>Salió</span><span><i style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></i>Jugar según la guía</span>'
-    :'<span><i style="background:var(--grn);box-shadow:0 0 8px var(--grn)"></i>0 y 00</span><span><i style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></i>Salió</span><span><i style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></i>Jugar según la guía</span>';
+  $("legend").innerHTML=l.roulette?'<span><i style="background:var(--grn);box-shadow:0 0 8px var(--grn)"></i>0 y 00</span><span><i style="background:var(--red);box-shadow:0 0 8px var(--red)"></i>Rojos</span><span><i style="background:var(--vio);box-shadow:0 0 8px var(--vio)"></i>Negros</span><span><i style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></i>Salió</span><span><i style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></i>Jugar según la guía</span><span><i style="background:#ff9f1c;box-shadow:0 0 8px #ff9f1c"></i>Jaula</span><span><i style="background:#ff3b5c;box-shadow:0 0 8px #ff3b5c"></i>Jaula fuerte</span>'
+    :'<span><i style="background:var(--grn);box-shadow:0 0 8px var(--grn)"></i>0 y 00</span><span><i style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></i>Salió</span><span><i style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></i>Jugar según la guía</span><span><i style="background:#ff9f1c;box-shadow:0 0 8px #ff9f1c"></i>Jaula</span><span><i style="background:#ff3b5c;box-shadow:0 0 8px #ff3b5c"></i>Jaula fuerte</span>';
   l.order.forEach(n=>{
     const b=document.createElement("button");
     b.className="a "+(n==="0"||n==="00"?"g":(l.roulette&&REDS.has(+n)?"r":"")); b.dataset.n=n;
     b.innerHTML=`<span class="e">${l.A[n][1]}</span><span class="n">${n}</span><span class="t">${esc(l.A[n][0])}</span>`;
-    b.onclick=()=>{S().hist.push(n);save();render();};
+    b.onclick=()=>{const st=S(); st.lastUndo=st.lastUndo||[]; st.lastUndo.push([n,st.last[n]||null]); if(st.lastUndo.length>200) st.lastUndo.shift(); st.last[n]=today(); st.hist.push(n);save();render();};
     grid.appendChild(b);
   });
   $("bet").value=st.cfg.bet; $("pay").value=st.cfg.pay; $("win").value=String(st.cfg.win);
@@ -329,7 +407,7 @@ function build(){
 $("bet").oninput=e=>{S().cfg.bet=Math.max(0,+e.target.value||0);save();render();};
 $("pay").oninput=e=>{S().cfg.pay=Math.max(1,+e.target.value||1);save();render();};
 $("win").onchange=e=>{S().cfg.win=+e.target.value||1;save();render();};
-$("undo").onclick=()=>{S().hist.pop();save();render();};
+$("undo").onclick=()=>{const st=S(); st.hist.pop(); const u=(st.lastUndo||[]).pop(); if(u){ if(u[1]) st.last[u[0]]=u[1]; else delete st.last[u[0]]; } save();render();};
 $("clear").onclick=()=>$("confirm").classList.add("on");
 $("no").onclick=()=>$("confirm").classList.remove("on");
 $("yes").onclick=()=>{S().hist=[];save();$("confirm").classList.remove("on");render();};
@@ -348,6 +426,10 @@ function render(){
   const last=hist[hist.length-1], prev=hist[hist.length-2];
   const P=last!=null?predict(g,last,prev):null;
   document.querySelectorAll("#grid .a").forEach(b=>{
+    const lv=jLevel(st,b.dataset.n); b.classList.toggle("j1",lv===1); b.classList.toggle("j2",lv===2);
+    let cg=b.querySelector(".cage"), jd=b.querySelector(".jd");
+    if(lv){ if(!cg){cg=document.createElement("i");cg.className="cage";b.appendChild(cg);} if(!jd){jd=document.createElement("span");jd.className="jd";b.appendChild(jd);} jd.textContent=daysSince(st.last[b.dataset.n])+"d"; }
+    else { if(cg) cg.remove(); if(jd) jd.remove(); }
     b.classList.toggle("last",b.dataset.n===last);
     b.classList.toggle("pick",!!(P&&P.now.has(b.dataset.n)));
   });
@@ -384,6 +466,7 @@ function render(){
   $("sInv").textContent=fmt(inv);
   const bal=ganado-inv, sb=$("sBal"); sb.textContent=(bal>0?"+":"")+fmt(bal); sb.className="v "+(bal>0?"pos":bal<0?"neg":"");
   $("hist").innerHTML=rows.reverse().slice(0,300).map((r,k)=>`<div><span>#${rows.length-k} · ${l.A[r.n][1]} ${r.n} ${esc(l.A[r.n][0])}</span>${r.t}</div>`).join("");
+  renderJaulas();
 }
 
 function renderGuide(){
