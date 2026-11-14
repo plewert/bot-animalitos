@@ -386,13 +386,13 @@ const COMP={"0":["08","12","16"],"00":["05","09","29"],"01":["21","32","35"],"02
 const compGroups={}; Object.keys(COMP).forEach(k=>compGroups[k]=[COMP[k]]);
 const LOTS=[
  {id:"activo",name:"Lotto Activo",short:"38 animales",color:"#2ef2ff",A:STD,order:ord(36),roulette:true,
-   guides:[{id:"comb",name:"Combinaciones",type:"chain",data:DATA.activo},{id:"comp",name:"Compañeros (guía anterior)",type:"group",data:compGroups}]},
+   guides:[{id:"comb",name:"Combinaciones",type:"chain",data:DATA.activo},{id:"comp",name:"Compañeros",type:"group",data:compGroups}]},
  {id:"granjita",name:"La Granjita",short:"38 animales",color:"#2dff8a",A:STD,order:ord(36),roulette:true,
-   guides:[{id:"comb",name:"Combinaciones",type:"chain",data:DATA.granjita}]},
+   guides:[{id:"comb",name:"Combinaciones",type:"chain",data:DATA.granjita},{id:"comp",name:"Compañeros",type:"group",data:compGroups}]},
  {id:"guacharo",name:"Guácharo",short:"77 animales",color:"#ffd23f",A:GUA,order:ord(75),roulette:false,
-   guides:[{id:"comb",name:"Combinaciones",type:"group",data:DATA.gua}]},
+   guides:[{id:"comb",name:"Combinaciones",type:"group",data:DATA.gua},{id:"comp",name:"Compañeros",type:"group",data:compGroups}]},
  {id:"inter",name:"Lotto Internacional",short:"38 animales",color:"#ff3df2",A:STD,order:ord(36),roulette:true,
-   guides:[{id:"comb",name:"Combinaciones",type:"chain",data:DATA.inter}]}
+   guides:[{id:"comb",name:"Combinaciones",type:"chain",data:DATA.inter},{id:"comp",name:"Compañeros",type:"group",data:compGroups}]}
 ];
 const REDS=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const $=id=>document.getElementById(id);
