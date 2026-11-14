@@ -245,9 +245,19 @@
     .bnav button.on span{filter:none;text-shadow:0 0 10px var(--cyan)}
     .bnav button .badge{position:absolute;top:0;left:56%;font:700 9px "Orbitron";background:var(--red);color:#fff;border-radius:99px;padding:1px 4px;filter:none;line-height:1.2}
   }
+
+  .ginfo{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+  .ginfo .gt{font:700 13px "Orbitron",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 10px rgba(255,210,63,.45)}
+  .ginfo .ga{margin-top:6px;color:var(--muted);font-size:15px}
+  .ginfo .ga b{color:var(--ink)}
+  .ginfo .gw{margin-top:12px;font-size:15px;color:var(--ink)}
+  .ginfo .gl{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .ginfo .gl a{display:block;padding:10px;border-radius:12px;border:1px solid rgba(45,255,138,.45);background:rgba(45,255,138,.1);color:var(--grn);font:700 16px "Rajdhani",sans-serif;letter-spacing:.04em;text-decoration:none;box-shadow:0 0 14px rgba(45,255,138,.2)}
+  .ginfo .gl a:hover{box-shadow:0 0 20px rgba(45,255,138,.45)}
+  body.locked .bnav{display:none!important}
 </style>
 </head>
-<body>
+<body class="locked">
 <div class="gate" id="gate">
   <div class="box">
     <div class="lock"><span>🔒</span></div>
@@ -255,6 +265,15 @@
     <div class="tagline" style="margin-top:6px">Acceso con código</div>
     <form id="gform"><input id="gcode" autocomplete="off" placeholder="BOT-XXXX-XXXX"><div class="err" id="gerr"></div>
     <button class="btn main" type="submit">Entrar</button></form>
+    <div class="ginfo">
+      <div class="gt">Suscripciones y Recargas</div>
+      <div class="ga">Aliado Comercial: <b>Agencia Betcom</b></div>
+      <div class="gw">💬 WhatsApp de Soporte</div>
+      <div class="gl">
+        <a href="https://wa.me/584247467906" target="_blank" rel="noopener">+58 424-7467906</a>
+        <a href="https://wa.me/584247616909" target="_blank" rel="noopener">+58 424-7616909</a>
+      </div>
+    </div>
   </div>
 </div>
 <div class="wrap" id="app" style="display:none">
@@ -639,6 +658,7 @@ function check(code,activar){
 }
 function fmtFecha(ms){return new Date(ms).toLocaleString("es-VE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"numeric",minute:"2-digit"});}
 function unlock(code,fin){
+  document.body.classList.remove("locked");
   CUR=code;
   try{localStorage.setItem(AKEY,code)}catch(e){}
   document.getElementById("gate").style.display="none";
@@ -646,6 +666,7 @@ function unlock(code,fin){
   {const d=new Date(fin); document.getElementById("vence").innerHTML='<span class="lg">Acceso hasta '+fmtFecha(fin)+'</span><span class="sm">Hasta '+String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+'</span>';}
 }
 function lock(msg){
+  document.body.classList.add("locked");
   CUR=null;
   try{localStorage.removeItem(AKEY)}catch(e){}
   document.getElementById("app").style.display="none";
