@@ -382,6 +382,9 @@
   @media(max-width:700px){.tgl .tx{display:none}.tgl{padding:2px 6px}.trow .tc{padding:3px 7px}}
   .trow .tgl{margin-left:auto}
   .trow .tgl+.tcp{margin-left:4px}
+  .mbar .mvol{margin-left:auto;font-size:13px;color:var(--muted);white-space:nowrap;border:1px solid rgba(46,242,255,.45);border-radius:99px;padding:2px 9px;background:rgba(46,242,255,.08)}
+  .mbar .mvol b{color:var(--cyan)}
+  .mbar .top{flex-wrap:wrap}
 </style>
 </head>
 <body class="locked">
@@ -738,7 +741,8 @@ function render(){
   if(last==null){
     pred.innerHTML='<h2>Jugada según la guía</h2><div class="empty">Todavía no has marcado ningún resultado en '+esc(l.name)+'.</div>';
   }else if(!P.now.size){
-    pred.innerHTML=`<h2>Jugada según la guía</h2><div class="from">Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>.</div><div class="empty">Tu guía de ${esc(l.name)} no tiene combinaciones para este animal.</div>`;
+    const vv0=volteo(l,last);
+    pred.innerHTML=`<h2>Jugada según la guía</h2>${vv0?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv0][1]} ${vv0} ${esc(l.A[vv0][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv0}">⧉ Copiar</button></div>`:""}<div class="from">Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>.</div><div class="empty">Tu guía de ${esc(l.name)} no tiene combinaciones para este animal.</div>`;
   }else{
     const contSet=new Set(P.cont.map(c=>c[2]));
     const arr=[...P.now.entries()].sort((a,b)=>b[1]-a[1]||l.order.indexOf(a[0])-l.order.indexOf(b[0]));
@@ -1031,7 +1035,8 @@ function renderMbar(){
   else{
     const P=predict(g,last,h[h.length-2]); const cs=new Set(P.cont.map(c=>c[2]));
     const arr=[...P.now.entries()].sort((a,b)=>b[1]-a[1]||l.order.indexOf(a[0])-l.order.indexOf(b[0]));
-    mb.innerHTML=`<div class="top"><span>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b></span></div>
+    const mv=volteo(l,last);
+    mb.innerHTML=`<div class="top"><span>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b></span>${mv?`<span class="mvol">⇄ Volteo: <b>${l.A[mv][1]} ${mv}</b></span>`:""}</div>
       <div class="acts" id="macts"><button class="undo cp" id="mcopy">⧉ Copiar</button><button class="undo" id="mundo">↶ Deshacer</button><button class="undo lp" id="mclear">🧹 Limpiar</button></div>
       <div class="acts conf" id="mconf" style="display:none"><span>¿Borrar todo lo marcado en ${esc(l.name)}?</span><button class="undo" id="mno">Cancelar</button><button class="undo yes" id="myes">Sí, limpiar</button></div>
       ${arr.length?'<div class="pdesc">🎯 Animales para jugar en el próximo sorteo:</div>':""}
@@ -1041,7 +1046,7 @@ function renderMbar(){
     $("mno").onclick=()=>{$("mconf").style.display="none";$("macts").style.display="flex";};
     $("myes").onclick=()=>{const st=S(); st.hist=[]; st.lastUndo=[]; st.hoy=null; save(); render();};
     $("mcopy").onclick=()=>{
-      const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+(arr.length?"🎯 *Animales para jugar en el próximo sorteo:*\n"+arr.map(([n])=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+ventanaTxt(st):"Sin combinaciones para este animal")
+      const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+(arr.length?"🎯 *Animales para jugar en el próximo sorteo:*\n"+arr.map(([n])=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+ventanaTxt(st):"Sin combinaciones para este animal")+(mv?"\n\n⇄ *Volteo:* "+l.A[mv][1]+" "+mv+" "+l.A[mv][0]:"")
         +FOOTER;
       const btn=$("mcopy");
       const done=ok=>{btn.classList.toggle("ok",ok);btn.textContent=ok?"✓ ¡Copiado!":"No se pudo copiar";clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.classList.remove("ok");btn.textContent="⧉ Copiar";},2000);};
