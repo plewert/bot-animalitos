@@ -365,6 +365,15 @@
   body.inapp #volCard.vis.hidev,#volCard.hidev{display:none!important}
   .mbar .pdesc{margin-top:8px;font-size:13.5px;font-weight:600;color:var(--gold)}
   .mbar .pdesc+.pks{margin-top:5px}
+
+  .clk{display:flex;align-items:center;gap:8px;margin-top:9px;border-radius:11px;padding:7px 10px;border:1px solid rgba(45,255,138,.55);background:rgba(45,255,138,.09);font-size:14px;color:#d6f8e6}
+  .clk>span{font-size:17px}
+  .clk b{color:var(--grn)}
+  .clk .bar{height:5px;border-radius:9px;background:#24304f;margin-top:5px;overflow:hidden}
+  .clk .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--grn),var(--cyan))}
+  .clk.v{border-color:rgba(255,59,92,.5);background:rgba(255,59,92,.08);color:#ffc2cc}
+  .clk.v b{color:#ff8ea0}
+  .pred .clk{margin:0 0 12px}
 </style>
 </head>
 <body class="locked">
@@ -567,6 +576,39 @@ function predict(g,x,p){
 function marcaDia(st,hoy){ if(!st.hoy||st.hoy.fecha!==hoy||st.hoy.ini>st.hist.length) st.hoy={fecha:hoy,ini:st.hist.length}; }
 function deHoy(st){ const td=today(); if(!st.hoy||st.hoy.fecha!==td) return []; return st.hist.slice(st.hoy.ini); }
 
+
+/* ---- horario para jugar (próximos 2 sorteos) ---- */
+const PRIMER=8, ULTIMO=19; // sorteos de 8:00 a. m. a 7:00 p. m., cada hora
+const fmtH=d=>{const a=d.getHours(),m=d.getMinutes();return ((a%12)||12)+":"+String(m).padStart(2,"0")+(a<12?" a. m.":" p. m.");};
+function ventana(st){
+  const h=st.hist; if(!h.length) return null;
+  let base=null;
+  const dia=st.dia&&st.dia.fecha===today()?st.dia.items:null, hoyL=deHoy(st);
+  if(dia&&dia.length&&hoyL.length===dia.length&&hoyL.every((n,i)=>n===dia[i].num)){
+    const [a,m]=dia[dia.length-1].hora.split(":").map(Number); base=new Date(); base.setHours(a,m,0,0);
+  }else if(st.tap&&st.tap.i===h.length){ base=new Date(st.tap.t); base.setMinutes(0,0,0); }
+  if(!base) return null;
+  const ini=new Date(base); ini.setHours(ini.getHours()+1);
+  if(ini.getHours()>ULTIMO||ini.getDate()!==base.getDate()||base.getHours()>=ULTIMO){ ini.setTime(base.getTime()); ini.setDate(ini.getDate()+(base.getHours()>=PRIMER?1:0)); ini.setHours(PRIMER,0,0,0); }
+  if(ini.getHours()<PRIMER) ini.setHours(PRIMER,0,0,0);
+  const fin=new Date(ini); if(fin.getHours()<ULTIMO) fin.setHours(fin.getHours()+1);
+  return {base,ini,fin};
+}
+function ventanaHtml(st){
+  const w=ventana(st); if(!w) return "";
+  const now=Date.now(), manana=w.ini.toDateString()!==new Date().toDateString()&&w.ini>new Date();
+  const rango=(w.fin.getTime()===w.ini.getTime()?"a las <b>"+fmtH(w.ini)+"</b>":"de <b>"+fmtH(w.ini)+"</b> a <b>"+fmtH(w.fin)+"</b>");
+  if(now>w.fin.getTime()+10*60000) return `<div class="clk v"><span>⌛</span><div>Horario vencido: era ${rango} · Toca 🔄 Actualizar o marca el último que salió.</div></div>`;
+  const pct=Math.max(0,Math.min(100,(now-w.base.getTime())/(w.fin.getTime()+10*60000-w.base.getTime())*100));
+  return `<div class="clk"><span>⏰</span><div style="flex:1">${manana?"Mañana: jugar ":"Jugar "}${rango} (${w.fin.getTime()===w.ini.getTime()?"último sorteo del día":"próximos 2 sorteos"})<div class="bar"><i style="width:${pct.toFixed(0)}%"></i></div></div></div>`;
+}
+function ventanaTxt(st){
+  const w=ventana(st); if(!w) return "";
+  const manana=w.ini.toDateString()!==new Date().toDateString()&&w.ini>new Date();
+  return "\n⏰ *"+(manana?"Mañana: jugar ":"Jugar ")+(w.fin.getTime()===w.ini.getTime()?"a las "+fmtH(w.ini):"de "+fmtH(w.ini)+" a "+fmtH(w.fin))+"*";
+}
+setInterval(()=>{ if(!document.body.classList.contains("locked")) try{render();}catch(e){} },60000);
+
 /* ---- jaulas: días sin salir ---- */
 const pad2=x=>String(x).padStart(2,"0");
 function today(){const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());}
@@ -635,7 +677,7 @@ function build(){
     const b=document.createElement("button");
     b.className="a "+(n==="0"||n==="00"?"g":(l.roulette&&REDS.has(+n)?"r":"")); b.dataset.n=n;
     b.innerHTML=`<span class="e">${l.A[n][1]}</span><span class="n">${n}</span><span class="t">${esc(l.A[n][0])}</span>`;
-    b.onclick=()=>{const st=S(); st.lastUndo=st.lastUndo||[]; st.lastUndo.push([n,st.last[n]||null]); if(st.lastUndo.length>200) st.lastUndo.shift(); marcaDia(st,today()); st.last[n]=today(); st.hist.push(n);save();render();};
+    b.onclick=()=>{const st=S(); st.lastUndo=st.lastUndo||[]; st.lastUndo.push([n,st.last[n]||null]); if(st.lastUndo.length>200) st.lastUndo.shift(); marcaDia(st,today()); st.last[n]=today(); st.hist.push(n); st.tap={i:st.hist.length,t:Date.now()}; save();render();};
     grid.appendChild(b);
   });
   $("bet").value=st.cfg.bet; $("pay").value=st.cfg.pay; $("win").value=String(st.cfg.win);
@@ -687,6 +729,7 @@ function render(){
     pred.innerHTML=`<h2>Jugada según la guía</h2>
       ${vv?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv][1]} ${vv} ${esc(l.A[vv][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv}">⧉ Copiar</button></div>`:""}
       <div class="from">Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>. Para el próximo sorteo la guía marca:</div>
+      ${ventanaHtml(st)}
       <div class="picks">${arr.map(([n,c])=>`<div class="pk${contSet.has(n)?" cont":""}">${c>1?`<span class="cnt">×${c}</span>`:""}<span class="e">${l.A[n][1]}</span><b>${n}</b>${esc(l.A[n][0])}</div>`).join("")}</div>
       <div class="chains">${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>
       <div class="note">Probabilidad real de que salga alguno en el próximo sorteo: <b>${arr.length} de ${N} (${fmt(arr.length/N*100)} %)</b>, igual que con cualquier otro grupo de ${arr.length} ${arr.length===1?"animal":"animales"}.</div>`;
@@ -961,13 +1004,13 @@ function renderMbar(){
       <div class="acts" id="macts"><button class="undo cp" id="mcopy">⧉ Copiar</button><button class="undo" id="mundo">↶ Deshacer</button><button class="undo lp" id="mclear">🧹 Limpiar</button></div>
       <div class="acts conf" id="mconf" style="display:none"><span>¿Borrar todo lo marcado en ${esc(l.name)}?</span><button class="undo" id="mno">Cancelar</button><button class="undo yes" id="myes">Sí, limpiar</button></div>
       ${arr.length?'<div class="pdesc">🎯 Animales para jugar en el próximo sorteo:</div>':""}
-      <div class="pks">${arr.length?arr.map(([n,c])=>`<span class="${cs.has(n)?"c":""}">${l.A[n][1]} ${n}${c>1?" ×"+c:""}</span>`).join(""):'<span style="color:var(--muted);background:none;border:0;font-weight:500">Sin combinaciones para este animal</span>'}</div>`;
+      <div class="pks" data-w="1">${arr.length?arr.map(([n,c])=>`<span class="${cs.has(n)?"c":""}">${l.A[n][1]} ${n}${c>1?" ×"+c:""}</span>`).join(""):'<span style="color:var(--muted);background:none;border:0;font-weight:500">Sin combinaciones para este animal</span>'}</div>${arr.length?ventanaHtml(st):""}`;
     $("mundo").onclick=()=>$("undo").click();
     $("mclear").onclick=()=>{$("macts").style.display="none";$("mconf").style.display="flex";};
     $("mno").onclick=()=>{$("mconf").style.display="none";$("macts").style.display="flex";};
     $("myes").onclick=()=>{const st=S(); st.hist=[]; st.lastUndo=[]; st.hoy=null; save(); render();};
     $("mcopy").onclick=()=>{
-      const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+(arr.length?"🎯 *Animales para jugar en el próximo sorteo:*\n"+arr.map(([n])=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n"):"Sin combinaciones para este animal")
+      const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+(arr.length?"🎯 *Animales para jugar en el próximo sorteo:*\n"+arr.map(([n])=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+ventanaTxt(st):"Sin combinaciones para este animal")
         +FOOTER;
       const btn=$("mcopy");
       const done=ok=>{btn.classList.toggle("ok",ok);btn.textContent=ok?"✓ ¡Copiado!":"No se pudo copiar";clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.classList.remove("ok");btn.textContent="⧉ Copiar";},2000);};
