@@ -687,8 +687,12 @@ const cyrb53=(str,seed=7)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=
 const AKEY="bot-animalitos-acceso"; let CUR=null; const MEM={};
 const getAct=h=>{try{const v=localStorage.getItem("bot-act-"+h);if(v)return +v;}catch(e){} return MEM[h]||null;};
 const setAct=(h,t)=>{MEM[h]=t;try{localStorage.setItem("bot-act-"+h,String(t))}catch(e){}};
+function normCode(c){
+  const t=String(c||"").normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  return (t.length===11&&t.startsWith("BOT"))?"BOT-"+t.slice(3,7)+"-"+t.slice(7):String(c||"").trim().toUpperCase();
+}
 function check(code,activar){
-  const h=cyrb53(String(code||"").trim().toUpperCase());
+  const h=cyrb53(normCode(code));
   if(!CODES.has(h)) return {ok:false,msg:"Ese código no existe."};
   let t=getAct(h);
   if(!t){
@@ -721,7 +725,7 @@ document.getElementById("gform").addEventListener("submit",e=>{
   e.preventDefault();
   const c=document.getElementById("gcode").value;
   if(!c.trim()){document.getElementById("gerr").textContent="Escribe un código.";return;}
-  const r=check(c,true); if(r.ok) unlock(c.trim().toUpperCase(),r.fin); else document.getElementById("gerr").textContent=r.msg;
+  const r=check(c,true); if(r.ok) unlock(normCode(c),r.fin); else document.getElementById("gerr").textContent=r.msg;
 });
 document.getElementById("gcode").addEventListener("input",()=>{document.getElementById("gerr").textContent="";});
 document.getElementById("salir").onclick=()=>lock("");
