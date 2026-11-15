@@ -1,0 +1,15 @@
+BOT DE ANIMALITOS - PARA RENDER
+
+Carpetas:
+  public/   -> la página del bot (index.html, manifest.json, íconos)
+  server/   -> el servidor que lee los resultados (server.js, package.json)
+  render.yaml -> configuración para crear todo de una vez en Render
+
+Para cambiar los enlaces de donde se leen los resultados:
+  abre server/server.js y edita la parte FUENTES al principio.
+
+Si Render le da a tu servidor un nombre distinto a bot-animalitos-api:
+  abre public/index.html, busca  const API_URL=  y pon la dirección que te dio Render.
+
+Para revisar qué está leyendo el servidor:
+  abre en el navegador  https://(dirección-de-tu-servidor)/prueba

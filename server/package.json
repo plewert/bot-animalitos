@@ -1,0 +1,8 @@
+{
+  "name": "bot-animalitos-api",
+  "version": "1.0.0",
+  "description": "Servidor de resultados para el Bot de animalitos",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}

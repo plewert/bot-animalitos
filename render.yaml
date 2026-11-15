@@ -1,0 +1,16 @@
+services:
+  # Servidor que lee los resultados (se duerme tras 15 min sin uso en el plan gratis)
+  - type: web
+    name: bot-animalitos-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+
+  # Página del bot (siempre encendida)
+  - type: web
+    name: bot-animalitos
+    runtime: static
+    buildCommand: echo listo
+    staticPublishPath: ./public
