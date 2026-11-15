@@ -340,6 +340,10 @@
   .tourtip .dots i.on{background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
   .tourtip button{border:1px solid var(--line);background:none;color:var(--muted);border-radius:9px;padding:6px 11px;font:700 13px "Rajdhani",sans-serif;cursor:pointer}
   .tourtip button.nx{border:0;background:linear-gradient(90deg,var(--cyan),var(--mag));color:#05060c}
+
+  .tc.tx{background:rgba(255,255,255,.04);border:1px dashed #3a4566;color:#6f7b96;text-decoration:line-through}
+  .tcp{margin-left:auto;border:1px solid rgba(46,242,255,.6);background:rgba(46,242,255,.12);color:var(--cyan);border-radius:9px;padding:4px 9px;font:700 13px "Rajdhani",sans-serif;cursor:pointer;white-space:nowrap}
+  .tcp.ok{border-color:rgba(45,255,138,.6);background:rgba(45,255,138,.12);color:var(--grn)}
 </style>
 </head>
 <body class="locked">
@@ -742,46 +746,52 @@ document.addEventListener("click",ev=>{
   copyTxt("🎯 *Combinación · "+l.name+"*\n"+t+FOOTER,b,"⧉ Copiar");
 });
 /* ---- tripletas de salidores ---- */
+// Solo se arman con salidores que AÚN NO han salido hoy.
 let TRI_SEED=0;
-function makeTripletas(top,out,pend){
+function makeTripletas(pool){
   const cands=[];
-  if(out.length&&pend.length>=2){
-    for(let i=0;i<pend.length;i++)for(let j=i+1;j<pend.length;j++)for(const o of out) cands.push([pend[i],pend[j],o]);
-  }else{
-    const pool=top; for(let i=0;i<pool.length;i++)for(let j=i+1;j<pool.length;j++)for(let k=j+1;k<pool.length;k++) cands.push([pool[i],pool[j],pool[k]]);
-  }
-  const rank=n=>top.indexOf(n);
-  cands.sort((a,b)=>(rank(a[0])+rank(a[1])+rank(a[2]))-(rank(b[0])+rank(b[1])+rank(b[2])));
-  // escoger 3 variando animales: evita repetir el mismo par/animal mientras se pueda
+  for(let i=0;i<pool.length;i++)for(let j=i+1;j<pool.length;j++)for(let k=j+1;k<pool.length;k++) cands.push([pool[i],pool[j],pool[k]]);
+  cands.sort((x,y)=>(x[0]+x[1]+x[2])-(y[0]+y[1]+y[2]));
   const res=[], used={}; const start=(TRI_SEED*3)%Math.max(1,cands.length);
   const order=cands.slice(start).concat(cands.slice(0,start));
-  for(const c of order){ if(res.length===3)break; const sc=c.filter(x=>used[x]).length; if(sc<=(res.length?1:0)||order.length<6){res.push(c);c.forEach(x=>used[x]=(used[x]||0)+1);} }
-  for(const c of order){ if(res.length===3)break; if(!res.includes(c)) res.push(c); }
+  // Variar los animales: primero tripletas sin repetir, luego con 1 repetido, luego cualquiera
+  for(const maxRep of [0,1,3]){
+    for(const c of order){ if(res.length===3)break; if(res.includes(c)) continue; if(c.filter(x=>used[x]).length<=maxRep){res.push(c);c.forEach(x=>used[x]=1);} }
+  }
   return res;
 }
 function renderTri(l,st,hot,n){
   const box=$("triBox"); if(!box) return;
+  const td=today(), salio=k=>st.last&&st.last[k]===td;
   const top=hot.filter(r=>r[1]>0).slice(0,10).map(r=>r[0]);
   if(top.length<3){box.innerHTML="";return;}
-  const td=today(); const out=top.filter(k=>st.last[k]===td), pend=top.filter(k=>st.last[k]!==td);
-  const tri=makeTripletas(top,out,pend);
+  const out=top.filter(salio);
+  // Pendientes: los del top 10 que no han salido; si son menos de 3, se siguen tomando del ranking.
+  let pend=top.filter(k=>!salio(k));
+  if(pend.length<3){ for(const r of hot){ if(pend.length>=3) break; if(!pend.includes(r[0])&&!salio(r[0])) pend.push(r[0]); } }
+  const extra=pend.filter(k=>!top.includes(k));
+  if(pend.length<3){
+    box.innerHTML=`<div class="sh" style="color:var(--cyan)">🎯 Tripletas de salidores</div><p class="note">Ya salieron casi todos los animales hoy: no quedan suficientes para armar tripletas.</p>`;
+    return;
+  }
+  const pool=pend.slice(0,Math.max(3,Math.min(7,pend.length)));
+  const idx=makeTripletas(pool.map((_,i)=>i));
+  const tri=idx.map(t=>t.map(i=>pool[i]));
   const chip=(k,c)=>`<span class="tc ${c}">${l.A[k][1]} ${k}</span>`;
-  const mixOK=out.length&&pend.length>=2;
+  const linea=t=>t.map(k=>l.A[k][1]+" "+k+" "+l.A[k][0]).join(" - ");
   box.innerHTML=`<div class="sh" style="color:var(--cyan)">🎯 Tripletas de salidores</div>
     <div class="note" style="margin:0 0 6px">De los ${top.length} más salidores:</div>
-    <div class="tl">✅ Ya salieron hoy</div><div class="tchs">${out.length?out.map(k=>chip(k,"tb")).join(""):'<span class="note" style="margin:0">Ninguno todavía</span>'}</div>
-    <div class="tl">⏳ Aún no salen hoy</div><div class="tchs">${pend.length?pend.map(k=>chip(k,"ta")).join(""):'<span class="note" style="margin:0">Todos ya salieron</span>'}</div>
-    <div class="tl" style="margin-top:12px">${mixOK?"2 que aún no salen + 1 que ya salió":"Combinadas entre los salidores (todavía no hay de los dos grupos para mezclar)"}</div>
-    ${tri.map((t,i)=>`<div class="trow"><span class="tn">${i+1}</span>${t.map(k=>chip(k,out.includes(k)?"tb":"ta")).join("")}</div>`).join("")}
+    <div class="tl">❌ Ya salieron hoy (no entran en las tripletas)</div><div class="tchs">${out.length?out.map(k=>chip(k,"tx")).join(""):'<span class="note" style="margin:0">Ninguno todavía</span>'}</div>
+    <div class="tl">⏳ Aún no salen hoy (con estos se arman)</div><div class="tchs">${pend.map(k=>chip(k,"ta")).join("")}</div>
+    ${extra.length?`<div class="note" style="margin:6px 0 0">Se agregaron ${extra.map(k=>k).join(", ")} del ranking porque en el top 10 quedaban menos de 3 sin salir.</div>`:""}
+    <div class="tl" style="margin-top:12px">🎯 Tripletas (los 3 aún no han salido hoy)</div>
+    ${tri.map((t,i)=>`<div class="trow"><span class="tn">${i+1}</span>${t.map(k=>chip(k,"ta")).join("")}<button class="tcp" data-i="${i}">⧉</button></div>`).join("")}
     <div class="row" style="margin-top:10px"><button class="btn main" id="triCopy">⧉ Copiar tripletas</button><button class="btn" id="triNew">🔄 Otras combinaciones</button></div>
     <p class="note">Cada tripleta necesita que salgan los 3 animales en el día: pasa aproximadamente menos de 2 veces de cada 100, sean salidores o no.</p>`;
   $("triNew").onclick=()=>{TRI_SEED++;renderSal();};
-  $("triCopy").onclick=()=>{
-    const txt="🎯 *Tripletas de salidores · "+l.name+"*\n"+tri.map((t,i)=>(i+1)+") "+t.map(k=>l.A[k][1]+" "+k+" "+l.A[k][0]).join(" - ")).join("\n")+FOOTER;
-    copyTxt(txt,$("triCopy"),"⧉ Copiar tripletas");
-  };
+  $("triCopy").onclick=()=>copyTxt("🎯 *Tripletas de salidores · "+l.name+"*\n"+tri.map((t,i)=>(i+1)+") "+linea(t)).join("\n")+FOOTER,$("triCopy"),"⧉ Copiar tripletas");
+  box.querySelectorAll(".tcp").forEach(b=>b.onclick=()=>copyTxt("🎯 *Tripleta de salidores · "+l.name+"*\n"+linea(tri[+b.dataset.i])+FOOTER,b,"⧉"));
 }
-
 /* ---- más salidores ---- */
 let SAL_ALL=false;
 function renderSal(){
