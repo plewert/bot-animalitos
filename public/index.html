@@ -1127,6 +1127,30 @@ function check(code,activar){
   if(Date.now()>fin) return {ok:false,msg:"Tu semana de acceso con ese código ya terminó."};
   return {ok:true,fin};
 }
+/* ---- código de un solo dispositivo (lo revisa el servidor) ---- */
+function devId(){let d=null;try{d=localStorage.getItem("bot-dev")}catch(e){}
+  if(!d){d=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));try{localStorage.setItem("bot-dev",d)}catch(e){}}
+  return d;}
+function uaCorto(){const u=navigator.userAgent;return /iphone|ipad/i.test(u)?"iPhone":/android/i.test(u)?"Android":/windows/i.test(u)?"PC Windows":/mac/i.test(u)?"Mac":"Otro";}
+const MSG_COD={no_existe:"Ese código no existe.",en_uso:"Este código ya está en uso en otro dispositivo. Escribe a soporte para liberarlo.",vencido:"Tu semana de acceso con ese código ya terminó.",no_activable:"Ese código ya no se puede activar."};
+async function servidorCodigo(code,activar){
+  if(typeof API_URL==="undefined"||!API_URL) return null;
+  try{
+    const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),75000);
+    const r=await fetch(API_URL+"/api/codigo",{method:"POST",headers:{"Content-Type":"application/json"},signal:ctl.signal,
+      body:JSON.stringify({hash:cyrb53(normCode(code)),codigo:normCode(code),dev:devId(),ua:uaCorto(),activar})});
+    clearTimeout(to);
+    const j=await r.json(); if(j.motivo==="no_config"||j.motivo==="error") return null; return j;
+  }catch(e){return null;}
+}
+async function revisarEnServidor(code){
+  const r=await servidorCodigo(code,true); if(!r) return;
+  if(r.ok){ const h=cyrb53(normCode(code)); setAct(h,r.fin-DIAS*86400000);
+    const d=new Date(r.fin); const v=document.getElementById("vence"); if(v&&CUR) v.innerHTML='<span class="lg">Acceso hasta '+fmtFecha(r.fin)+'</span><span class="sm">Hasta '+String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+'</span>'; }
+  else if(MSG_COD[r.motivo]&&CUR) lock(MSG_COD[r.motivo]);
+}
+setInterval(()=>{ if(CUR) revisarEnServidor(CUR); },10*60000);
+
 function fmtFecha(ms){return new Date(ms).toLocaleString("es-VE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"numeric",minute:"2-digit"});}
 function unlock(code,fin){
   document.body.classList.remove("locked");
@@ -1146,16 +1170,26 @@ function lock(msg){
   document.getElementById("gate").style.display="";
   document.getElementById("gerr").textContent=msg||"";
 }
-document.getElementById("gform").addEventListener("submit",e=>{
+document.getElementById("gform").addEventListener("submit",async e=>{
   e.preventDefault();
-  const c=document.getElementById("gcode").value;
-  if(!c.trim()){document.getElementById("gerr").textContent="Escribe un código.";return;}
-  const r=check(c,true); if(r.ok) unlock(normCode(c),r.fin); else document.getElementById("gerr").textContent=r.msg;
+  const c=document.getElementById("gcode").value, err=document.getElementById("gerr"), btn=e.target.querySelector("button[type=submit]");
+  if(!c.trim()){err.textContent="Escribe un código.";return;}
+  if(!CODES.has(cyrb53(normCode(c)))){err.textContent=MSG_COD.no_existe;return;}
+  err.style.color="var(--muted)"; err.textContent="Verificando código… la primera vez puede tardar hasta 1 minuto."; btn.disabled=true;
+  const r=await servidorCodigo(c,true);
+  btn.disabled=false; err.style.color="";
+  if(r){
+    if(r.ok){ setAct(cyrb53(normCode(c)),r.fin-DIAS*86400000); err.textContent=""; unlock(normCode(c),r.fin); }
+    else err.textContent=MSG_COD[r.motivo]||"No se pudo verificar el código. Intenta otra vez.";
+    return;
+  }
+  // Sin servidor disponible: se revisa en este dispositivo como antes
+  const l=check(c,true); if(l.ok){err.textContent="";unlock(normCode(c),l.fin);} else err.textContent=l.msg;
 });
 document.getElementById("gcode").addEventListener("input",()=>{document.getElementById("gerr").textContent="";});
 document.getElementById("salir").onclick=()=>lock("");
 (function(){let c=null;try{c=localStorage.getItem(AKEY)}catch(e){}
-  if(c){const r=check(c,false); if(r.ok) unlock(c,r.fin); else lock(r.msg);} })();
+  if(c){const r=check(c,false); if(r.ok){ unlock(c,r.fin); setTimeout(()=>revisarEnServidor(c),300); } else lock(r.msg);} })();
 setInterval(()=>{const c=CUR;
   if(document.getElementById("app").style.display!=="none"){const r=check(c,false); if(!r.ok) lock("Tu semana de acceso terminó.");}},60000);
 
