@@ -503,7 +503,7 @@
   </div>
 
   <div class="card" style="margin-top:16px;display:none" data-view="guia" id="volCard">
-    <h2>Volteos · Guácharo</h2>
+    <h2>Volteos · <span id="volLot">Guácharo</span></h2>
     <div class="row" style="margin-top:-4px"><input id="vsearch" placeholder="Buscar número o animal" style="flex:1;min-width:180px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(4,8,18,.75);color:var(--ink);font:inherit"></div>
     <div class="volg" id="volList"></div>
   </div>
@@ -742,7 +742,7 @@ function render(){
   }else{
     const contSet=new Set(P.cont.map(c=>c[2]));
     const arr=[...P.now.entries()].sort((a,b)=>b[1]-a[1]||l.order.indexOf(a[0])-l.order.indexOf(b[0]));
-    const vv=l.id==="guacharo"?volteo(l,last):null;
+    const vv=volteo(l,last);
     pred.innerHTML=`<h2>Jugada según la guía</h2>
       ${vv?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv][1]} ${vv} ${esc(l.A[vv][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv}">⧉ Copiar</button></div>`:""}
       <div class="from">Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>. Para el próximo sorteo la guía marca:</div>
@@ -833,7 +833,7 @@ function copyTxt(txt,btn,label){
   try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(()=>done(true),fb); else fb(); }catch(e){fb();}
 }
 
-/* ---- volteos (Guácharo) ---- */
+/* ---- volteos (las 4 loterías) ---- */
 // Volteo = el número al revés (12 ⇄ 21, 47 ⇄ 74). 0, 00 y los dobles (11, 22…) no tienen volteo.
 function volteo(l,n){
   if(n==="0"||n==="00") return null;
@@ -844,7 +844,7 @@ function volteo(l,n){
 }
 function renderVol(){
   const card=$("volCard"); if(!card) return; const l=L();
-  const on=l.id==="guacharo"; card.style.display=on?"":"none"; card.classList.toggle("hidev",!on);
+  const on=true; card.style.display=""; card.classList.remove("hidev"); $("volLot").textContent=l.name;
   if(!on) return;
   const q=norm($("vsearch").value.trim());
   const items=l.order.filter(n=>{ if(!q) return true; const v=volteo(l,n); return [n,v].some(x=>x&&(x===q||x===q.padStart(2,"0")||norm(l.A[x][0]).includes(q))); });
