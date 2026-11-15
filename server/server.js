@@ -6,16 +6,29 @@ const http = require("http");
 
 // ===================== CONFIGURACIÓN =====================
 // Enlaces de cada lotería. "estadisticas" = tabla de última fecha / días sin salir.
-// "resultados" = página con los sorteos del día. Si un enlace está vacío (""), esa parte se apaga.
+// "resultados" = página de resultados; el servidor le agrega la fecha de hoy (…/resultados/2026-11-15/).
+// Si un enlace está vacío (""), esa parte se apaga.
 const FUENTES = {
   activo: {
     nombre: "Lotto Activo",
     estadisticas: "https://lotoven.com/animalito/lottoactivo/estadisticas/",
-    resultados: "https://lotoven.com/animalito/lottoactivo/resultados/", // por confirmar
+    resultados: "https://lotoven.com/animalito/lottoactivo/resultados/",
   },
-  granjita: { nombre: "La Granjita", estadisticas: "", resultados: "" },
-  guacharo: { nombre: "Guácharo", estadisticas: "", resultados: "" },
-  inter: { nombre: "Lotto Internacional", estadisticas: "", resultados: "" },
+  granjita: {
+    nombre: "La Granjita",
+    estadisticas: "https://lotoven.com/animalito/lagranjita/estadisticas/",
+    resultados: "https://lotoven.com/animalito/lagranjita/resultados/",
+  },
+  guacharo: {
+    nombre: "Guácharo",
+    estadisticas: "https://lotoven.com/animalito/guacharoactivo/estadisticas/",
+    resultados: "https://lotoven.com/animalito/guacharoactivo/resultados/",
+  },
+  inter: {
+    nombre: "Lotto Internacional",
+    estadisticas: "https://lotoven.com/animalito/lottoactivordint/estadisticas/",
+    resultados: "https://lotoven.com/animalito/lottoactivordint/resultados/",
+  },
 };
 const MINUTOS_CACHE = 5;           // cada cuánto se vuelve a leer la página como máximo
 const ZONA = "America/Caracas";     // hora de Venezuela
@@ -24,6 +37,10 @@ const ZONA = "America/Caracas";     // hora de Venezuela
 const MAX_NUM = { activo: 36, granjita: 36, guacharo: 75, inter: 36 };
 const cache = new Map();
 
+function horaVE() {
+  const p = new Intl.DateTimeFormat("en-GB", { timeZone: ZONA, hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+  return p.replace(/^24/, "00"); // HH:MM
+}
 function hoyVE() {
   const p = new Intl.DateTimeFormat("en-CA", { timeZone: ZONA, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   return p; // YYYY-MM-DD
@@ -98,11 +115,26 @@ function parseResultados(html, lot) {
     const n = normNum(m[1], MAX_NUM[lot]);
     if (n) anim.push({ i: m.index, n, nombre: m[2] });
   }
+  // Quitar "animales" que en realidad son parte de una hora (ej. "00 AM")
+  const enHora = (i) => horas.some(h => i >= h.i - 1 && i < h.fin);
+  const A2 = anim.filter(a => !enHora(a.i));
+  // Mezclar horas y animales en el orden en que aparecen y ver cuál va primero:
+  // "09:00 AM  27 Perro" (hora antes) o "27 Perro  09:00 AM" (animal antes).
+  const fila = [...horas.map(h => ({ t: "H", i: h.i, h })), ...A2.map(a => ({ t: "A", i: a.i, a }))].sort((x, y) => x.i - y.i);
+  let ha = 0, ah = 0;
+  for (let k = 0; k + 1 < fila.length; k++) {
+    if (fila[k].t === "H" && fila[k + 1].t === "A") ha++;
+    if (fila[k].t === "A" && fila[k + 1].t === "H") ah++;
+  }
+  const animalAntes = ah > ha;
   const porHora = new Map();
-  for (const h of horas) {
-    // primer animal que aparece después de la hora, dentro de 120 caracteres
-    const a = anim.find(x => x.i >= h.fin && x.i - h.fin < 120 && !horas.some(o => o.i > h.fin && o.i < x.i));
-    if (a && !porHora.has(h.h)) porHora.set(h.h, { hora: h.h, num: a.n, nombre: a.nombre });
+  for (let k = 0; k < fila.length; k++) {
+    if (fila[k].t !== "H") continue;
+    const vecino = animalAntes ? fila[k - 1] : fila[k + 1];
+    if (!vecino || vecino.t !== "A") continue;
+    const h = fila[k].h, a = vecino.a;
+    if (Math.abs(a.i - h.i) > 160) continue;
+    if (!porHora.has(h.h)) porHora.set(h.h, { hora: h.h, num: a.n, nombre: a.nombre });
   }
   return [...porHora.values()].sort((a, b) => a.hora.localeCompare(b.hora));
 }
@@ -119,14 +151,28 @@ function enviar(res, code, obj, tipo) {
 async function datos(lot, que) {
   const f = FUENTES[lot];
   if (!f) throw new Error("Lotería desconocida");
-  const url = f[que];
+  let url = f[que];
   if (!url) return { lot, que, activo: false, mensaje: "Sin enlace configurado" };
-  const html = await leer(url);
+  if (que === "resultados" && /\/resultados\/?$/.test(url)) url = url.replace(/\/?$/, "/") + hoyVE() + "/";
+  let html;
+  try { html = await leer(url); }
+  catch (e) {
+    // La página del día todavía no existe (nadie ha jugado hoy): no es un error.
+    if (que === "resultados" && /404/.test(String(e.message))) return { lot, que, activo: true, hoy: hoyVE(), total: 0, datos: [], mensaje: "Todavía no hay sorteos hoy" };
+    throw e;
+  }
   if (que === "estadisticas") {
     const d = parseEstadisticas(html, lot);
     return { lot, que, activo: true, hoy: hoyVE(), total: Object.keys(d).length, datos: d };
   }
   const r = parseResultados(html, lot);
+  // Si la página todavía muestra sorteos con hora posterior a la hora actual,
+  // son de AYER (pasa después de medianoche): no se entregan como de hoy.
+  const ahora = horaVE();
+  const margen = (h) => { const [a, b] = h.split(":").map(Number); return a * 60 + b; };
+  if (r.length && r.some(x => margen(x.hora) > margen(ahora) + 20)) {
+    return { lot, que, activo: true, hoy: hoyVE(), total: 0, datos: [], mensaje: "La página aún muestra los sorteos de ayer" };
+  }
   return { lot, que, activo: true, hoy: hoyVE(), total: r.length, datos: r };
 }
 
@@ -159,7 +205,7 @@ const server = http.createServer(async (req, res) => {
             const muestra = que === "estadisticas"
               ? Object.entries(d.datos).slice(0, 6).map(([n, v]) => `${n} ${v.nombre} · ${v.fecha}`).join("<br>")
               : d.datos.map(x => `${x.hora} → ${x.num} ${x.nombre}`).join("<br>");
-            html += `<p><b>${que}</b>: ${d.total} encontrados ${d.total ? "✅" : "⚠️"}<br><small>${muestra || "nada"}</small></p>`;
+            html += `<p><b>${que}</b>: ${d.total} encontrados ${d.total ? "✅" : "⚠️"}${d.mensaje ? " · " + d.mensaje : ""}<br><small>${muestra || "nada"}</small></p>`;
           } catch (e) { html += `<p><b>${que}</b>: ❌ ${String(e.message || e)}</p>`; }
         }
       }
@@ -174,4 +220,4 @@ const server = http.createServer(async (req, res) => {
 const PORT = process.env.PORT || 10000;
 if (require.main === module) server.listen(PORT, () => console.log("Servidor de resultados listo en el puerto " + PORT));
 
-module.exports = { parseEstadisticas, parseResultados, aTexto, hoyVE };
+module.exports = { parseEstadisticas, parseResultados, aTexto, hoyVE, horaVE };
