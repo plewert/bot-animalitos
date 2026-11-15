@@ -385,6 +385,9 @@
   .mbar .mvol{margin-left:auto;font-size:13px;color:var(--muted);white-space:nowrap;border:1px solid rgba(46,242,255,.45);border-radius:99px;padding:2px 9px;background:rgba(46,242,255,.08)}
   .mbar .mvol b{color:var(--cyan)}
   .mbar .top{flex-wrap:wrap}
+  .sh.shc{display:flex;align-items:center;gap:8px}
+  .scp{margin-left:auto;border:1px solid rgba(46,242,255,.6);color:var(--cyan);background:rgba(46,242,255,.1);border-radius:99px;padding:4px 11px;font:600 13px "Rajdhani",sans-serif;letter-spacing:0;text-transform:none;cursor:pointer;white-space:nowrap}
+  .scp.ok{border-color:rgba(45,255,138,.6);color:var(--grn);background:rgba(45,255,138,.12)}
 </style>
 </head>
 <body class="locked">
@@ -948,11 +951,15 @@ function renderSal(){
   const row=(r,i)=>`<div class="srow"><span class="p">${i+1}</span><span class="e">${l.A[r[0]][1]}</span><div class="bw"><div class="b" style="width:${Math.max(4,r[1]/mx*100)}%"></div><div class="bl">${r[0]} ${esc(l.A[r[0]][0])}</div></div><span class="c">${r[1]} ${r[1]===1?"vez":"veces"}<small>${fmt(r[1]/n*100)} %</small></span></div>`;
   const k=SAL_ALL?10:5, exp=n/N;
   const expTxt=exp<1?"menos de 1 vez":(Math.floor(exp)===Math.ceil(exp)?Math.round(exp)+" veces":Math.floor(exp)+" o "+Math.ceil(exp)+" veces");
-  $("sBody").innerHTML=`<div class="sh" style="color:var(--gold)">🔥 Los que más han salido</div>${hot.slice(0,k).map(row).join("")}
+  $("sBody").innerHTML=`<div class="sh shc" style="color:var(--gold)"><span>🔥 Los que más han salido</span><button class="scp" id="scpHot">⧉ Copiar</button></div>${hot.slice(0,k).map(row).join("")}
     <button class="smore" id="smore">${SAL_ALL?"Ver menos ⌃":"Ver los 10 ⌄"}</button>
-    <div class="cold"><div class="sh" style="color:var(--vio)">🧊 Los que menos han salido</div>${cold.slice(0,5).map(row).join("")}</div>
+    <div class="cold"><div class="sh shc" style="color:var(--vio)"><span>🧊 Los que menos han salido</span><button class="scp" id="scpCold">⧉ Copiar</button></div>${cold.slice(0,SAL_ALL?10:5).map(row).join("")}</div>
     <p class="note" style="text-align:center">Basado en ${n} ${n===1?"sorteo marcado":"sorteos marcados"} de ${esc(l.name)}. Lo normal sería que cada animal saliera unas ${expTxt}.${n<N*2?" Con tan pocos sorteos las diferencias son pura casualidad: pega más resultados para un ranking más confiable.":""}</p>`;
   $("smore").onclick=()=>{SAL_ALL=!SAL_ALL;renderSal();};
+  const rango=sn?"últimos "+n+" sorteos":"todos los sorteos ("+n+")";
+  const lista=(arr,tit)=>tit+" · "+l.name+"*\n("+rango+")\n"+arr.slice(0,10).map((r,i)=>(i+1)+". "+l.A[r[0]][1]+" "+r[0]+" "+l.A[r[0]][0]+" — "+r[1]+" "+(r[1]===1?"vez":"veces")).join("\n")+FOOTER;
+  $("scpHot").onclick=()=>copyTxt(lista(hot,"🔥 *Los que más han salido"),$("scpHot"),"⧉ Copiar");
+  $("scpCold").onclick=()=>copyTxt(lista(cold,"🧊 *Los que menos han salido"),$("scpCold"),"⧉ Copiar");
   renderTri(l,st,hot,n);
 }
 document.querySelectorAll("#sSeg button").forEach(b=>b.onclick=()=>{S().cfg.sal=+b.dataset.s;save();renderSal();});
