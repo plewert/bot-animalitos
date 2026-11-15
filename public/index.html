@@ -374,6 +374,14 @@
   .clk.v{border-color:rgba(255,59,92,.5);background:rgba(255,59,92,.08);color:#ffc2cc}
   .clk.v b{color:#ff8ea0}
   .pred .clk{margin:0 0 12px}
+  .trow.tg{border-color:rgba(139,123,255,.6);background:rgba(139,123,255,.08)}
+  .tgl{font-size:11px;border-radius:99px;padding:2px 8px;background:rgba(139,123,255,.2);color:#d9d2ff;white-space:nowrap;font-weight:600}
+  .tgl.s{background:rgba(255,210,63,.12);color:var(--gold)}
+  .trow .tcp{margin-left:auto}
+  .trow{flex-wrap:nowrap}
+  @media(max-width:700px){.tgl .tx{display:none}.tgl{padding:2px 6px}.trow .tc{padding:3px 7px}}
+  .trow .tgl{margin-left:auto}
+  .trow .tgl+.tcp{margin-left:4px}
 </style>
 </head>
 <body class="locked">
@@ -560,9 +568,17 @@ function S(){const id=L().id; if(!ST.lots[id]) ST.lots[id]={hist:[],cfg:{}}; con
 const GD=()=>L().guides.find(g=>g.id===S().cfg.guide);
 
 /* predicción según la guía: qué jugar después de x (p = el anterior) */
+/* ---- combinaciones de grupos: los animales de un grupo van juntos ---- */
+const GRUPOS=[
+  {lots:["activo","granjita","guacharo","inter"],a:["0","00","14","17"]},
+  {lots:["activo","granjita","guacharo","inter"],a:["02","15","20","26","29"]},
+  {lots:["granjita","inter"],a:["09","11","20","34"]}
+];
+function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 function predict(g,x,p){
   const now=new Map(), combos=[], cont=[];
   const add=(n,w)=>now.set(n,(now.get(n)||0)+w);
+  gruposDe(L().id,x).forEach(c=>{combos.push(c); c.slice(1).forEach(n=>add(n,1));});
   if(g.type==="chain"){
     g.data.forEach(c=>{ if(c[0]===x){combos.push(c); add(c[1],1);} });
     if(p!=null) g.data.forEach(c=>{ if(c.length>2&&c[0]===p&&c[1]===x){cont.push(c); add(c[2],1);} });
@@ -694,13 +710,14 @@ $("yes").onclick=()=>{S().hist=[];S().hoy=null;save();$("confirm").classList.rem
 
 const tag=(l,n,hot)=>`<span class="x${hot?" hot":""}">${l.A[n][1]} ${n} ${esc(l.A[n][0])}</span>`;
 function chainHtml(l,c,g,hotSet,isCont,cp){
-  const sep=g.type==="chain"?'<span class="ar">➜</span>':'';
+  const tipo=c.grp?"group":g.type;
+  const sep=tipo==="chain"?'<span class="ar">➜</span>':'';
   const head=tag(l,c[0]);
-  const rest=g.type==="chain"?c.slice(1).map((n,i)=>tag(l,n,hotSet&&hotSet.has(n)&&((isCont&&i===1)||(!isCont&&i===0)))).join(sep)
+  const rest=tipo==="chain"?c.slice(1).map((n,i)=>tag(l,n,hotSet&&hotSet.has(n)&&((isCont&&i===1)||(!isCont&&i===0)))).join(sep)
     :c.slice(1).map(n=>tag(l,n,hotSet&&hotSet.has(n))).join(" ");
   const inner=`${isCont?'<span class="lbl">CADENA EN CURSO</span>':""}${head}<span class="ar">➜</span>${rest}`;
   if(!cp) return `<div class="ch${isCont?" cont":""}">${inner}</div>`;
-  return `<div class="ch chc${isCont?" cont":""}"><div class="cad">${inner}</div><button class="ccp" data-c="${c.join(",")}" data-k="${g.type}">⧉ Copiar</button></div>`;
+  return `<div class="ch chc${isCont?" cont":""}"><div class="cad">${inner}</div><button class="ccp" data-c="${c.join(",")}" data-k="${tipo}">⧉ Copiar</button></div>`;
 }
 
 function render(){
@@ -762,7 +779,7 @@ function render(){
 function renderGuide(){
   try{renderVol();}catch(e){}
   const l=L(), g=GD(), q=norm($("gsearch").value.trim());
-  const by={}; l.order.forEach(n=>by[n]=[]);
+  const by={}; l.order.forEach(n=>by[n]=gruposDe(l.id,n));
   if(g.type==="chain") g.data.forEach(c=>by[c[0]]&&by[c[0]].push(c)); else Object.keys(g.data).forEach(k=>g.data[k].forEach(grp=>by[k]&&by[k].push([k].concat(grp))));
   const items=l.order.filter(n=>by[n].length).filter(n=>{ if(!q) return true; return by[n].some(c=>c.some(x=>x===q||x===q.padStart(2,"0")||norm(l.A[x][0]).includes(q))); });
   $("guideList").innerHTML=items.length?items.map(n=>`<div class="gi"><h3>${l.A[n][1]} ${n} ${esc(l.A[n][0])}</h3>${by[n].map(c=>chainHtml(l,c,g,null,false)).join("")}</div>`).join(""):'<div class="empty" style="color:var(--muted)">Nada coincide con la búsqueda.</div>';
@@ -867,35 +884,49 @@ function makeTripletas(pool){
 function renderTri(l,st,hot,n){
   const box=$("triBox"); if(!box) return;
   const td=today(), salio=k=>st.last&&st.last[k]===td;
+  const rank=k=>{const i=hot.findIndex(r=>r[0]===k);return i<0?999:i;};
   const top=hot.filter(r=>r[1]>0).slice(0,10).map(r=>r[0]);
   if(top.length<3){box.innerHTML="";return;}
   const out=top.filter(salio);
-  // Pendientes: los del top 10 que no han salido; si son menos de 3, se siguen tomando del ranking.
+  // 1) Tripletas de grupos: animales del mismo grupo que aún no han salido hoy
+  const tri=[];
+  GRUPOS.filter(G=>G.lots.includes(l.id)).forEach(G=>{
+    if(tri.length>=3) return;
+    const rest=G.a.filter(k=>!salio(k)).sort((x,y)=>rank(x)-rank(y));
+    if(rest.length>=3) tri.push({t:rest.slice(0,3),g:true,grupo:G.a});
+  });
+  // 2) Tripletas de salidores para completar hasta 3
   let pend=top.filter(k=>!salio(k));
   if(pend.length<3){ for(const r of hot){ if(pend.length>=3) break; if(!pend.includes(r[0])&&!salio(r[0])) pend.push(r[0]); } }
   const extra=pend.filter(k=>!top.includes(k));
-  if(pend.length<3){
+  if(pend.length>=3&&tri.length<3){
+    const pool=pend.slice(0,Math.max(3,Math.min(7,pend.length)));
+    const clave=t=>t.slice().sort().join(",");
+    const ya=new Set(tri.map(x=>clave(x.t)));
+    for(const t of makeTripletas(pool.map((_,i)=>i)).map(t=>t.map(i=>pool[i]))){ if(tri.length>=3) break; if(!ya.has(clave(t))){tri.push({t,g:false});ya.add(clave(t));} }
+  }
+  if(!tri.length){
     box.innerHTML=`<div class="sh" style="color:var(--cyan)">🎯 Tripletas de salidores</div><p class="note">Ya salieron casi todos los animales hoy: no quedan suficientes para armar tripletas.</p>`;
     return;
   }
-  const pool=pend.slice(0,Math.max(3,Math.min(7,pend.length)));
-  const idx=makeTripletas(pool.map((_,i)=>i));
-  const tri=idx.map(t=>t.map(i=>pool[i]));
   const chip=(k,c)=>`<span class="tc ${c}">${l.A[k][1]} ${k}</span>`;
   const linea=t=>t.map(k=>l.A[k][1]+" "+k+" "+l.A[k][0]).join(" - ");
+  const etq=x=>x.g?'👥<span class="tx"> Grupo</span>':'🔥<span class="tx"> Salidores</span>';
   box.innerHTML=`<div class="sh" style="color:var(--cyan)">🎯 Tripletas de salidores</div>
-    <div class="note" style="margin:0 0 6px">De los ${top.length} más salidores:</div>
+    <div class="note" style="margin:0 0 6px">De los ${top.length} más salidores${GRUPOS.some(G=>G.lots.includes(l.id))?" y los grupos de "+esc(l.name):""}:</div>
     <div class="tl">❌ Ya salieron hoy (no entran en las tripletas)</div><div class="tchs">${out.length?out.map(k=>chip(k,"tx")).join(""):'<span class="note" style="margin:0">Ninguno todavía</span>'}</div>
-    <div class="tl">⏳ Aún no salen hoy (con estos se arman)</div><div class="tchs">${pend.map(k=>chip(k,"ta")).join("")}</div>
-    ${extra.length?`<div class="note" style="margin:6px 0 0">Se agregaron ${extra.map(k=>k).join(", ")} del ranking porque en el top 10 quedaban menos de 3 sin salir.</div>`:""}
-    <div class="tl" style="margin-top:12px">🎯 Tripletas (los 3 aún no han salido hoy)</div>
-    ${tri.map((t,i)=>`<div class="trow"><span class="tn">${i+1}</span>${t.map(k=>chip(k,"ta")).join("")}<button class="tcp" data-i="${i}">⧉</button></div>`).join("")}
+    <div class="tl">⏳ Salidores que aún no salen hoy</div><div class="tchs">${pend.map(k=>chip(k,"ta")).join("")}</div>
+    ${extra.length?`<div class="note" style="margin:6px 0 0">Se agregaron ${extra.join(", ")} del ranking porque en el top 10 quedaban menos de 3 sin salir.</div>`:""}
+    <div class="tl" style="margin-top:12px">🎯 Tripletas (ninguno ha salido hoy)</div>
+    ${tri.map((x,i)=>`<div class="trow${x.g?" tg":""}"><span class="tn">${i+1}</span>${x.t.map(k=>chip(k,"ta")).join("")}<span class="tgl${x.g?"":" s"}">${etq(x)}</span><button class="tcp" data-i="${i}">⧉</button></div>`).join("")}
+    ${tri.some(x=>x.g)?`<div class="note" style="margin:6px 0 0">${tri.filter(x=>x.g).map(x=>"Grupo "+x.grupo.join(" · ")+": "+(x.grupo.filter(salio).length?"ya salió "+x.grupo.filter(salio).join(", ")+"; ":"")+"se eligen los que más han salido.").join("<br>")}</div>`:""}
     <div class="row" style="margin-top:10px"><button class="btn main" id="triCopy">⧉ Copiar tripletas</button><button class="btn" id="triNew">🔄 Otras combinaciones</button></div>
-    <p class="note">Cada tripleta necesita que salgan los 3 animales en el día: pasa aproximadamente menos de 2 veces de cada 100, sean salidores o no.</p>`;
+    <p class="note">Cada tripleta necesita que salgan los 3 animales en el día: pasa aproximadamente menos de 2 veces de cada 100, sean salidores, de grupo o no.</p>`;
   $("triNew").onclick=()=>{TRI_SEED++;renderSal();};
-  $("triCopy").onclick=()=>copyTxt("🎯 *Tripletas de salidores · "+l.name+"*\n"+tri.map((t,i)=>(i+1)+") "+linea(t)).join("\n")+FOOTER,$("triCopy"),"⧉ Copiar tripletas");
-  box.querySelectorAll(".tcp").forEach(b=>b.onclick=()=>copyTxt("🎯 *Tripleta de salidores · "+l.name+"*\n"+linea(tri[+b.dataset.i])+FOOTER,b,"⧉"));
+  $("triCopy").onclick=()=>copyTxt("🎯 *Tripletas de salidores · "+l.name+"*\n"+tri.map((x,i)=>(i+1)+") "+(x.g?"👥 ":"")+linea(x.t)).join("\n")+FOOTER,$("triCopy"),"⧉ Copiar tripletas");
+  box.querySelectorAll(".tcp").forEach(b=>b.onclick=()=>{const x=tri[+b.dataset.i];copyTxt("🎯 *Tripleta "+(x.g?"de grupo":"de salidores")+" · "+l.name+"*\n"+linea(x.t)+FOOTER,b,"⧉");});
 }
+
 /* ---- más salidores ---- */
 let SAL_ALL=false;
 function renderSal(){
