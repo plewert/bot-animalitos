@@ -423,6 +423,10 @@
   .pk .cnt{z-index:4}
   .picks{align-items:stretch}
   .pk .pjt{white-space:nowrap;max-width:calc(100% - 12px);overflow:hidden;font-size:9px}
+  .pk.v69{border-color:rgba(255,61,242,.65);box-shadow:0 0 16px rgba(255,61,242,.25)}
+  .pk.v69 b{color:#ff8af7}
+  .pk .v69t{position:absolute;top:5px;left:7px;z-index:3;font:700 13px sans-serif;color:#ff8af7}
+  .mbar .pks span.v69{color:#ff8af7;border-color:rgba(255,61,242,.55);background:rgba(255,61,242,.12)}
 </style>
 </head>
 <body class="locked">
@@ -651,6 +655,18 @@ const GRUPOS=[
   {lots:["granjita","inter"],a:["09","11","20","34"]}
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
+/* ---- regla 6⇄9 (solo para los animales que están para jugar) ---- */
+const PAR69={"06":["09"],"09":["06"],"16":["19"],"19":["16"],"26":["29"],"29":["26"]};
+const PAR69G={"16":["19","61"],"19":["16","61"],"61":["16","19"]};
+function par69(id,n){ return (id==="guacharo"&&PAR69G[n])?PAR69G[n]:(PAR69[n]||[]); }
+function orden69(arr,P){
+  if(!P.vadd||!P.vadd.size) return arr;
+  const out=[];
+  arr.filter(x=>!P.vadd.has(x[0])).forEach(x=>{ out.push(x);
+    arr.forEach(y=>{ if(P.vadd.get(y[0])===x[0]&&!out.includes(y)) out.push(y); }); });
+  arr.forEach(y=>{ if(!out.includes(y)) out.push(y); });
+  return out;
+}
 function predict(g,x,p){
   const now=new Map(), combos=[], cont=[];
   const add=(n,w)=>now.set(n,(now.get(n)||0)+w);
@@ -661,7 +677,11 @@ function predict(g,x,p){
   }else{
     (g.data[x]||[]).forEach(grp=>{combos.push([x].concat(grp)); grp.forEach(n=>add(n,1));});
   }
-  return {now,combos,cont};
+  // regla 6⇄9: si uno de estos está para jugar, su compañero entra a su lado
+  const vadd=new Map();
+  const base=[...now.keys()], subido=new Set();
+  base.forEach(n=>par69(L().id,n).forEach(p=>{ if(!L().A[p]||subido.has(p)) return; subido.add(p); if(!now.has(p)) vadd.set(p,n); add(p,1); }));
+  return {now,combos,cont,vadd};
 }
 
 /* ---- inicio de los sorteos de hoy dentro del historial ---- */
@@ -818,14 +838,14 @@ function render(){
     pred.innerHTML=`<h2>Jugada según la guía</h2>${vv0?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv0][1]} ${vv0} ${esc(l.A[vv0][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv0}">⧉ Copiar</button></div>`:""}<div class="from">Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>.</div><div class="empty">Tu guía de ${esc(l.name)} no tiene combinaciones para este animal.</div>`;
   }else{
     const contSet=new Set(P.cont.map(c=>c[2]));
-    const arr=[...P.now.entries()].sort((a,b)=>b[1]-a[1]||l.order.indexOf(a[0])-l.order.indexOf(b[0]));
+    const arr=orden69([...P.now.entries()].sort((a,b)=>b[1]-a[1]||l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
     const vv=volteo(l,last);
     pred.innerHTML=`<h2>Jugada según la guía</h2>
       ${vv?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv][1]} ${vv} ${esc(l.A[vv][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv}">⧉ Copiar</button></div>`:""}
       <div class="from">Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>. Para el próximo sorteo la guía marca:</div>
       ${ventanaHtml(st)}
       <div class="picks">${arr.map(([n,c])=>{const lv=jLevel(st,n);
-        return `<div class="pk${contSet.has(n)?" cont":""}${lv?" j"+lv:""}">${c>1?`<span class="cnt">×${c}</span>`:""}${lv?`<i class="cage"></i><span class="pjt">${lv===2?"JAULA FUERTE":"JAULA"}</span><span class="pjd">${daysSince(st.last[n])}d</span>`:""}<span class="e">${l.A[n][1]}</span><b>${n}</b>${esc(l.A[n][0])}${lv?`<span class="pno">${lv===2?"Jaula fuerte · no jugarlo":"Jaula · no jugarlo"}</span>`:""}</div>`;}).join("")}</div>
+        return `<div class="pk${contSet.has(n)?" cont":""}${lv?" j"+lv:""}${P.vadd.has(n)?" v69":""}">${P.vadd.has(n)?`<span class="v69t">⇄</span>`:""}${c>1?`<span class="cnt">×${c}</span>`:""}${lv?`<i class="cage"></i><span class="pjt">${lv===2?"JAULA FUERTE":"JAULA"}</span><span class="pjd">${daysSince(st.last[n])}d</span>`:""}<span class="e">${l.A[n][1]}</span><b>${n}</b>${esc(l.A[n][0])}${lv?`<span class="pno">${lv===2?"Jaula fuerte · no jugarlo":"Jaula · no jugarlo"}</span>`:""}</div>`;}).join("")}</div>
       <div class="chains">${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>
       <div class="note">Probabilidad real de que salga alguno en el próximo sorteo: <b>${arr.length} de ${N} (${fmt(arr.length/N*100)} %)</b>, igual que con cualquier otro grupo de ${arr.length} ${arr.length===1?"animal":"animales"}.</div>`;
   }
@@ -1112,19 +1132,19 @@ function renderMbar(){
   if(last==null){mb.innerHTML='<div class="empty">Toca el animal que acaba de salir en '+esc(l.name)+'.</div>';}
   else{
     const P=predict(g,last,h[h.length-2]); const cs=new Set(P.cont.map(c=>c[2]));
-    const arr=[...P.now.entries()].sort((a,b)=>b[1]-a[1]||l.order.indexOf(a[0])-l.order.indexOf(b[0]));
+    const arr=orden69([...P.now.entries()].sort((a,b)=>b[1]-a[1]||l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
     const mv=volteo(l,last);
     mb.innerHTML=`<div class="top"><span>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b></span>${mv?`<span class="mvol">⇄ Volteo: <b>${l.A[mv][1]} ${mv}</b></span>`:""}</div>
       <div class="acts" id="macts"><button class="undo cp" id="mcopy">⧉ Copiar</button><button class="undo" id="mundo">↶ Deshacer</button><button class="undo lp" id="mclear">🧹 Limpiar</button></div>
       <div class="acts conf" id="mconf" style="display:none"><span>¿Borrar todo lo marcado en ${esc(l.name)}?</span><button class="undo" id="mno">Cancelar</button><button class="undo yes" id="myes">Sí, limpiar</button></div>
       ${arr.length?'<div class="pdesc">🎯 Animales para jugar en el próximo sorteo:</div>':""}
-      <div class="pks" data-w="1">${arr.length?arr.map(([n,c])=>`<span class="${cs.has(n)?"c":""}">${l.A[n][1]} ${n}${c>1?" ×"+c:""}</span>`).join(""):'<span style="color:var(--muted);background:none;border:0;font-weight:500">Sin combinaciones para este animal</span>'}</div>${arr.length?ventanaHtml(st):""}`;
+      <div class="pks" data-w="1">${arr.length?arr.map(([n,c])=>`<span class="${cs.has(n)?"c":""}${P.vadd.has(n)?" v69":""}">${P.vadd.has(n)?"⇄ ":""}${l.A[n][1]} ${n}${c>1?" ×"+c:""}</span>`).join(""):'<span style="color:var(--muted);background:none;border:0;font-weight:500">Sin combinaciones para este animal</span>'}</div>${arr.length?ventanaHtml(st):""}`;
     $("mundo").onclick=()=>$("undo").click();
     $("mclear").onclick=()=>{$("macts").style.display="none";$("mconf").style.display="flex";};
     $("mno").onclick=()=>{$("mconf").style.display="none";$("macts").style.display="flex";};
     $("myes").onclick=()=>{const st=S(); st.hist=[]; st.lastUndo=[]; st.hoy=null; save(); render();};
     $("mcopy").onclick=()=>{
-      const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+(arr.length?"🎯 *Animales para jugar en el próximo sorteo:*\n"+arr.map(([n])=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+ventanaTxt(st):"Sin combinaciones para este animal")+(mv?"\n\n⇄ *Volteo:* "+l.A[mv][1]+" "+mv+" "+l.A[mv][0]:"")
+      const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+(arr.length?"🎯 *Animales para jugar en el próximo sorteo:*\n"+arr.map(([n])=>(P.vadd.has(n)?"⇄ ":"")+l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+ventanaTxt(st):"Sin combinaciones para este animal")+(mv?"\n\n⇄ *Volteo:* "+l.A[mv][1]+" "+mv+" "+l.A[mv][0]:"")
         +FOOTER;
       const btn=$("mcopy");
       const done=ok=>{btn.classList.toggle("ok",ok);btn.textContent=ok?"✓ ¡Copiado!":"No se pudo copiar";clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.classList.remove("ok");btn.textContent="⧉ Copiar";},2000);};
