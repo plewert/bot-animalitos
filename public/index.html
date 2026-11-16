@@ -718,7 +718,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611161516";
+const BUILD="202611161519";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -813,6 +813,7 @@ function ventanaHtml(st){
   const pct=Math.max(0,Math.min(100,(now-w.base.getTime())/(w.fin.getTime()+10*60000-w.base.getTime())*100));
   return `<div class="clk"><span>⏰</span><div style="flex:1">${manana?"Mañana: jugar ":"Jugar "}${rango} (${w.fin.getTime()===w.ini.getTime()?"último sorteo del día":"próximos 2 sorteos"})<div class="bar"><i style="width:${pct.toFixed(0)}%"></i></div></div></div>`;
 }
+function horaSalio(st){ try{ const w=ventana(st); return w?" ("+fmtH(w.base)+")":""; }catch(e){ return ""; } }
 function ventanaTxt(st){
   const w=ventana(st); if(!w) return "";
   const manana=w.ini.toDateString()!==new Date().toDateString()&&w.ini>new Date();
@@ -1054,7 +1055,7 @@ $("vsearch").oninput=renderVol;
 document.addEventListener("click",ev=>{
   const b=ev.target.closest&&ev.target.closest(".ccpv"); if(!b) return;
   const l=L(), n=b.dataset.n, v=b.dataset.v;
-  copyTxt("⇄ *Volteo · "+l.name+"*\nSalió: "+l.A[n][1]+" "+n+" "+l.A[n][0]+"\nVolteo: "+l.A[v][1]+" "+v+" "+l.A[v][0]+FOOTER,b,"⧉ Copiar");
+  copyTxt("⇄ *Volteo · "+l.name+"*\nSalió: "+l.A[n][1]+" "+n+" "+l.A[n][0]+horaSalio(S())+"\nVolteo: "+l.A[v][1]+" "+v+" "+l.A[v][0]+ventanaTxt(S())+FOOTER,b,"⧉ Copiar");
 });
 
 /* ---- copiar una combinación ---- */
@@ -1063,7 +1064,7 @@ document.addEventListener("click",ev=>{
   const l=L(), c=b.dataset.c.split(","), sep=b.dataset.k==="chain"?" ➜ ":" ➜ ";
   const t=b.dataset.k==="chain"?c.map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join(sep)
     :l.A[c[0]][1]+" "+c[0]+" "+l.A[c[0]][0]+" ➜ "+c.slice(1).map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join(" - ");
-  copyTxt("🎯 *Combinación · "+l.name+"*\n"+t+FOOTER,b,"⧉ Copiar");
+  copyTxt("🎯 *Combinación · "+l.name+"*\n"+t+ventanaTxt(S())+FOOTER,b,"⧉ Copiar");
 });
 /* ---- tripletas de salidores ---- */
 // Solo se arman con salidores que AÚN NO han salido hoy.
@@ -1247,7 +1248,7 @@ function renderMbar(){
     $("mno").onclick=()=>{$("mconf").style.display="none";$("macts").style.display="flex";};
     $("myes").onclick=()=>{const st=S(); st.hist=[]; st.lastUndo=[]; st.hoy=null; save(); render();};
     $("mcopy").onclick=()=>{
-      const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+(arr.length?"🎯 *Animales para jugar en el próximo sorteo:*\n"+arr.map(([n])=>(P.vadd.has(n)?"⇄ ":"")+l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+ventanaTxt(st):"Sin combinaciones para este animal")+(mv?"\n\n⇄ *Volteo:* "+l.A[mv][1]+" "+mv+" "+l.A[mv][0]:"")
+      const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+horaSalio(st)+"\n\n"+(arr.length?"🎯 *Animales para jugar en el próximo sorteo:*\n"+arr.map(([n])=>(P.vadd.has(n)?"⇄ ":"")+l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+ventanaTxt(st):"Sin combinaciones para este animal")+(mv?"\n\n⇄ *Volteo:* "+l.A[mv][1]+" "+mv+" "+l.A[mv][0]:"")
         +FOOTER;
       const btn=$("mcopy");
       const done=ok=>{btn.classList.toggle("ok",ok);btn.textContent=ok?"✓ ¡Copiado!":"No se pudo copiar";clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.classList.remove("ok");btn.textContent="⧉ Copiar";},2000);};
@@ -1528,8 +1529,8 @@ function vfJugada(l,last){
 }
 document.addEventListener("click",e=>{
   const b=e.target.closest(".vfcp"); if(!b) return;
-  const l=L(), last=b.dataset.last, v=vfInfo(last); if(!v) return;
-  copyTxt(v.tit+" · *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+v.nums.filter(n=>l.A[n]).map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+FOOTER,b,"⧉ Copiar");
+  const l=L(), st=S(), last=b.dataset.last, v=vfInfo(last); if(!v) return;
+  copyTxt(v.tit+" · *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+horaSalio(st)+"\n\n"+v.nums.filter(n=>l.A[n]).map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+ventanaTxt(st)+FOOTER,b,"⧉ Copiar");
 });
 
 /* copiar las tarjetas de "Animales para jugar" en Jugada */
@@ -1539,7 +1540,7 @@ document.addEventListener("click",e=>{
   const P=predict(g,last,h[h.length-2]);
   const arr=orden69([...P.now.entries()].sort((a,c)=>l.order.indexOf(a[0])-l.order.indexOf(c[0])),P);
   const lin=arr.map(([n,c])=>{ const lv=jLevel(st,n); return (P.vadd.has(n)?"⇄ ":"")+l.A[n][1]+" "+n+" "+l.A[n][0]+(c>1?" ×"+c:"")+(lv?" ("+(lv===2?"jaula fuerte":"jaula")+" · no jugarlo)":""); });
-  copyTxt("🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n🎯 *Animales para jugar en el próximo sorteo:*\n"+lin.join("\n")+ventanaTxt(st)+FOOTER,b,"⧉ Copiar");
+  copyTxt("🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+horaSalio(st)+"\n\n🎯 *Animales para jugar en el próximo sorteo:*\n"+lin.join("\n")+ventanaTxt(st)+FOOTER,b,"⧉ Copiar");
 });
 
 function fmtFecha(ms){return new Date(ms).toLocaleString("es-VE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"numeric",minute:"2-digit"});}
