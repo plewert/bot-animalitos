@@ -388,9 +388,41 @@
   .sh.shc{display:flex;align-items:center;gap:8px}
   .scp{margin-left:auto;border:1px solid rgba(46,242,255,.6);color:var(--cyan);background:rgba(46,242,255,.1);border-radius:99px;padding:4px 11px;font:600 13px "Rajdhani",sans-serif;letter-spacing:0;text-transform:none;cursor:pointer;white-space:nowrap}
   .scp.ok{border-color:rgba(45,255,138,.6);color:var(--grn);background:rgba(45,255,138,.12)}
+  .gor{margin:14px 0 8px;font-size:13px;color:var(--muted);text-align:center}
+  .btn.gdemo{width:100%;border-color:rgba(255,210,63,.6);color:var(--gold);background:rgba(255,210,63,.1)}
+  .btn.gdemo:disabled{opacity:.55;cursor:default}
+  .gsm{margin-top:6px;font-size:12.5px;color:var(--muted);text-align:center}
+  .demobar{display:none}
+  body.demo .demobar{display:flex;align-items:center;gap:10px;margin:0 0 10px;border:1px solid rgba(255,210,63,.6);background:rgba(255,210,63,.1);border-radius:12px;padding:8px 12px;color:var(--gold);font-weight:700;font-size:14px;position:relative;z-index:20}
+  .demobar .bar{flex:1;height:6px;border-radius:9px;background:#2a3558;overflow:hidden;min-width:50px}
+  #demoTxt{white-space:nowrap;font-size:13px}
+  .demobar .bar i{display:block;height:100%;width:100%;background:var(--gold);transition:width .5s}
+  .demobar a{color:var(--gold);white-space:nowrap;border:1px solid rgba(255,210,63,.6);border-radius:99px;padding:3px 10px;text-decoration:none;font-size:13px}
+  body.demo .tab:not([data-id="activo"]){opacity:.45}
+  body.demo .tab:not([data-id="activo"])::before{content:"🔒 "}
+  body.demo #triBox>*{display:none}
+  body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide el tuyo por WhatsApp.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted)}
+  .demoend{display:none;position:fixed;inset:0;z-index:200;background:rgba(3,5,12,.88);align-items:center;justify-content:center;padding:20px}
+  .demoend.on{display:flex}
+  .demoend .box{max-width:380px;width:100%;text-align:center;border:1px solid rgba(255,210,63,.55);background:#0b1124;border-radius:20px;padding:24px 20px;display:flex;flex-direction:column;gap:12px}
+  .demoend h2{margin:0;color:var(--cyan);letter-spacing:.08em}
+  .demoend p{margin:0;color:#c9d6ee;line-height:1.45}
+  .demoend .btn{text-decoration:none;text-align:center}
+  .demotoast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:210;background:#14120a;border:1px solid rgba(255,210,63,.6);color:var(--gold);border-radius:12px;padding:10px 14px;font-weight:700;max-width:90vw;text-align:center;display:none}
+  .demotoast.on{display:block}
 </style>
 </head>
 <body class="locked">
+<div class="demoend" id="demoEnd" role="dialog" aria-modal="true" aria-labelledby="deT">
+  <div class="box">
+    <div style="font-size:44px">⏰</div>
+    <h2 id="deT">TU PRUEBA TERMINÓ</h2>
+    <p>¿Te gustó? Pide tu código y úsalo <b>7 días</b> con las <b>4 loterías</b>, tripletas y copiar a WhatsApp.</p>
+    <a class="btn main" href="https://wa.me/584247467906?text=Hola%2C%20quiero%20un%20c%C3%B3digo%20para%20el%20Bot%20de%20Animalitos" target="_blank" rel="noopener">💬 Pedir código por WhatsApp</a>
+    <button class="btn" type="button" id="deYa">Ya tengo código</button>
+  </div>
+</div>
+<div class="demotoast" id="demoToast" role="status"></div>
 <div class="gate" id="gate">
   <div class="box">
     <div class="lock"><span>🔒</span></div>
@@ -398,6 +430,9 @@
     <div class="tagline" style="margin-top:6px">Acceso con código</div>
     <form id="gform"><input id="gcode" autocomplete="off" placeholder="BOT-XXXX-XXXX"><div class="err" id="gerr"></div>
     <button class="btn main" type="submit">Entrar</button></form>
+    <div class="gor">— ¿todavía no tienes código? —</div>
+    <button class="btn gdemo" type="button" id="gdemo">▶ Probar gratis 30 minutos</button>
+    <div class="gsm" id="gdemoTxt">Una prueba por teléfono · solo Lotto Activo</div>
     <div class="ginfo">
       <div class="gt">Suscripciones y Recargas</div>
       <div class="ga">Aliado Comercial: <b>Agencia Betcom</b></div>
@@ -422,6 +457,7 @@
     <div class="logo"><div class="mark">🎰</div><div><h1>ANIMALITOS·BOT</h1><div class="tagline" id="tagline">Lotto Activo</div></div></div>
     <div class="topbar"><span class="pill"><span class="dot"></span><span id="vence"></span></span><button class="linkbtn" id="salir">Salir</button></div>
   </div>
+  <div class="demobar" id="demobar"><span id="demoTxt">PRUEBA GRATIS</span><div class="bar"><i id="demoFill"></i></div><a href="https://wa.me/584247467906?text=Hola%2C%20quiero%20un%20c%C3%B3digo%20para%20el%20Bot%20de%20Animalitos" target="_blank" rel="noopener">Comprar código</a></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="mbar" id="mbar"></div>
   <div class="auto" id="autoSt"></div>
@@ -1194,8 +1230,72 @@ async function revisarEnServidor(code){
 }
 setInterval(()=>{ if(CUR) revisarEnServidor(CUR); },10*60000);
 
+/* ---- prueba gratis (30 min, una por teléfono, solo Lotto Activo) ---- */
+const DEMO_MIN=30, DEMO_LOT="activo", DKEY="bot-demo-fin";
+let DEMO=null;
+function demoDev(){let d=null;try{d=localStorage.getItem("bot-dev")}catch(e){}
+  if(!d){d=(window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));try{localStorage.setItem("bot-dev",d)}catch(e){}}
+  return d;}
+async function pedirDemo(){
+  const url=(typeof API_URL!=="undefined"&&API_URL)?API_URL:"";
+  const u=navigator.userAgent, ua=/iphone|ipad/i.test(u)?"iPhone":/android/i.test(u)?"Android":/windows/i.test(u)?"PC Windows":/mac/i.test(u)?"Mac":"Otro";
+  if(url){ try{
+    const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),75000);
+    const r=await fetch(url+"/api/demo",{method:"POST",headers:{"Content-Type":"application/json"},signal:ctl.signal,body:JSON.stringify({dev:demoDev(),ua})});
+    clearTimeout(to); const j=await r.json();
+    if(j.motivo!=="no_config"&&j.motivo!=="error"){ if(j.ok) try{localStorage.setItem("bot-demo-ini",String(j.fin-DEMO_MIN*60000))}catch(e){} else try{localStorage.setItem("bot-demo-ini","1")}catch(e){} return j; }
+  }catch(e){} }
+  let ini=0; try{ini=+(localStorage.getItem("bot-demo-ini")||0)}catch(e){}
+  if(!ini){ini=Date.now(); try{localStorage.setItem("bot-demo-ini",String(ini))}catch(e){}}
+  const fin=ini+DEMO_MIN*60000; return Date.now()<fin?{ok:true,fin}:{ok:false,motivo:"usada"};
+}
+function demoUsada(){const b=$("gdemo"); if(b){b.disabled=true;b.textContent="Ya usaste tu prueba gratis";} const t=$("gdemoTxt"); if(t) t.textContent="Pide tu código por WhatsApp para seguir usando el bot.";}
+function startDemo(fin){
+  DEMO=fin; try{localStorage.setItem(DKEY,String(fin))}catch(e){}
+  document.body.classList.add("demo"); document.body.classList.remove("locked");
+  $("demoEnd").classList.remove("on");
+  document.getElementById("gate").style.display="none";
+  document.getElementById("app").style.display="";
+  ST.cur=DEMO_LOT; try{save();}catch(e){} try{build();}catch(e){}
+  $("vence").innerHTML='<span class="lg">Prueba gratis</span><span class="sm">Prueba</span>';
+  setTimeout(()=>{let v=null;try{v=localStorage.getItem("bot-tour-visto")}catch(e){} if(!v&&window.abrirBotGuia) window.abrirBotGuia();},900);
+  setTimeout(()=>{try{autoTodas(false);}catch(e){}},50);
+  demoTick();
+}
+function demoTick(){
+  if(!DEMO) return; const left=DEMO-Date.now();
+  if(left<=0){ endDemo(); return; }
+  $("demoTxt").textContent="PRUEBA GRATIS · quedan "+Math.max(1,Math.ceil(left/60000))+" min";
+  $("demoFill").style.width=Math.max(2,left/(DEMO_MIN*60000)*100)+"%";
+}
+function endDemo(){
+  DEMO=null; try{localStorage.removeItem(DKEY)}catch(e){}
+  document.body.classList.remove("demo"); document.body.classList.add("locked");
+  document.getElementById("app").style.display="none"; document.getElementById("gate").style.display="";
+  demoUsada(); $("demoEnd").classList.add("on");
+}
+setInterval(demoTick,15000);
+let demoT=null;
+function demoAviso(msg){const t=$("demoToast"); t.textContent="🔒 "+msg; t.classList.add("on"); clearTimeout(demoT); demoT=setTimeout(()=>t.classList.remove("on"),2600);}
+document.addEventListener("click",e=>{
+  if(!DEMO) return;
+  const tb=e.target.closest(".tab");
+  if(tb&&tb.dataset.id&&tb.dataset.id!==DEMO_LOT){e.preventDefault();e.stopImmediatePropagation();demoAviso("Las otras loterías son solo con código.");return;}
+  const b=e.target.closest("button");
+  if(b&&(/Copiar/.test(b.textContent)||b.classList.contains("tcp"))){e.preventDefault();e.stopImmediatePropagation();demoAviso("Copiar a WhatsApp es solo con código.");}
+},true);
+document.getElementById("gdemo").addEventListener("click",async()=>{
+  const b=$("gdemo"), err=$("gerr"); b.disabled=true; b.textContent="Preparando tu prueba…";
+  err.style.color="var(--muted)"; err.textContent="La primera vez puede tardar hasta 1 minuto.";
+  const r=await pedirDemo(); err.style.color=""; err.textContent="";
+  if(r&&r.ok){ b.disabled=false; b.textContent="▶ Probar gratis 30 minutos"; startDemo(r.fin); }
+  else { demoUsada(); $("demoEnd").classList.add("on"); }
+});
+document.getElementById("deYa").onclick=()=>{$("demoEnd").classList.remove("on"); const g=$("gcode"); if(g) g.focus();};
+
 function fmtFecha(ms){return new Date(ms).toLocaleString("es-VE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"numeric",minute:"2-digit"});}
 function unlock(code,fin){
+  DEMO=null; document.body.classList.remove("demo"); try{localStorage.removeItem(DKEY)}catch(e){}
   document.body.classList.remove("locked");
   setTimeout(()=>{let v=null;try{v=localStorage.getItem("bot-tour-visto")}catch(e){} if(!v&&window.abrirBotGuia) window.abrirBotGuia();},900);
   setTimeout(()=>{try{autoTodas(false);}catch(e){}},50);
@@ -1206,6 +1306,7 @@ function unlock(code,fin){
   {const d=new Date(fin); document.getElementById("vence").innerHTML='<span class="lg">Acceso hasta '+fmtFecha(fin)+'</span><span class="sm">Hasta '+String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+'</span>';}
 }
 function lock(msg){
+  DEMO=null; document.body.classList.remove("demo"); try{localStorage.removeItem(DKEY)}catch(e){}
   document.body.classList.add("locked");
   CUR=null;
   try{localStorage.removeItem(AKEY)}catch(e){}
@@ -1233,8 +1334,10 @@ document.getElementById("gcode").addEventListener("input",()=>{document.getEleme
 document.getElementById("salir").onclick=()=>lock("");
 (function(){let c=null;try{c=localStorage.getItem(AKEY)}catch(e){}
   if(c){const r=check(c,false); if(r.ok){ unlock(c,r.fin); setTimeout(()=>revisarEnServidor(c),300); } else lock(r.msg);} })();
+(function(){ if(CUR) return; let fin=0,ini=0; try{fin=+(localStorage.getItem(DKEY)||0); ini=+(localStorage.getItem("bot-demo-ini")||0);}catch(e){}
+  if(fin&&Date.now()<fin) startDemo(fin); else if(fin){ endDemo(); } else if(ini&&Date.now()>ini+DEMO_MIN*60000) demoUsada(); })();
 setInterval(()=>{const c=CUR;
-  if(document.getElementById("app").style.display!=="none"){const r=check(c,false); if(!r.ok) lock("Tu semana de acceso terminó.");}},60000);
+  if(!DEMO&&c&&document.getElementById("app").style.display!=="none"){const r=check(c,false); if(!r.ok) lock("Tu semana de acceso terminó.");}},60000);
 
 </script>
 </body>
