@@ -460,6 +460,23 @@
   .avrow{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #24304f;border-radius:12px;padding:10px 12px;font-weight:700}
   .avrow input{width:22px;height:22px;accent-color:#2ef2ff}
   .avmsg{font-size:13px;color:var(--muted);line-height:1.4;min-height:1em}
+  .vfbox{margin:10px 0;border:1px solid rgba(255,159,28,.6);background:rgba(255,159,28,.08);border-radius:14px;padding:10px 12px}
+  .vfbox.vfv{border-color:rgba(45,255,138,.55);background:rgba(45,255,138,.06)}
+  .vfbox .vft{display:flex;align-items:center;gap:6px;font-weight:700;color:#ffb547}
+  .vfbox.vfv .vft{color:#7dffb4}
+  .vfbox .vft small{font-weight:600;color:var(--muted)}
+  .vfbox .vfcp{margin-left:auto;border:1px solid rgba(46,242,255,.6);color:var(--cyan);background:rgba(46,242,255,.1);border-radius:99px;padding:3px 10px;font:600 13px "Rajdhani",sans-serif;cursor:pointer}
+  .vfbox .vfcp.ok{border-color:rgba(45,255,138,.6);color:var(--grn)}
+  .vfbox .pks{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+  .vfbox .pks span{border-radius:10px;padding:4px 10px;font-weight:700;background:rgba(255,159,28,.14);border:1px solid rgba(255,159,28,.6);color:#ffb547}
+  .vfbox.vfv .pks span{background:rgba(45,255,138,.1);border-color:rgba(45,255,138,.55);color:#7dffb4}
+  .vfbox .vfg{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:8px}
+  .vfbox .vfg div{border:1px solid rgba(255,159,28,.55);border-radius:12px;text-align:center;padding:9px 4px 7px;background:#0f1430;font-weight:600}
+  .vfbox.vfv .vfg div{border-color:rgba(45,255,138,.55)}
+  .vfbox .vfg .e{display:block;font-size:26px}
+  .vfbox .vfg b{display:block;color:#ffb547;font-family:"Orbitron",sans-serif}
+  .vfbox.vfv .vfg b{color:#7dffb4}
+  .vfbox.mini{margin:8px 0 0;padding:8px 10px}
 </style>
 </head>
 <body class="locked">
@@ -698,7 +715,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611161341";
+const BUILD="202611161414";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1208,6 +1225,7 @@ try{MQ.addEventListener("change",applyMQ);}catch(e){MQ.addListener(applyMQ);}
 document.querySelectorAll("#bnav button").forEach(b=>b.onclick=()=>setView(b.dataset.v));
 function renderMbar(){
   const l=L(), st=S(), g=GD(), h=st.hist, last=h[h.length-1];
+  try{ vfJugada(l,last); }catch(e){}
   const mb=$("mbar"); if(!mb) return;
   if(last==null){mb.innerHTML='<div class="empty">Toca el animal que acaba de salir en '+esc(l.name)+'.</div>';}
   else{
@@ -1219,6 +1237,7 @@ function renderMbar(){
       <div class="acts conf" id="mconf" style="display:none"><span>¿Borrar todo lo marcado en ${esc(l.name)}?</span><button class="undo" id="mno">Cancelar</button><button class="undo yes" id="myes">Sí, limpiar</button></div>
       ${arr.length?'<div class="pdesc">🎯 Animales para jugar en el próximo sorteo:</div>':""}
       <div class="pks" data-w="1">${arr.length?arr.map(([n,c])=>`<span class="${cs.has(n)?"c":""}${P.vadd.has(n)?" v69":""}">${P.vadd.has(n)?"⇄ ":""}${l.A[n][1]} ${n}${P.vadd.has(n)?" 🔥":""}${c>1?" ×"+c:""}</span>`).join(""):'<span style="color:var(--muted);background:none;border:0;font-weight:500">Sin combinaciones para este animal</span>'}</div>${arr.length?ventanaHtml(st):""}`;
+    mb.insertAdjacentHTML("beforeend",vfHtml(l,last,true));
     $("mundo").onclick=()=>$("undo").click();
     $("mclear").onclick=()=>{$("macts").style.display="none";$("mconf").style.display="flex";};
     $("mno").onclick=()=>{$("mconf").style.display="none";$("macts").style.display="flex";};
@@ -1429,7 +1448,6 @@ document.getElementById("gdemo").addEventListener("click",async()=>{
 document.getElementById("deYa").onclick=()=>{$("demoEnd").classList.remove("on"); const g=$("gcode"); if(g) g.focus();};
 
 /* ---- cuenta regresiva al próximo sorteo ---- */
-const CD_NOM={activo:"LOTTO ACTIVO",granjita:"GRANJITA",guacharo:"GUÁCHARO",inter:"INTER"};
 function proxSorteo(l){
   const st=ST.lots[l.id]||{}; let min=0;
   const it=st.dia&&st.dia.items&&st.dia.items.length?st.dia.items[st.dia.items.length-1]:null;
@@ -1439,6 +1457,7 @@ function proxSorteo(l){
   d.setDate(d.getDate()+1); d.setHours(PRIMER,min,0,0); return {d,hoy:false};
 }
 function pintarCuenta(){
+  const CD_NOM={activo:"LOTTO ACTIVO",granjita:"GRANJITA",guacharo:"GUÁCHARO",inter:"INTER"};
   const box=document.getElementById("cdown"); if(!box) return;
   box.innerHTML=LOTS.map(l=>{ const p=proxSorteo(l), ms=p.d-Date.now(), m=Math.ceil(ms/60000);
     const t=!p.hoy?"Mañana":m<60?m+" min":Math.floor(m/60)+" h "+(m%60)+" min";
@@ -1482,6 +1501,32 @@ async function avGuardar(){
 }
 document.getElementById("avisosBtn").onclick=()=>{ $("avMsg").textContent=""; avPintar(); $("avBox").classList.add("on"); };
 document.getElementById("avCerrar").onclick=()=>$("avBox").classList.remove("on");
+
+/* ---- veneno ⇄ felinos (recuadro aparte, no cambia los animales para jugar) ---- */
+function vfInfo(last){
+  const VENENO=["03","04","30","36"], FELINOS=["05","10","11"];
+  if(VENENO.includes(last)) return {cls:"vff",tit:"🐾 Felinos",sub:"salió veneno",nums:FELINOS};
+  if(FELINOS.includes(last)) return {cls:"vfv",tit:"☠ Veneno",sub:"salió felino",nums:VENENO};
+  return null;
+}
+function vfHtml(l,last,corto){
+  const v=last!=null&&vfInfo(last); if(!v) return "";
+  const ns=v.nums.filter(n=>l.A[n]);
+  return `<div class="vfbox ${v.cls}${corto?" mini":""}"><div class="vft">${v.tit} <small>(${v.sub})</small><button class="vfcp" type="button" data-last="${last}">⧉ Copiar</button></div>`+
+    (corto?`<div class="pks">${ns.map(n=>`<span>${l.A[n][1]} ${n}</span>`).join("")}</div>`
+          :`<div class="vfg">${ns.map(n=>`<div><span class="e">${l.A[n][1]}</span><b>${n}</b>${esc(l.A[n][0])}</div>`).join("")}</div>`)+`</div>`;
+}
+function vfJugada(l,last){
+  const pred=$("pred"); if(!pred) return;
+  pred.querySelectorAll(".vfbox").forEach(x=>x.remove());
+  const h=vfHtml(l,last,false); if(!h) return;
+  const at=pred.querySelector(".from"); if(at) at.insertAdjacentHTML("beforebegin",h); else { const h2=pred.querySelector("h2"); if(h2) h2.insertAdjacentHTML("afterend",h); }
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest(".vfcp"); if(!b) return;
+  const l=L(), last=b.dataset.last, v=vfInfo(last); if(!v) return;
+  copyTxt(v.tit+" · *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+v.nums.filter(n=>l.A[n]).map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+FOOTER,b,"⧉ Copiar");
+});
 
 function fmtFecha(ms){return new Date(ms).toLocaleString("es-VE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"numeric",minute:"2-digit"});}
 function unlock(code,fin){
