@@ -223,11 +223,25 @@ async function usarCodigo(b) {
   await redis(["SET", key, JSON.stringify(rec)]);
   return { ok: true, fin: finDe(rec.ini) };
 }
+// Prueba gratis: una por dispositivo
+const DEMO_MIN = 30;
+async function usarDemo(b) {
+  const dev = String(b.dev || "").slice(0, 80);
+  if (!dev) return { ok: false, motivo: "sin_dispositivo" };
+  const key = "demo:" + dev, ahora = Date.now();
+  let v = await redis(["GET", key]);
+  if (!v) { v = JSON.stringify({ ini: ahora, ua: String(b.ua || "").slice(0, 40) }); await redis(["SET", key, v]); }
+  const fin = JSON.parse(v).ini + DEMO_MIN * 60000;
+  return ahora < fin ? { ok: true, fin } : { ok: false, motivo: "usada" };
+}
+
 async function listaCodigos() {
   const keys = (await redis(["KEYS", "cod:*"])) || [];
   const vals = keys.length ? await redis(["MGET", ...keys]) : [];
   const ahora = Date.now();
+  const demos = ((await redis(["KEYS", "demo:*"])) || []).length;
   return {
+    demos,
     total: CODIGOS.size,
     usados: keys.map((k, i) => { const r = JSON.parse(vals[i] || "{}"); const fin = finDe(r.ini || 0);
       return { hash: k.slice(4), codigo: r.codigo || "(sin nombre)", ua: r.ua || "", ini: r.ini, fin, uso: r.uso, libre: !r.dev, estado: ahora > fin ? "vencido" : "activo" }; })
@@ -251,7 +265,7 @@ let D=null;
 async function cargar(){try{D=await api("/admin/api/lista");sessionStorage.setItem("cl",C);document.getElementById("login").style.display="none";document.getElementById("pan").style.display="";pintar();}catch(e){document.getElementById("msg").textContent=e.message;}}
 function pintar(){const q=document.getElementById("bus").value.trim().toUpperCase();const a=D.usados.filter(x=>!q||x.codigo.includes(q));
 const act=D.usados.filter(x=>x.estado==="activo").length;
-document.getElementById("res").textContent=D.total+" códigos · "+D.usados.length+" usados ("+act+" activos) · "+(D.total-D.usados.length)+" sin usar";
+document.getElementById("res").textContent=D.total+" códigos · "+D.usados.length+" usados ("+act+" activos) · "+(D.total-D.usados.length)+" sin usar · "+(D.demos||0)+" pruebas gratis";
 document.getElementById("lis").innerHTML=a.map(x=>'<div class="it"><div><b>'+x.codigo+'</b><div class="s">'+(x.libre?"liberado, esperando otro dispositivo":(x.ua||"dispositivo"))+' · desde '+f(x.ini)+'</div></div><div class="'+(x.estado==="vencido"?"ve":(x.libre?"li":"ok"))+'">'+(x.estado==="vencido"?"Vencido "+f(x.fin):"Activo · vence "+f(x.fin))+'</div>'+(x.libre||x.estado==="vencido"?"":'<button class="lb" data-h="'+x.hash+'">Liberar</button>')+'</div>').join("")||'<div class="s">Ningún código usado todavía.</div>';
 document.querySelectorAll(".lb").forEach(b=>b.onclick=async()=>{if(!confirmar(b))return;await api("/admin/api/liberar",{hash:b.dataset.h});cargar();});}
 function confirmar(b){if(b.dataset.c)return true;b.dataset.c=1;b.textContent="¿Seguro? Toca otra vez";setTimeout(()=>{b.dataset.c="";b.textContent="Liberar"},4000);return false;}
@@ -269,6 +283,11 @@ const server = http.createServer(async (req, res) => {
     if (u.pathname === "/api/codigo" && req.method === "POST") {
       const b = await leerCuerpo(req);
       try { return enviar(res, 200, await usarCodigo(b)); }
+      catch (e) { return enviar(res, 503, { ok: false, motivo: String(e.message) === "no_config" ? "no_config" : "error" }); }
+    }
+    if (u.pathname === "/api/demo" && req.method === "POST") {
+      const b = await leerCuerpo(req);
+      try { return enviar(res, 200, await usarDemo(b)); }
       catch (e) { return enviar(res, 503, { ok: false, motivo: String(e.message) === "no_config" ? "no_config" : "error" }); }
     }
     if (u.pathname === "/admin") return enviar(res, 200, ADMIN_HTML, "text/html; charset=utf-8");
