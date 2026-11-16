@@ -3,6 +3,7 @@
 // Lee las páginas de lotoven.com y entrega los datos al bot en formato JSON.
 
 const http = require("http");
+const crypto = require("crypto");
 
 // ===================== CONFIGURACIÓN =====================
 // Enlaces de cada lotería. "estadisticas" = tabla de última fecha / días sin salir.
@@ -235,6 +236,88 @@ async function usarDemo(b) {
   return ahora < fin ? { ok: true, fin } : { ok: false, motivo: "usada" };
 }
 
+
+// ===================== AVISOS AL TELÉFONO (notificaciones) =====================
+// El servidor revisa los resultados cada 2 minutos (de 7 a. m. a 9 p. m.) y,
+// cuando sale uno nuevo, avisa a los teléfonos suscritos a esa lotería.
+// Las claves de los avisos se crean solas y se guardan en Upstash.
+const AVISO_GUIA = {"activo":{"nombre":"Lotto Activo","A":{"0":["Delfín","🐬"],"10":["Tigre","🐯"],"11":["Gato","🐱"],"12":["Caballo","🐴"],"13":["Mono","🐒"],"14":["Paloma","🕊️"],"15":["Zorro","🦊"],"16":["Oso","🐻"],"17":["Pavo","🦃"],"18":["Burro","🫏"],"19":["Chivo","🐐"],"20":["Cochino","🐷"],"21":["Gallo","🐓"],"22":["Camello","🐫"],"23":["Cebra","🦓"],"24":["Iguana","🦎"],"25":["Gallina","🐔"],"26":["Vaca","🐄"],"27":["Perro","🐶"],"28":["Zamuro","🪶"],"29":["Elefante","🐘"],"30":["Caimán","🐊"],"31":["Lapa","🐹"],"32":["Ardilla","🐿️"],"33":["Pescado","🐟"],"34":["Venado","🦌"],"35":["Jirafa","🦒"],"36":["Culebra","🐍"],"00":["Ballena","🐋"],"01":["Carnero","🐏"],"02":["Toro","🐂"],"03":["Ciempiés","🐛"],"04":["Alacrán","🦂"],"05":["León","🦁"],"06":["Rana","🐸"],"07":["Perico","🦜"],"08":["Ratón","🐭"],"09":["Águila","🦅"]},"sig":{"0":["00","03","14","16","17"],"10":["05","18","25"],"11":["05","18","25"],"12":["0","05","16"],"13":["15","16","34"],"14":["0","00","04","17","35"],"15":["02","12","20","26","29","30"],"16":["05","15"],"17":["0","00","14","22","31"],"18":["01","10","15"],"19":["07","14"],"20":["02","14","15","26","29","30","35"],"21":["05","07"],"22":["16","28"],"23":["03","30"],"24":["20"],"25":["10"],"26":["02","15","20","24","29","35"],"27":["13","26","34"],"28":["01","11","19"],"29":["01","02","03","15","20","24","26"],"30":["07","16","31"],"31":["01","04","29"],"32":["13","27","31"],"33":["11","34","36"],"34":["15","36"],"35":["10","27","33"],"36":["07","18","20"],"00":["0","14","17","22"],"01":["0","18","22"],"02":["01","15","19","20","26","29","35"],"03":["02","18"],"04":["07","19"],"05":["16","17","21"],"06":["04","08"],"07":["04","15","33"],"08":["12","15","28"],"09":["08","20","34"]}},"granjita":{"nombre":"La Granjita","A":{"0":["Delfín","🐬"],"10":["Tigre","🐯"],"11":["Gato","🐱"],"12":["Caballo","🐴"],"13":["Mono","🐒"],"14":["Paloma","🕊️"],"15":["Zorro","🦊"],"16":["Oso","🐻"],"17":["Pavo","🦃"],"18":["Burro","🫏"],"19":["Chivo","🐐"],"20":["Cochino","🐷"],"21":["Gallo","🐓"],"22":["Camello","🐫"],"23":["Cebra","🦓"],"24":["Iguana","🦎"],"25":["Gallina","🐔"],"26":["Vaca","🐄"],"27":["Perro","🐶"],"28":["Zamuro","🪶"],"29":["Elefante","🐘"],"30":["Caimán","🐊"],"31":["Lapa","🐹"],"32":["Ardilla","🐿️"],"33":["Pescado","🐟"],"34":["Venado","🦌"],"35":["Jirafa","🦒"],"36":["Culebra","🐍"],"00":["Ballena","🐋"],"01":["Carnero","🐏"],"02":["Toro","🐂"],"03":["Ciempiés","🐛"],"04":["Alacrán","🦂"],"05":["León","🦁"],"06":["Rana","🐸"],"07":["Perico","🦜"],"08":["Ratón","🐭"],"09":["Águila","🦅"]},"sig":{"0":["00","01","03","08","12","14","16","17","22"],"10":["05","18","25","26"],"11":["05","07","09","18","20","23","25","27","34"],"12":["0","04","05","08","15","16","24","29","34"],"13":["06","14","15","16","34"],"14":["0","00","04","17","19","20","35"],"15":["02","03","04","07","12","13","16","18","20","26","29","30"],"16":["00","05","12","13","15","23","30"],"17":["0","00","05","13","14","22","31"],"18":["0","01","03","10","11","15","22","34"],"19":["02","04","06","07","14","28"],"20":["02","05","09","11","14","15","24","26","29","30","34","35","36"],"21":["05","07","08","13"],"22":["00","01","02","03","04","17","28","36"],"23":["0","00","01","05","28","30","33"],"24":["02","05","07","09","20","26"],"25":["10","11"],"26":["02","09","15","20","25","27","29","35"],"27":["13","26","32","34","35"],"28":["01","11","16","17","19","22"],"29":["01","02","03","10","15","20","24","26"],"30":["04","07","15","16","23","24","31"],"31":["04","17","29","30"],"32":["02","06","10","13","15","19","27","31"],"33":["00","07","11","21","22","25","34","35","36"],"34":["09","11","13","15","20","23","27","30","36"],"35":["20","26","29","31","32"],"36":["07","18","20","22","33","34"],"00":["0","14","17","22","23","36"],"01":["0","02","08","12","13","18","22","31"],"02":["01","03","09","14","15","19","20","26","29","35"],"03":["0","02","10","18","23","29","34"],"04":["03","06","07","14","19","31"],"05":["10","11","12","16","17","21"],"06":["04","08","27","32","36"],"07":["04","15","19","20","24","30","33"],"08":["0","06","09","22","28","31"],"09":["07","08","11","20","21","26","34"]}},"guacharo":{"nombre":"Guácharo","A":{"0":["Delfín","🐬"],"10":["Tigre","🐯"],"11":["Gato","🐱"],"12":["Caballo","🐴"],"13":["Mono","🐒"],"14":["Paloma","🕊️"],"15":["Zorro","🦊"],"16":["Oso","🐻"],"17":["Pavo","🦃"],"18":["Burro","🫏"],"19":["Chivo","🐐"],"20":["Cochino","🐷"],"21":["Gallo","🐓"],"22":["Camello","🐫"],"23":["Cebra","🦓"],"24":["Iguana","🦎"],"25":["Gallina","🐔"],"26":["Vaca","🐄"],"27":["Perro","🐶"],"28":["Zamuro","🪶"],"29":["Elefante","🐘"],"30":["Caimán","🐊"],"31":["Lapa","🐹"],"32":["Ardilla","🐿️"],"33":["Pescado","🐟"],"34":["Venado","🦌"],"35":["Jirafa","🦒"],"36":["Culebra","🐍"],"37":["Tortuga","🐢"],"38":["Búfalo","🐃"],"39":["Lechuza","🦉"],"40":["Avispa","🐝"],"41":["Canguro","🦘"],"42":["Tucán","🐦"],"43":["Mariposa","🦋"],"44":["Chigüire","🦫"],"45":["Garza","🦢"],"46":["Puma","🐆"],"47":["Pavo Real","🦚"],"48":["Puercoespín","🦔"],"49":["Pereza","🦥"],"50":["Canario","🐤"],"51":["Pelícano","🦤"],"52":["Pulpo","🐙"],"53":["Caracol","🐌"],"54":["Grillo","🦗"],"55":["Oso Hormiguero","🦡"],"56":["Tiburón","🦈"],"57":["Pato","🦆"],"58":["Hormiga","🐜"],"59":["Pantera","🐈‍⬛"],"60":["Camaleón","🦎"],"61":["Panda","🐼"],"62":["Cachicamo","🐾"],"63":["Cangrejo","🦀"],"64":["Gavilán","🦅"],"65":["Araña","🕷️"],"66":["Lobo","🐺"],"67":["Avestruz","🦩"],"68":["Jaguar","🐆"],"69":["Conejo","🐰"],"70":["Bisonte","🦬"],"71":["Guacamaya","🦜"],"72":["Gorila","🦍"],"73":["Hipopótamo","🦛"],"74":["Turpial","🐦"],"75":["Guácharo","🦇"],"00":["Ballena","🐋"],"01":["Carnero","🐏"],"02":["Toro","🐂"],"03":["Ciempiés","🐛"],"04":["Alacrán","🦂"],"05":["León","🦁"],"06":["Rana","🐸"],"07":["Perico","🦜"],"08":["Ratón","🐭"],"09":["Águila","🦅"]},"sig":{"0":["00","06","14","17","24","37","56","66"],"10":["16","22","31","49","74"],"11":["27","37","49","50","59"],"12":["26","34","50","72","73"],"13":["06","26","29","51","59"],"14":["0","00","08","17","21","40","52","72"],"15":["02","20","24","26","29","35","53","56","60"],"16":["48","52","54","63","67"],"17":["0","00","09","14","28","55","59","63"],"18":["27","56","64","73","74"],"19":["13","16","18","56","70"],"20":["02","15","21","26","29","58","67"],"21":["03","08","54","56","59"],"22":["06","44","60","62","71"],"23":["05","10","16","43","61"],"24":["01","04","48","57","62"],"25":["01","23","32","44","52"],"26":["02","04","15","16","20","29","42","51","68"],"27":["25","28","52","61","73"],"28":["15","47","62","66","71"],"29":["02","09","15","20","26","27","54","67","72"],"30":["33","68"],"31":["19","53"],"32":["03","14"],"33":["0","71"],"34":["04","05","40","43","50"],"35":["12","37"],"36":["10","74"],"37":["23","51"],"38":["33","48"],"39":[],"40":["02","07","20","70"],"41":["01","03"],"42":["04","66"],"43":["05","35"],"44":["27","56"],"45":["12","62"],"46":["04","18"],"47":["06","64"],"48":["57","58"],"49":["21","24"],"50":["12","57"],"51":["23","61"],"52":["14","72"],"53":["33","38"],"54":["03","39"],"55":["34","56"],"56":["13","18"],"57":["38","64"],"58":["20","32"],"59":["21","28"],"60":["22","37"],"61":["0","53"],"62":["71","74"],"63":["05","67"],"64":["24","42","47","74"],"65":["15","39"],"66":["30","46"],"67":["36","45"],"68":["53","57"],"69":["20","52"],"70":["01","47"],"71":["15","43"],"72":["52","69"],"73":["04","37","40"],"74":["10","62"],"75":["39","61"],"00":["0","09","14","17","23","31","54","56"],"01":["24","26","39","43","57"],"02":["15","17","20","26","29","40","52","65","70"],"03":["11","18","40","41","68"],"04":["18","24","43","48","60"],"05":["08","10","29","43","47"],"06":["19","37","38","53","70"],"07":["24","33","38","45","57"],"08":["07","42","51","55","63"],"09":["17","27","28","44","66"]}},"inter":{"nombre":"Lotto Internacional","A":{"0":["Delfín","🐬"],"10":["Tigre","🐯"],"11":["Gato","🐱"],"12":["Caballo","🐴"],"13":["Mono","🐒"],"14":["Paloma","🕊️"],"15":["Zorro","🦊"],"16":["Oso","🐻"],"17":["Pavo","🦃"],"18":["Burro","🫏"],"19":["Chivo","🐐"],"20":["Cochino","🐷"],"21":["Gallo","🐓"],"22":["Camello","🐫"],"23":["Cebra","🦓"],"24":["Iguana","🦎"],"25":["Gallina","🐔"],"26":["Vaca","🐄"],"27":["Perro","🐶"],"28":["Zamuro","🪶"],"29":["Elefante","🐘"],"30":["Caimán","🐊"],"31":["Lapa","🐹"],"32":["Ardilla","🐿️"],"33":["Pescado","🐟"],"34":["Venado","🦌"],"35":["Jirafa","🦒"],"36":["Culebra","🐍"],"00":["Ballena","🐋"],"01":["Carnero","🐏"],"02":["Toro","🐂"],"03":["Ciempiés","🐛"],"04":["Alacrán","🦂"],"05":["León","🦁"],"06":["Rana","🐸"],"07":["Perico","🦜"],"08":["Ratón","🐭"],"09":["Águila","🦅"]},"sig":{"0":["00","01","03","08","12","14","16","17","22"],"10":["05","18","25","26"],"11":["05","07","09","18","20","23","25","27","34"],"12":["0","04","05","08","15","16","24","29","34"],"13":["06","14","15","16","34"],"14":["0","00","04","17","19","20","35"],"15":["02","03","04","07","12","13","16","18","20","26","29","30"],"16":["00","05","12","13","15","23","30"],"17":["0","00","05","13","14","22","31"],"18":["0","01","03","10","11","15","22","34"],"19":["02","04","06","07","14","28"],"20":["02","05","09","11","14","15","24","26","29","30","34","35","36"],"21":["05","07","08","13"],"22":["00","01","02","03","04","17","28","36"],"23":["0","00","01","05","28","30","33"],"24":["02","05","07","09","20","26"],"25":["10","11"],"26":["02","09","15","20","25","27","29","35"],"27":["13","26","32","34","35"],"28":["01","11","16","17","19","22"],"29":["01","02","03","10","15","20","24","26"],"30":["04","07","15","16","23","24","31"],"31":["04","17","29","30"],"32":["02","06","10","13","15","19","27","31"],"33":["00","07","11","21","22","25","34","35","36"],"34":["09","11","13","15","20","23","27","30","36"],"35":["20","26","29","31","32"],"36":["07","18","20","22","33","34"],"00":["0","14","17","22","23","36"],"01":["0","02","08","12","13","18","22","31"],"02":["01","03","09","14","15","19","20","26","29","35"],"03":["0","02","10","18","23","29","34"],"04":["03","06","07","14","19","31"],"05":["10","11","12","16","17","21"],"06":["04","08","27","32","36"],"07":["04","15","19","20","24","30","33"],"08":["0","06","09","22","28","31"],"09":["07","08","11","20","21","26","34"]}}};
+let VAPID = null;
+async function vapid() {
+  if (VAPID) return VAPID;
+  const v = await redis(["GET", "vapid"]);
+  if (v) { VAPID = JSON.parse(v); return VAPID; }
+  const { publicKey, privateKey } = crypto.generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const pub = publicKey.export({ format: "jwk" });
+  const raw = Buffer.concat([Buffer.from([4]), Buffer.from(pub.x, "base64url"), Buffer.from(pub.y, "base64url")]);
+  VAPID = { jwk: privateKey.export({ format: "jwk" }), pub: raw.toString("base64url") };
+  await redis(["SET", "vapid", JSON.stringify(VAPID)]);
+  return VAPID;
+}
+async function empujar(endpoint) {
+  const v = await vapid();
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const sinFirma = b64({ typ: "JWT", alg: "ES256" }) + "." + b64({ aud: new URL(endpoint).origin, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: "https://bot-animalitos.onrender.com" });
+  const firma = crypto.sign("sha256", Buffer.from(sinFirma), { key: crypto.createPrivateKey({ key: v.jwk, format: "jwk" }), dsaEncoding: "ieee-p1363" }).toString("base64url");
+  const r = await fetch(endpoint, { method: "POST", headers: { TTL: "3600", Urgency: "high", Authorization: "vapid t=" + sinFirma + "." + firma + ", k=" + v.pub, "Content-Length": "0" } });
+  return r.status;
+}
+const subKey = (endpoint) => "sub:" + crypto.createHash("sha256").update(String(endpoint)).digest("hex").slice(0, 24);
+async function suscribir(b) {
+  const sub = b.sub || {}, endpoint = String(sub.endpoint || "");
+  if (!/^https:\/\//.test(endpoint)) return { ok: false, motivo: "sin_suscripcion" };
+  const lots = (Array.isArray(b.lots) ? b.lots : []).filter((l) => FUENTES[l]);
+  if (!lots.length) { await redis(["DEL", subKey(endpoint)]); return { ok: true, lots: [] }; }
+  const hash = String(b.hash || ""), dev = String(b.dev || "").slice(0, 64);
+  let rec = await redis(["GET", "cod:" + hash]); rec = rec ? JSON.parse(rec) : null;
+  if (!CODIGOS.has(hash) || !rec) return { ok: false, motivo: "sin_codigo" };
+  if (rec.dev !== dev) return { ok: false, motivo: "en_uso" };
+  const fin = finDe(rec.ini); if (Date.now() > fin) return { ok: false, motivo: "vencido" };
+  await redis(["SET", subKey(endpoint), JSON.stringify({ sub, lots, hash, fin, t: Date.now() })]);
+  return { ok: true, lots };
+}
+async function enviarAvisos(lot) {
+  const keys = (await redis(["KEYS", "sub:*"])) || [];
+  if (!keys.length) return 0;
+  const vals = await redis(["MGET", ...keys]);
+  let n = 0;
+  for (let i = 0; i < keys.length; i++) {
+    if (!vals[i]) continue;
+    const s = JSON.parse(vals[i]);
+    if (Date.now() > s.fin) { await redis(["DEL", keys[i]]); continue; }
+    if (!s.lots.includes(lot)) continue;
+    try { const st = await empujar(s.sub.endpoint); if (st === 404 || st === 410) await redis(["DEL", keys[i]]); else n++; } catch (e) {}
+  }
+  return n;
+}
+let vigilando = false;
+async function vigilar() {
+  if (!R_URL || !R_TOK || vigilando) return;
+  const hh = +horaVE().split(":")[0]; if (hh < 7 || hh > 21) return;
+  vigilando = true;
+  try {
+    for (const lot of Object.keys(FUENTES)) {
+      try {
+        const r = await datos(lot, "resultados");
+        if (!r.datos || !r.datos.length) continue;
+        const u = r.datos[r.datos.length - 1];
+        const clave = hoyVE() + " " + u.hora + " " + u.num;
+        const prev = await redis(["GET", "ult:" + lot]);
+        if (prev && JSON.parse(prev).clave === clave) continue;
+        const g = AVISO_GUIA[lot] || { A: {}, sig: {} }, a = g.A[u.num] || [u.nombre || "", ""];
+        await redis(["SET", "ult:" + lot, JSON.stringify({ lot, clave, hora: u.hora, num: u.num, nombre: a[0], emoji: a[1], picks: (g.sig[u.num] || []).map((k) => ((g.A[k] || [])[1] || "") + " " + k), ts: Date.now() })]);
+        if (prev) await enviarAvisos(lot); // la primera vez solo se guarda, para no avisar algo viejo
+      } catch (e) {}
+    }
+  } finally { vigilando = false; }
+}
+async function ultimos() {
+  const lots = Object.keys(FUENTES);
+  const vals = await redis(["MGET", ...lots.map((l) => "ult:" + l)]);
+  const o = {}; lots.forEach((l, i) => { if (vals[i]) o[l] = Object.assign(JSON.parse(vals[i]), { lotNombre: (AVISO_GUIA[l] || {}).nombre || l }); });
+  return o;
+}
+
 async function listaCodigos() {
   const keys = (await redis(["KEYS", "cod:*"])) || [];
   const vals = keys.length ? await redis(["MGET", ...keys]) : [];
@@ -290,6 +373,12 @@ const server = http.createServer(async (req, res) => {
       try { return enviar(res, 200, await usarDemo(b)); }
       catch (e) { return enviar(res, 503, { ok: false, motivo: String(e.message) === "no_config" ? "no_config" : "error" }); }
     }
+    if (u.pathname === "/api/avisos/clave") { try { return enviar(res, 200, { ok: true, pub: (await vapid()).pub }); } catch (e) { return enviar(res, 503, { ok: false }); } }
+    if (u.pathname === "/api/avisos/ultimos") { try { return enviar(res, 200, { ok: true, ultimos: await ultimos() }); } catch (e) { return enviar(res, 503, { ok: false }); } }
+    if (u.pathname === "/api/avisos/sub" && req.method === "POST") {
+      const b = await leerCuerpo(req);
+      try { return enviar(res, 200, await suscribir(b)); } catch (e) { return enviar(res, 503, { ok: false, motivo: "error" }); }
+    }
     if (u.pathname === "/admin") return enviar(res, 200, ADMIN_HTML, "text/html; charset=utf-8");
     if (u.pathname.startsWith("/admin/api/")) {
       if (!CLAVE || req.headers["x-clave"] !== CLAVE) return enviar(res, 401, { error: "Clave incorrecta" });
@@ -338,6 +427,9 @@ const server = http.createServer(async (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-if (require.main === module) server.listen(PORT, () => console.log("Servidor de resultados listo en el puerto " + PORT));
+if (require.main === module) {
+  server.listen(PORT, () => console.log("Servidor de resultados listo en el puerto " + PORT));
+  setTimeout(vigilar, 20000); setInterval(vigilar, 2 * 60000);
+}
 
-module.exports = { parseEstadisticas, parseResultados, aTexto, hoyVE, horaVE };
+module.exports = { parseEstadisticas, parseResultados, aTexto, hoyVE, horaVE, vigilar, empujar, suscribir, ultimos, enviarAvisos };
