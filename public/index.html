@@ -669,13 +669,23 @@ const GRUPOS=[
   {lots:["granjita","inter"],a:["09","11","20","34"]}
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
+/* ---- se actualiza solo cuando subes una versión nueva ---- */
+const BUILD="202611161009";
+async function revisarVersion(){
+  try{ if(location.protocol!=="https:") return;
+    const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
+    const m=t.match(/const BUILD="(\d+)"/); if(m&&m[1]!==BUILD){ location.replace(location.pathname+"?v="+m[1]); }
+  }catch(e){}
+}
+setTimeout(revisarVersion,1500); setInterval(revisarVersion,10*60000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) revisarVersion(); });
 /* ---- regla 6⇄9 (solo para los animales que están para jugar) ---- */
 const PAR69={"06":["09"],"09":["06"],"16":["19"],"19":["16"],"26":["29"],"29":["26"]};
 const PAR69G={"16":["19","61"],"19":["16","61"],"61":["16","19"]};
-function par69(id,n){ return (id==="guacharo"&&PAR69G[n])?PAR69G[n]:(PAR69[n]||[]); }
+function par69(id,n){ const a=((id==="guacharo"&&PAR69G[n])?PAR69G[n]:(PAR69[n]||[])).slice(); const l=LOTS.find(x=>x.id===id); const v=l?volteo(l,n):null; if(v&&!a.includes(v)) a.push(v); return a; }
 /* ---- los que más señales tienen (en Jugada) ---- */
 function rankHtml(l,st,last,arr,P){
-  if(!arr||arr.length<2) return "";
+  if(!arr||!arr.length) return "";
   const sn=st.cfg.sal==null?100:st.cfg.sal, h=sn?st.hist.slice(-sn):st.hist.slice();
   const cnt={}; h.forEach(k=>cnt[k]=(cnt[k]||0)+1);
   const top=Object.keys(cnt).filter(k=>cnt[k]>0).sort((a,b)=>cnt[b]-cnt[a]).slice(0,10);
@@ -688,7 +698,7 @@ function rankHtml(l,st,last,arr,P){
     if(c>1) tags.push("×"+c+" en la guía");
     if(sal) tags.push("🔥 salidor");
     if(a) tags.push("✓ acertó "+a+(a===1?" vez":" veces"));
-    if(v) tags.push("⇄ regla 6⇄9");
+    if(v) tags.push("⇄ volteo");
     if(lv) tags.push("🔒 "+(lv===2?"jaula fuerte ":"jaula ")+daysSince(st.last[n])+"d");
     return {n,c,lv,sc,st3,tags};
   }).sort((x,y)=>(!!x.lv-!!y.lv)||(y.sc-x.sc)||(y.c-x.c));
@@ -873,7 +883,7 @@ function render(){
     pred.innerHTML=`<h2>Jugada según la guía</h2>${vv0?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv0][1]} ${vv0} ${esc(l.A[vv0][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv0}">⧉ Copiar</button></div>`:""}<div class="from">Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>.</div><div class="empty">Tu guía de ${esc(l.name)} no tiene combinaciones para este animal.</div>`;
   }else{
     const contSet=new Set(P.cont.map(c=>c[2]));
-    const arr=orden69([...P.now.entries()].sort((a,b)=>b[1]-a[1]||l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
+    const arr=orden69([...P.now.entries()].sort((a,b)=>l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
     const vv=volteo(l,last);
     pred.innerHTML=`<h2>Jugada según la guía</h2>
       ${vv?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv][1]} ${vv} ${esc(l.A[vv][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv}">⧉ Copiar</button></div>`:""}
@@ -1168,7 +1178,7 @@ function renderMbar(){
   if(last==null){mb.innerHTML='<div class="empty">Toca el animal que acaba de salir en '+esc(l.name)+'.</div>';}
   else{
     const P=predict(g,last,h[h.length-2]); const cs=new Set(P.cont.map(c=>c[2]));
-    const arr=orden69([...P.now.entries()].sort((a,b)=>b[1]-a[1]||l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
+    const arr=orden69([...P.now.entries()].sort((a,b)=>l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
     const mv=volteo(l,last);
     mb.innerHTML=`<div class="top"><span>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b></span>${mv?`<span class="mvol">⇄ Volteo: <b>${l.A[mv][1]} ${mv}</b></span>`:""}</div>
       <div class="acts" id="macts"><button class="undo cp" id="mcopy">⧉ Copiar</button><button class="undo" id="mundo">↶ Deshacer</button><button class="undo lp" id="mclear">🧹 Limpiar</button></div>
