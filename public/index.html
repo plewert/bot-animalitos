@@ -477,6 +477,9 @@
   .vfbox .vfg b{display:block;color:#ffb547;font-family:"Orbitron",sans-serif}
   .vfbox.vfv .vfg b{color:#7dffb4}
   .vfbox.mini{margin:8px 0 0;padding:8px 10px}
+  .pkhead{display:flex;align-items:center;gap:8px;margin:10px 0 6px;color:var(--gold);font-weight:700}
+  .pkcp{margin-left:auto;border:1px solid rgba(46,242,255,.6);color:var(--cyan);background:rgba(46,242,255,.1);border-radius:99px;padding:3px 11px;font:600 13px "Rajdhani",sans-serif;cursor:pointer}
+  .pkcp.ok{border-color:rgba(45,255,138,.6);color:var(--grn)}
 </style>
 </head>
 <body class="locked">
@@ -715,7 +718,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611161458";
+const BUILD="202611161516";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -940,6 +943,7 @@ function render(){
       ${vv?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv][1]} ${vv} ${esc(l.A[vv][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv}">⧉ Copiar</button></div>`:""}
       <div class="from">Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>. Para el próximo sorteo la guía marca:</div>
       ${ventanaHtml(st)}
+      <div class="pkhead"><span>🎯 Animales para jugar</span><button class="pkcp" type="button">⧉ Copiar</button></div>
       <div class="picks">${arr.map(([n,c])=>{const lv=jLevel(st,n);
         return `<div class="pk${contSet.has(n)?" cont":""}${lv?" j"+lv:""}${P.vadd.has(n)?" v69":""}">${P.vadd.has(n)?`<span class="v69t">⇄ 🔥</span>`:""}${c>1?`<span class="cnt">×${c}</span>`:""}${lv?`<i class="cage"></i><span class="pjt">${lv===2?"JAULA FUERTE":"JAULA"}</span><span class="pjd">${daysSince(st.last[n])}d</span>`:""}<span class="e">${l.A[n][1]}</span><b>${n}</b>${esc(l.A[n][0])}${lv?`<span class="pno">${lv===2?"Jaula fuerte · no jugarlo":"Jaula · no jugarlo"}</span>`:""}</div>`;}).join("")}</div>
       ${rankHtml(l,st,last,arr,P)}
@@ -1526,6 +1530,16 @@ document.addEventListener("click",e=>{
   const b=e.target.closest(".vfcp"); if(!b) return;
   const l=L(), last=b.dataset.last, v=vfInfo(last); if(!v) return;
   copyTxt(v.tit+" · *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n"+v.nums.filter(n=>l.A[n]).map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+FOOTER,b,"⧉ Copiar");
+});
+
+/* copiar las tarjetas de "Animales para jugar" en Jugada */
+document.addEventListener("click",e=>{
+  const b=e.target.closest(".pkcp"); if(!b) return;
+  const l=L(), st=S(), g=GD(), h=st.hist, last=h[h.length-1]; if(last==null) return;
+  const P=predict(g,last,h[h.length-2]);
+  const arr=orden69([...P.now.entries()].sort((a,c)=>l.order.indexOf(a[0])-l.order.indexOf(c[0])),P);
+  const lin=arr.map(([n,c])=>{ const lv=jLevel(st,n); return (P.vadd.has(n)?"⇄ ":"")+l.A[n][1]+" "+n+" "+l.A[n][0]+(c>1?" ×"+c:"")+(lv?" ("+(lv===2?"jaula fuerte":"jaula")+" · no jugarlo)":""); });
+  copyTxt("🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+"\n\n🎯 *Animales para jugar en el próximo sorteo:*\n"+lin.join("\n")+ventanaTxt(st)+FOOTER,b,"⧉ Copiar");
 });
 
 function fmtFecha(ms){return new Date(ms).toLocaleString("es-VE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"numeric",minute:"2-digit"});}
