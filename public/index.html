@@ -718,7 +718,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611161519";
+const BUILD="202611161729";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -791,17 +791,20 @@ function deHoy(st){ const td=today(); if(!st.hoy||st.hoy.fecha!==td) return []; 
 /* ---- horario para jugar (próximos 2 sorteos) ---- */
 const PRIMER=8, ULTIMO=19; // sorteos de 8:00 a. m. a 7:00 p. m., cada hora
 const fmtH=d=>{const a=d.getHours(),m=d.getMinutes();return ((a%12)||12)+":"+String(m).padStart(2,"0")+(a<12?" a. m.":" p. m.");};
+// minuto de cada sorteo: Lotto Internacional sortea a la media hora (8:30 a. m. a 7:30 p. m.)
+function minLot(st){ try{ const id=typeof st==="string"?st:Object.keys(ST.lots).find(k=>ST.lots[k]===st); return id==="inter"?30:0; }catch(e){ return 0; } }
 function ventana(st){
   const h=st.hist; if(!h.length) return null;
+  const mm=minLot(st);
   let base=null;
   const dia=st.dia&&st.dia.fecha===today()?st.dia.items:null, hoyL=deHoy(st);
   if(dia&&dia.length&&hoyL.length===dia.length&&hoyL.every((n,i)=>n===dia[i].num)){
     const [a,m]=dia[dia.length-1].hora.split(":").map(Number); base=new Date(); base.setHours(a,m,0,0);
-  }else if(st.tap&&st.tap.i===h.length){ base=new Date(st.tap.t); base.setMinutes(0,0,0); }
+  }else if(st.tap&&st.tap.i===h.length){ base=new Date(st.tap.t); if(base.getMinutes()<mm) base.setHours(base.getHours()-1); base.setMinutes(mm,0,0); }
   if(!base) return null;
   const ini=new Date(base); ini.setHours(ini.getHours()+1);
-  if(ini.getHours()>ULTIMO||ini.getDate()!==base.getDate()||base.getHours()>=ULTIMO){ ini.setTime(base.getTime()); ini.setDate(ini.getDate()+(base.getHours()>=PRIMER?1:0)); ini.setHours(PRIMER,0,0,0); }
-  if(ini.getHours()<PRIMER) ini.setHours(PRIMER,0,0,0);
+  if(ini.getHours()>ULTIMO||ini.getDate()!==base.getDate()||base.getHours()>=ULTIMO){ ini.setTime(base.getTime()); ini.setDate(ini.getDate()+(base.getHours()>=PRIMER?1:0)); ini.setHours(PRIMER,mm,0,0); }
+  if(ini.getHours()<PRIMER) ini.setHours(PRIMER,mm,0,0);
   const fin=new Date(ini); if(fin.getHours()<ULTIMO) fin.setHours(fin.getHours()+1);
   return {base,ini,fin};
 }
@@ -1454,7 +1457,7 @@ document.getElementById("deYa").onclick=()=>{$("demoEnd").classList.remove("on")
 
 /* ---- cuenta regresiva al próximo sorteo ---- */
 function proxSorteo(l){
-  const st=ST.lots[l.id]||{}; let min=0;
+  const st=ST.lots[l.id]||{}; let min=minLot(l.id);
   const it=st.dia&&st.dia.items&&st.dia.items.length?st.dia.items[st.dia.items.length-1]:null;
   if(it&&it.hora){ const m=+String(it.hora).split(":")[1]; if(!isNaN(m)) min=m; }
   const now=new Date(), d=new Date(now);
