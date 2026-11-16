@@ -264,6 +264,7 @@
   .soc a span{font-size:16px}
   .soc .yt{background:rgba(255,40,40,.16);border:1px solid rgba(255,60,60,.6)} .soc .yt:hover{box-shadow:0 0 16px rgba(255,60,60,.5)}
   .soc .ig{background:rgba(225,48,108,.16);border:1px solid rgba(225,80,160,.6)} .soc .ig:hover{box-shadow:0 0 16px rgba(225,80,160,.5)}
+  .soc .fb{background:rgba(24,119,242,.16);border:1px solid rgba(24,119,242,.65)} .soc .fb:hover{box-shadow:0 0 16px rgba(24,119,242,.55)}
   .soc .tt{background:rgba(46,242,255,.12);border:1px solid rgba(46,242,255,.55)} .soc .tt:hover{box-shadow:0 0 16px rgba(46,242,255,.5)}
   .appsoc{margin:12px 0 4px;max-width:520px}
   @media(max-width:700px){body.inapp .appsoc{margin:0 0 12px}}
@@ -427,6 +428,19 @@
   .pk.v69 b{color:#ff8af7}
   .pk .v69t{position:absolute;top:5px;left:7px;z-index:3;font:700 13px sans-serif;color:#ff8af7}
   .mbar .pks span.v69{color:#ff8af7;border-color:rgba(255,61,242,.55);background:rgba(255,61,242,.12)}
+  .rank{margin:14px 0 4px;border:1px solid var(--line);border-radius:16px;padding:12px;background:rgba(10,16,34,.6)}
+  .rank .rh{color:var(--cyan);font:700 12.5px "Orbitron",sans-serif;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+  .rr{display:grid;grid-template-columns:18px 32px 1fr auto;align-items:center;gap:8px;border:1px solid #24304f;border-radius:12px;padding:7px 10px;margin-top:6px;background:#0a1022}
+  .rr.top{border-color:rgba(255,210,63,.6);background:rgba(255,210,63,.07)}
+  .rr.jl1{border-color:rgba(255,159,28,.45)} .rr.jl2{border-color:rgba(255,59,92,.45)}
+  .rr .ri{color:var(--muted);font-size:12px;text-align:center}
+  .rr .re{font-size:22px;text-align:center}
+  .rr .rn{font-size:15px;font-weight:600}
+  .rr .rn b{color:var(--gold);font-family:"Orbitron",sans-serif;font-size:14px}
+  .rr .rt{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
+  .rr .rt span{font-size:11.5px;border-radius:99px;padding:1px 8px;background:rgba(255,255,255,.07);color:#c9d6ee;font-weight:600}
+  .rr .rs{color:var(--gold);font-size:15px;letter-spacing:1px;white-space:nowrap}
+  .rr .rs i{color:#3a4566;font-style:normal}
 </style>
 </head>
 <body class="locked">
@@ -464,7 +478,7 @@
       <div class="soc">
       <a class="yt" href="https://youtube.com/@rapronosticos" target="_blank" rel="noopener"><span>▶️</span>YouTube</a>
       <a class="ig" href="https://www.instagram.com/ra.pronosticos" target="_blank" rel="noopener"><span>📸</span>Instagram</a>
-      <a class="tt" href="https://www.tiktok.com/@rapronosticos2" target="_blank" rel="noopener"><span>🎵</span>TikTok</a>
+      <a class="fb" href="https://www.facebook.com/share/1D9qPgduab/" target="_blank" rel="noopener"><span>📘</span>Facebook</a>
     </div>
     </div>
   </div>
@@ -483,7 +497,7 @@
   <div class="soc appsoc">
       <a class="yt" href="https://youtube.com/@rapronosticos" target="_blank" rel="noopener"><span>▶️</span>YouTube</a>
       <a class="ig" href="https://www.instagram.com/ra.pronosticos" target="_blank" rel="noopener"><span>📸</span>Instagram</a>
-      <a class="tt" href="https://www.tiktok.com/@rapronosticos2" target="_blank" rel="noopener"><span>🎵</span>TikTok</a>
+      <a class="fb" href="https://www.facebook.com/share/1D9qPgduab/" target="_blank" rel="noopener"><span>📘</span>Facebook</a>
     </div>
   <p class="sub">Toca el animalito que <b>acaba de salir</b>. El bot marca las combinaciones de la guía de esa lotería y lleva la cuenta de si aciertan en los sorteos siguientes.</p>
 
@@ -659,6 +673,27 @@ function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includ
 const PAR69={"06":["09"],"09":["06"],"16":["19"],"19":["16"],"26":["29"],"29":["26"]};
 const PAR69G={"16":["19","61"],"19":["16","61"],"61":["16","19"]};
 function par69(id,n){ return (id==="guacharo"&&PAR69G[n])?PAR69G[n]:(PAR69[n]||[]); }
+/* ---- los que más señales tienen (en Jugada) ---- */
+function rankHtml(l,st,last,arr,P){
+  if(!arr||arr.length<2) return "";
+  const sn=st.cfg.sal==null?100:st.cfg.sal, h=sn?st.hist.slice(-sn):st.hist.slice();
+  const cnt={}; h.forEach(k=>cnt[k]=(cnt[k]||0)+1);
+  const top=Object.keys(cnt).filter(k=>cnt[k]>0).sort((a,b)=>cnt[b]-cnt[a]).slice(0,10);
+  const H=st.hist, ac={}; for(let i=0;i<H.length-1;i++) if(H[i]===last) ac[H[i+1]]=(ac[H[i+1]]||0)+1;
+  const rows=arr.map(([n,c])=>{
+    const lv=jLevel(st,n), sal=top.includes(n), a=ac[n]||0, v=P.vadd&&P.vadd.has(n);
+    const sc=(c-1)*2+(sal?2:0)+Math.min(a,3)*1.5;
+    const st3=lv?0:(sc>=4?3:sc>=2?2:sc>0?1:0);
+    const tags=[];
+    if(c>1) tags.push("×"+c+" en la guía");
+    if(sal) tags.push("🔥 salidor");
+    if(a) tags.push("✓ acertó "+a+(a===1?" vez":" veces"));
+    if(v) tags.push("⇄ regla 6⇄9");
+    if(lv) tags.push("🔒 "+(lv===2?"jaula fuerte ":"jaula ")+daysSince(st.last[n])+"d");
+    return {n,c,lv,sc,st3,tags};
+  }).sort((x,y)=>(!!x.lv-!!y.lv)||(y.sc-x.sc)||(y.c-x.c));
+  return `<div class="rank"><div class="rh">◆ Los que más señales tienen</div>${rows.map((r,i)=>`<div class="rr${i===0&&!r.lv&&r.st3?" top":""}${r.lv?" jl"+r.lv:""}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${r.tags.length?`<div class="rt">${r.tags.map(t=>`<span>${t}</span>`).join("")}</div>`:""}</div><span class="rs">${r.lv?"—":"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`;
+}
 function orden69(arr,P){
   if(!P.vadd||!P.vadd.size) return arr;
   const out=[];
@@ -846,6 +881,7 @@ function render(){
       ${ventanaHtml(st)}
       <div class="picks">${arr.map(([n,c])=>{const lv=jLevel(st,n);
         return `<div class="pk${contSet.has(n)?" cont":""}${lv?" j"+lv:""}${P.vadd.has(n)?" v69":""}">${P.vadd.has(n)?`<span class="v69t">⇄</span>`:""}${c>1?`<span class="cnt">×${c}</span>`:""}${lv?`<i class="cage"></i><span class="pjt">${lv===2?"JAULA FUERTE":"JAULA"}</span><span class="pjd">${daysSince(st.last[n])}d</span>`:""}<span class="e">${l.A[n][1]}</span><b>${n}</b>${esc(l.A[n][0])}${lv?`<span class="pno">${lv===2?"Jaula fuerte · no jugarlo":"Jaula · no jugarlo"}</span>`:""}</div>`;}).join("")}</div>
+      ${rankHtml(l,st,last,arr,P)}
       <div class="chains">${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>
       <div class="note">Probabilidad real de que salga alguno en el próximo sorteo: <b>${arr.length} de ${N} (${fmt(arr.length/N*100)} %)</b>, igual que con cualquier otro grupo de ${arr.length} ${arr.length===1?"animal":"animales"}.</div>`;
   }
@@ -924,7 +960,7 @@ build();
 
 /* ---- pie de los mensajes copiados ---- */
 const FOOTER="\n\n━━━━━━━━━━━━\n💎 *Suscripciones y Recargas*\n🤝 Aliado Comercial: *Agencia Betcom*\n💬 WhatsApp de Soporte:\n+58 424-7467906\n+58 424-7616909"
-  +"\n\n📲 *Síguenos:*\n▶️ YouTube: https://youtube.com/@rapronosticos\n📸 Instagram: https://www.instagram.com/ra.pronosticos\n🎵 TikTok: https://www.tiktok.com/@rapronosticos2";
+  +"\n\n📲 *Síguenos:*\n▶️ YouTube: https://youtube.com/@rapronosticos\n📸 Instagram: https://www.instagram.com/ra.pronosticos\n📘 Facebook: https://www.facebook.com/share/1D9qPgduab/";
 function copyTxt(txt,btn,label){
   const done=ok=>{btn.classList.toggle("ok",ok);btn.textContent=ok?"✓ ¡Copiado!":"No se pudo copiar";clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.classList.remove("ok");btn.textContent=label;},2000);};
   const fb=()=>{try{const ta=document.createElement("textarea");ta.value=sinDib(txt);ta.setAttribute("readonly","");ta.style.position="absolute";ta.style.left="-9999px";document.body.appendChild(ta);ta.select();const ok=document.execCommand("copy");ta.remove();done(ok);}catch(e){done(false);}};
