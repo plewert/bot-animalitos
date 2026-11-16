@@ -480,6 +480,31 @@
   .pkhead{display:flex;align-items:center;gap:8px;margin:10px 0 6px;color:var(--gold);font-weight:700}
   .pkcp{margin-left:auto;border:1px solid rgba(46,242,255,.6);color:var(--cyan);background:rgba(46,242,255,.1);border-radius:99px;padding:3px 11px;font:600 13px "Rajdhani",sans-serif;cursor:pointer}
   .pkcp.ok{border-color:rgba(45,255,138,.6);color:var(--grn)}
+  .senal{margin:14px 0 4px;border:1px solid rgba(45,255,138,.35);border-radius:16px;padding:12px;background:rgba(8,20,24,.6)}
+  .senal .sgh{display:flex;align-items:center;gap:8px;color:var(--grn);font:700 13px "Orbitron",sans-serif;letter-spacing:.08em;text-transform:uppercase}
+  .senal .sgh small{margin-left:auto;font:600 12px "Rajdhani",sans-serif;letter-spacing:0;text-transform:none;color:var(--muted)}
+  .senal .sgsub{font-size:12.5px;color:var(--muted);margin:3px 0 4px}
+  .sgr{border:1px solid #24304f;border-radius:12px;padding:7px 10px;margin-top:6px;background:#0a1022;cursor:pointer}
+  .sgr.top{border-color:rgba(255,210,63,.6);background:rgba(255,210,63,.06)}
+  .sgl{display:grid;grid-template-columns:18px 32px 1fr auto;gap:8px;align-items:center}
+  .sgl .ri{color:var(--muted);font-size:12px;text-align:center}.sgl .re{font-size:22px;text-align:center}
+  .sgl .rn{font-size:15px;font-weight:600}.sgl .rn b{color:var(--gold);font-family:"Orbitron",sans-serif;font-size:14px}
+  .sgb{display:flex;gap:2px;align-items:flex-end;height:19px;justify-content:flex-end}
+  .sgb i{width:5px;border-radius:2px;background:#2a3558}.sgb i.on{background:#2dff8a}.sgr.top .sgb i.on{background:#ffd23f}
+  .sgt{font-size:11px;color:var(--muted);text-align:right}
+  .sgd{display:none;margin-top:7px;border-top:1px solid #1d2742;padding-top:6px}
+  .sgr.open .sgd{display:block}
+  .sgf{display:grid;grid-template-columns:minmax(0,1fr) 70px 30px;gap:6px;align-items:center;font-size:12.5px;color:#c9d6ee;margin-top:3px}
+  .sgf .b{height:6px;border-radius:9px;background:#1d2742;overflow:hidden}.sgf .b i{display:block;height:100%;background:var(--cyan)}
+  .sgf .v{color:var(--muted);text-align:right;font-weight:700}
+  .sgbtns{display:flex;gap:6px;margin-top:10px}
+  .sgbtns button,.senal .sgh .sgset{flex:1;border:1px solid rgba(46,242,255,.6);color:var(--cyan);background:rgba(46,242,255,.08);border-radius:99px;padding:6px;font:600 13px "Rajdhani",sans-serif;cursor:pointer}
+  .senal .sgh .sgset{flex:0 0 auto;margin-left:auto;padding:3px 10px;letter-spacing:0;text-transform:none}
+  .sgbtns button.ok{border-color:rgba(45,255,138,.6);color:var(--grn)}
+  .sgcfg{margin-top:8px;display:grid;gap:6px;border:1px solid #24304f;border-radius:12px;padding:9px}
+  .sgcfg[hidden]{display:none}
+  .sgcfg label{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px}
+  .sgcfg input{width:18px;height:18px;accent-color:#2ef2ff}
 </style>
 </head>
 <body class="locked">
@@ -718,7 +743,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611161729";
+const BUILD="202611161747";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -950,7 +975,7 @@ function render(){
       <div class="pkhead"><span>🎯 Animales para jugar</span><button class="pkcp" type="button">⧉ Copiar</button></div>
       <div class="picks">${arr.map(([n,c])=>{const lv=jLevel(st,n);
         return `<div class="pk${contSet.has(n)?" cont":""}${lv?" j"+lv:""}${P.vadd.has(n)?" v69":""}">${P.vadd.has(n)?`<span class="v69t">⇄ 🔥</span>`:""}${c>1?`<span class="cnt">×${c}</span>`:""}${lv?`<i class="cage"></i><span class="pjt">${lv===2?"JAULA FUERTE":"JAULA"}</span><span class="pjd">${daysSince(st.last[n])}d</span>`:""}<span class="e">${l.A[n][1]}</span><b>${n}</b>${esc(l.A[n][0])}${lv?`<span class="pno">${lv===2?"Jaula fuerte · no jugarlo":"Jaula · no jugarlo"}</span>`:""}</div>`;}).join("")}</div>
-      ${rankHtml(l,st,last,arr,P)}
+      ${rankHtml(l,st,last,arr,P)}${senalHtml(l,st,last,P)}
       <div class="chains">${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>
       <div class="note">Probabilidad real de que salga alguno en el próximo sorteo: <b>${arr.length} de ${N} (${fmt(arr.length/N*100)} %)</b>, igual que con cualquier otro grupo de ${arr.length} ${arr.length===1?"animal":"animales"}.</div>`;
   }
@@ -1544,6 +1569,58 @@ document.addEventListener("click",e=>{
   const arr=orden69([...P.now.entries()].sort((a,c)=>l.order.indexOf(a[0])-l.order.indexOf(c[0])),P);
   const lin=arr.map(([n,c])=>{ const lv=jLevel(st,n); return (P.vadd.has(n)?"⇄ ":"")+l.A[n][1]+" "+n+" "+l.A[n][0]+(c>1?" ×"+c:"")+(lv?" ("+(lv===2?"jaula fuerte":"jaula")+" · no jugarlo)":""); });
   copyTxt("🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+horaSalio(st)+"\n\n🎯 *Animales para jugar en el próximo sorteo:*\n"+lin.join("\n")+ventanaTxt(st)+FOOTER,b,"⧉ Copiar");
+});
+
+/* ---- 📡 Señal: junta todos los datos y da puntos a cada animal ---- */
+function SG_DATOS(){ return [["guia","📖 Guía"],["vol","⇄ Volteos"],["vf","🐾 Veneno ⇄ felinos"],["sal","🔥 Salidores"],["ac","✓ Aciertos anteriores"],["jaula","🔒 Jaulas (restan)"]]; }
+function sgOff(){ try{ return JSON.parse(localStorage.getItem("bot-senal-off")||"[]"); }catch(e){ return []; } }
+function senalCalc(l,st,last,P){
+  const off=sgOff(), on=k=>!off.includes(k);
+  const sn=st.cfg.sal==null?100:st.cfg.sal, h=sn?st.hist.slice(-sn):st.hist.slice();
+  const cnt={}; h.forEach(k=>cnt[k]=(cnt[k]||0)+1);
+  const top=[...topSalidores()], H=st.hist, ac={};
+  for(let i=0;i<H.length-1;i++) if(H[i]===last) ac[H[i+1]]=(ac[H[i+1]]||0)+1;
+  const vf=vfInfo(last);
+  const out=l.order.map(n=>{
+    const f=[]; let sc=0;
+    const c=P.now.get(n)||0, v=P.vadd&&P.vadd.has(n);
+    if(on("guia")&&c&&!v){ const p=2*c; f.push(["📖 Guía"+(c>1?" (×"+c+")":""),p]); sc+=p; }
+    if(on("vol")&&v){ f.push(["⇄ Volteo de "+P.vadd.get(n),2]); sc+=2; }
+    if(on("vf")&&vf&&vf.nums.includes(n)){ f.push([(vf.cls==="vff"?"🐾 Felino (salió veneno)":"☠ Veneno (salió felino)"),2]); sc+=2; }
+    const r=top.indexOf(n);
+    if(on("sal")&&r>=0){ const p=r<3?3:2; f.push(["🔥 Salidor ("+(cnt[n]||0)+" de "+h.length+")",p]); sc+=p; }
+    if(on("ac")&&ac[n]){ const p=Math.min(ac[n],3); f.push(["✓ Acertó "+ac[n]+(ac[n]===1?" vez":" veces")+" tras el "+last,p]); sc+=p; }
+    const lv=jLevel(st,n);
+    if(on("jaula")&&lv){ f.push(["🔒 "+(lv===2?"Jaula fuerte":"Jaula")+" "+daysSince(st.last[n])+"d",-3]); sc-=3; }
+    return {n,sc,f};
+  }).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc||l.order.indexOf(a.n)-l.order.indexOf(b.n)).slice(0,5);
+  out.forEach(x=>x.lv=x.sc>=8?5:x.sc>=6?4:x.sc>=4?3:x.sc>=2?2:1);
+  return out;
+}
+function SG_TXT(){ return ["","Débil","Baja","Media","Alta","Muy alta"]; }
+function senalHtml(l,st,last,P){
+  const R=senalCalc(l,st,last,P), off=sgOff();
+  const cfg=`<div class="sgcfg" hidden>${SG_DATOS().map(([k,t])=>`<label><input type="checkbox" data-k="${k}" ${off.includes(k)?"":"checked"}> ${t}</label>`).join("")}</div>`;
+  if(!R.length) return `<div class="senal"><div class="sgh"><span>📡 Señal</span><button class="sgset" type="button">⚙ Qué datos usar</button></div>${cfg}<p class="note" style="margin:6px 0 0">No hay datos suficientes para dar una señal todavía.</p></div>`;
+  return `<div class="senal"><div class="sgh"><span>📡 Señal</span><small>tras ${l.A[last][1]} ${last}${horaSalio(st)}</small></div>
+    <div class="sgsub">Los 5 con más puntos juntando todos los datos. Toca uno para ver por qué.</div>
+    ${R.map((x,i)=>`<div class="sgr${i===0?" top":""}"><div class="sgl"><span class="ri">${i+1}</span><span class="re">${l.A[x.n][1]}</span><div class="rn"><b>${x.n}</b> ${esc(l.A[x.n][0])}</div><div><div class="sgb">${[1,2,3,4,5].map(k=>`<i class="${k<=x.lv?"on":""}" style="height:${4+k*3}px"></i>`).join("")}</div><div class="sgt">${SG_TXT()[x.lv]}</div></div></div>
+      <div class="sgd">${x.f.map(([t,p])=>`<div class="sgf"><span>${t}</span><span class="b"><i style="width:${Math.min(100,Math.abs(p)*25)}%${p<0?";background:#ff3b5c":""}"></i></span><span class="v">${p>0?"+"+p:p}</span></div>`).join("")}</div></div>`).join("")}
+    <div class="sgbtns"><button class="sgcp" type="button">⧉ Copiar señal</button><button class="sgset" type="button">⚙ Qué datos usar</button></div>${cfg}</div>`;
+}
+document.addEventListener("click",e=>{
+  const r=e.target.closest(".sgr"); if(r){ r.classList.toggle("open"); return; }
+  const s=e.target.closest(".sgset"); if(s){ const c=s.closest(".senal").querySelector(".sgcfg"); c.hidden=!c.hidden; return; }
+  const b=e.target.closest(".sgcp"); if(!b) return;
+  const l=L(), st=S(), g=GD(), h=st.hist, last=h[h.length-1]; if(last==null) return;
+  const R=senalCalc(l,st,last,predict(g,last,h[h.length-2]));
+  copyTxt("📡 *Señal · "+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+horaSalio(st)+"\n\n"+R.map((x,i)=>(i+1)+". "+l.A[x.n][1]+" "+x.n+" "+l.A[x.n][0]+" — "+SG_TXT()[x.lv]).join("\n")+ventanaTxt(st)+FOOTER,b,"⧉ Copiar señal");
+});
+document.addEventListener("change",e=>{
+  const i=e.target.closest(".sgcfg input"); if(!i) return;
+  const off=[...document.querySelectorAll(".sgcfg input")].filter(x=>!x.checked).map(x=>x.dataset.k);
+  try{ localStorage.setItem("bot-senal-off",JSON.stringify([...new Set(off)])); }catch(err){}
+  render(); setTimeout(()=>{ const c=document.querySelector(".senal .sgcfg"); if(c) c.hidden=false; },0);
 });
 
 function fmtFecha(ms){return new Date(ms).toLocaleString("es-VE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"numeric",minute:"2-digit"});}
