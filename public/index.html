@@ -529,6 +529,11 @@
   .hdw b{display:block;font-size:15px}
   .hpt .hi,.hdw .hi{border-color:rgba(255,210,63,.65)}
   .hdw .hi b{color:var(--gold)}
+  .lkh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .lk{font:700 13px "Rajdhani",sans-serif;border-radius:999px;padding:5px 12px;cursor:pointer;border:1px solid #2fd39a;background:#0c3a2c;color:#9ff0cf;white-space:nowrap;flex:none;letter-spacing:0;text-transform:none}
+  .lk.off{border-color:#f5b83d;background:#3d2a05;color:#ffd27a}
+  .lkmsg{display:none;margin:4px 0 8px;padding:8px 10px;border-radius:10px;background:#3d2a05;border:1px solid #f5b83d;color:#ffd27a;font-size:13px;text-align:center}
+  .lkmsg.on{display:block}
 </style>
 </head>
 <body class="locked">
@@ -599,7 +604,7 @@
 
   <div class="layout">
     <div class="card" id="panelCard" data-view="panel" style="grid-area:panel;align-self:start">
-      <h2><span id="panelTitle">Panel de animalitos</span></h2>
+      <h2 class="lkh"><span id="panelTitle">Panel de animalitos</span><button id="lockBtn" type="button" class="lk">🔒 Bloqueado</button></h2><div id="lockMsg" class="lkmsg"></div>
       <div class="row" id="guideRow" style="margin-top:-6px"></div>
       <div class="legend" id="legend"><span><i style="background:var(--grn);box-shadow:0 0 8px var(--grn)"></i>0 y 00</span><span><i style="background:var(--red);box-shadow:0 0 8px var(--red)"></i>Rojos</span><span><i style="background:var(--vio);box-shadow:0 0 8px var(--vio)"></i>Negros</span><span><i style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></i>Salió</span><span><i style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></i>Compañeros</span></div>
       <div class="grid" id="grid"></div>
@@ -773,7 +778,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171229";
+const BUILD="202611171332";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1776,6 +1781,18 @@ document.getElementById("salir").onclick=()=>lock("");
 setInterval(()=>{const c=CUR;
   if(!DEMO&&c&&document.getElementById("app").style.display!=="none"){const r=check(c,false); if(!r.ok) lock("Tu semana de acceso terminó.");}},60000);
 
+(function candado(){
+  const g=$("grid"), b=$("lockBtn"), m=$("lockMsg"); if(!g||!b) return;
+  let lk=true, tRel=null, tMsg=null;
+  const msg=(t,fijo)=>{ clearTimeout(tMsg); m.textContent=t; m.classList.toggle("on",!!t); if(t&&!fijo) tMsg=setTimeout(()=>m.classList.remove("on"),3500); };
+  const armar=()=>{ clearTimeout(tRel); tRel=setTimeout(()=>poner(true),60000); };
+  function poner(v){ lk=v; b.classList.toggle("off",!v); b.textContent=v?"🔒 Bloqueado":"🔓 Desbloqueado";
+    if(v){ clearTimeout(tRel); msg(""); } else { armar(); msg("🔓 Puedes marcar a mano. Se bloquea solo en 1 minuto.",true); } }
+  g.addEventListener("click",e=>{ if(!e.target.closest(".a")) return;
+    if(lk){ e.stopPropagation(); e.preventDefault(); msg("🔒 Bloqueado: el bot carga los resultados solo. Toca el candado para marcar a mano."); }
+    else armar(); },true);
+  b.onclick=()=>poner(!lk);
+})();
 </script>
 </body>
 </html>
