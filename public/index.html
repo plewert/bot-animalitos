@@ -773,7 +773,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171155";
+const BUILD="202611171205";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -838,11 +838,15 @@ function predict(g,x,p){
     ext.forEach(c=>{ if(c[0]===x&&!usados.has(c)){ combos.push(c.slice()); add(c[1],1); } });
     if(p!=null) ext.forEach(c=>{ if(c[0]===p&&c[1]===x){cont.push(c); add(c[2],1);} });
   }
+  // reglas fijas en las 4 loterías: al salir X, se juega una tripleta completa
+  const REGLA_TRI={"13":[["0","00","31"]]};
+  const extra=(REGLA_TRI[x]||[]).filter(t=>t.every(n=>L().A[n]));
+  extra.forEach(t=>t.forEach(n=>add(n,1)));
   // regla 6⇄9: si uno de estos está para jugar, su compañero entra a su lado
   const vadd=new Map();
   const base=[...now.keys()], subido=new Set(), salT=topSalidores();
   base.forEach(n=>par69(L().id,n).forEach(p=>{ if(!L().A[p]||subido.has(p)||!salT.has(p)||p===x) return; subido.add(p); if(!now.has(p)) vadd.set(p,n); add(p,1); }));
-  return {now,combos,cont,vadd};
+  return {now,combos,cont,vadd,extra};
 }
 
 /* ---- inicio de los sorteos de hoy dentro del historial ---- */
@@ -1017,8 +1021,8 @@ function render(){
       <div class="picks">${arr.map(([n,c])=>{const lv=jLevel(st,n);
         return `<div class="pk${contSet.has(n)?" cont":""}${lv?" j"+lv:""}${P.vadd.has(n)?" v69":""}">${P.vadd.has(n)?`<span class="v69t">⇄ 🔥</span>`:""}${c>1?`<span class="cnt">×${c}</span>`:""}${lv?`<i class="cage"></i><span class="pjt">${lv===2?"JAULA FUERTE":"JAULA"}</span><span class="pjd">${daysSince(st.last[n])}d</span>`:""}<span class="e">${l.A[n][1]}</span><b>${n}</b>${esc(l.A[n][0])}${lv?`<span class="pno">${lv===2?"Jaula fuerte · no jugarlo":"Jaula · no jugarlo"}</span>`:""}</div>`;}).join("")}</div>
       ${rankHtml(l,st,last,arr,P)}${senalHtml(l,st,last,P)}
-      ${(()=>{ const hay=[...P.cont,...P.combos].length>0; TRI_N={n:1};
-        const h=`${hay?'<div class="trih"><span>🎯 Tripletas</span><button class="tricpall" type="button">⧉ Copiar todas</button></div>':""}<div class="chains">${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>`;
+      ${(()=>{ const hay=[...P.cont,...P.combos,...(P.extra||[])].length>0; TRI_N={n:1};
+        const h=`${hay?'<div class="trih"><span>🎯 Tripletas</span><button class="tricpall" type="button">⧉ Copiar todas</button></div>':""}<div class="chains">${(P.extra||[]).map(t=>`<div class="ch chc tri3"><div class="cad"><span class="tnum">Tripleta ${TRI_N.n++}</span>${t.map(n=>tag(l,n,true)).join('<span class="ar">-</span>')}</div><button class="ccp" data-c="${t.join(",")}" data-k="tri">⧉ Copiar</button></div>`).join("")}${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>`;
         TRI_N=null; return h; })()}
       <div class="note">Probabilidad real de que salga alguno en el próximo sorteo: <b>${arr.length} de ${N} (${fmt(arr.length/N*100)} %)</b>, igual que con cualquier otro grupo de ${arr.length} ${arr.length===1?"animal":"animales"}.</div>`;
   }
