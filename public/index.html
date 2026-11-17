@@ -563,6 +563,23 @@
   .cres .r{display:flex;justify-content:space-between;gap:8px}
   .cres .g{color:var(--grn)} .cres .o{color:#ffd27a}
   .tnum.cmb{background:#3d2a05;color:#ffd27a;border-color:#f5b83d}
+  .pron{margin:12px 0 4px;padding:10px 12px;border:1px solid #f5b83d;border-radius:16px;background:rgba(245,184,61,.04)}
+  .pron .prh{display:flex;align-items:center;gap:8px;color:#ffd27a;font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:14px}
+  .pron .prs{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:13.5px;margin:4px 0 6px}
+  .pron .prs b{color:var(--cyan);white-space:nowrap}
+  .pron .prr{display:flex;gap:10px;align-items:center;padding:9px 10px;margin:6px 0;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .pron .prr.top{border-color:#f5b83d;background:#2a1f06}
+  .pron .pre{font-size:32px;line-height:1}
+  .pron .prn{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:18px}
+  .pron .prn b{color:#ffd27a}
+  .pron .prt{display:inline-block;margin:3px 4px 0 0;padding:1px 8px;border-radius:99px;font-size:12.5px;font-weight:700;border:1px solid;text-transform:none;letter-spacing:0}
+  .pron .t-g{border-color:#f5b83d;background:#3d2a05;color:#ffd27a} .pron .t-p{border-color:#2fd39a;background:#0c3a2c;color:#9ff0cf}
+  .pron .t-h{border-color:#2ef2ff;background:rgba(46,242,255,.1);color:#9ff7ff} .pron .t-c{border-color:#ff7a3c;background:rgba(255,90,60,.15);color:#ffb08a}
+  .pron .t-v{border-color:#b18cff;background:rgba(177,140,255,.12);color:#d8c6ff}
+  .pron .prb{display:inline-flex;gap:2px;align-items:flex-end;flex:none}
+  .pron .prb i{width:5px;border-radius:2px;background:#26324f}
+  .pron .prb i.on{background:#2fd39a} .pron .prb.max i.on{background:#ff3b3b}
+  .pron .prcp{width:100%;margin-top:6px;padding:7px;border-radius:99px;border:1px solid rgba(46,242,255,.6);background:rgba(46,242,255,.1);color:var(--cyan);font:700 15px "Rajdhani",sans-serif;cursor:pointer}
 </style>
 </head>
 <body class="locked">
@@ -827,7 +844,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171621";
+const BUILD="202611171916";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1080,7 +1097,7 @@ function render(){
       <div class="pkhead"><span>🎯 Animales para jugar</span><button class="pkcp" type="button">⧉ Copiar</button></div>
       <div class="picks">${arr.map(([n,c])=>{const lv=jLevel(st,n);
         return `<div class="pk${contSet.has(n)?" cont":""}${lv?" j"+lv:""}${P.vadd.has(n)?" v69":""}">${P.vadd.has(n)?`<span class="v69t">⇄ 🔥</span>`:""}${c>1?`<span class="cnt">×${c}</span>`:""}${lv?`<i class="cage"></i><span class="pjt">${lv===2?"JAULA FUERTE":"JAULA"}</span><span class="pjd">${daysSince(st.last[n])}d</span>`:""}<span class="e">${l.A[n][1]}</span><b>${n}</b>${esc(l.A[n][0])}${lv?`<span class="pno">${lv===2?"Jaula fuerte · no jugarlo":"Jaula · no jugarlo"}</span>`:""}</div>`;}).join("")}</div>
-      ${rankHtml(l,st,last,arr,P)}${senalHtml(l,st,last,P)}
+      ${pronHtml(l,st,last,P)}${rankHtml(l,st,last,arr,P)}${senalHtml(l,st,last,P)}
       ${(()=>{ const hay=[...P.cont,...P.combos,...(P.extra||[])].length>0; TRI_N={n:1};
         const h=`${hay?'<div class="trih"><span>🎯 Tripletas</span><button class="tricpall" type="button">⧉ Copiar todas</button></div>':""}<div class="chains">${P.combos.filter(c=>c.length>=5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}${(P.extra||[]).map(t=>`<div class="ch chc tri3"><div class="cad"><span class="tnum">Tripleta ${TRI_N.n++}</span>${t.map(n=>tag(l,n,n!==last)).join('<span class="ar">-</span>')}</div><button class="ccp" data-c="${t.join(",")}" data-k="tri">⧉ Copiar</button></div>`).join("")}${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.filter(c=>c.length<5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>`;
         TRI_N=null; return h; })()}`;
@@ -1740,6 +1757,48 @@ function senalCalc(l,st,last,P){
   return out;
 }
 function SG_TXT(){ return ["","Débil","Baja","Media","Alta","Muy alta"]; }
+/* ===== 🎯 Pronóstico del próximo sorteo: 3 animales con el porqué ===== */
+function pronCalc(l,st,last,P){
+  const off=sgOff(), on=k=>!off.includes(k), dos=x=>String(x).padStart(2,"0");
+  const px=proxSorteo(l), hk=dos(px.d.getHours())+":"+dos(px.d.getMinutes());
+  const hh=px.d.getHours(), hLab=((hh%12)||12)+(px.d.getMinutes()?":"+dos(px.d.getMinutes()):"")+(hh<12?" a. m.":" p. m.");
+  let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
+  const hc={}; let hT=0; const cy={}, c7={}; const lim=new Date(); lim.setDate(lim.getDate()-7); const fl=lim.toISOString().slice(0,10);
+  D.forEach(([f,it])=>it.forEach(([h,n])=>{ if(!l.A[n]) return; cy[n]=(cy[n]||0)+1; if(f>=fl) c7[n]=(c7[n]||0)+1; if(h===hk){ hc[n]=(hc[n]||0)+1; hT++; } }));
+  const nd=D.length, hEsp=hT/l.order.length;
+  const H=st.hist, ac={}; let acT=0; for(let i=0;i<H.length-1;i++) if(H[i]===last){ ac[H[i+1]]=(ac[H[i+1]]||0)+1; acT++; }
+  const acEsp=acT/l.order.length, top=[...topSalidores()];
+  const R=l.order.map(n=>{ let sc=0; const t=[];
+    const c=P.now.get(n)||0, v=P.vadd&&P.vadd.has(n);
+    if(on("guia")&&c&&!v){ sc+=2*c; t.push(["g","📖 En tu guía"+(c>1?" ×"+c:"")]); }
+    if(on("vol")&&v){ sc+=2; t.push(["v","⇄ Volteo"]); }
+    const r=top.indexOf(n); if(on("sal")&&r>=0){ sc+=r<3?3:2; t.push(["c","📈 Salidor"]); }
+    if(on("ac")&&acEsp>=2&&ac[n]){ const q=ac[n]/acEsp; if(q>=1.4){ sc+=q>=1.8?3:2; t.push(["p","🔁 Pareja fuerte del "+last]); } }
+    if(hT>=30&&hc[n]>=Math.max(3,hEsp*1.4)){ sc+=2; t.push(["h","⏰ Salidor a las "+hLab]); }
+    if(nd>=30&&(c7[n]||0)>=3&&c7[n]>=2*(cy[n]/nd*7)){ sc+=2; t.push(["c","🔥 Caliente esta semana"]); }
+    if(on("jaula")&&jLevel(st,n)) sc-=3;
+    return {n,sc,t};
+  }).filter(x=>x.sc>0&&x.t.length&&x.n!==last).sort((a,b)=>b.sc-a.sc||b.t.length-a.t.length||l.order.indexOf(a.n)-l.order.indexOf(b.n)).slice(0,3);
+  R.forEach(x=>x.lv=x.sc>=9?5:x.sc>=7?4:x.sc>=5?3:x.sc>=3?2:1);
+  return {R,hLab,man:!px.hoy};
+}
+function pronHtml(l,st,last,P){
+  if(!last||!l.A[last]) return "";
+  let o; try{ o=pronCalc(l,st,last,P); }catch(e){ return ""; }
+  if(!o.R.length) return "";
+  return `<div class="pron"><div class="prh">🎯 Pronóstico del próximo sorteo</div>
+    <div class="prs"><span>${esc(l.name)} · tras ${l.A[last][1]} ${last}${horaSalio(st)}</span><b>⏰ ${o.man?"Mañana ":""}${o.hLab}</b></div>
+    ${o.R.map((x,i)=>`<div class="prr${i===0?" top":""}"><div class="pre">${l.A[x.n][1]}</div><div style="flex:1;min-width:0">
+      <div class="prn"><span><b>${x.n}</b> ${esc(l.A[x.n][0])}</span><span class="prb${x.lv>=5?" max":""}">${[1,2,3,4,5].map(k=>`<i class="${k<=x.lv?"on":""}" style="height:${4+k*3}px"></i>`).join("")}</span></div>
+      <div>${x.t.map(([c,t])=>`<span class="prt t-${c}">${esc(t)}</span>`).join("")}</div></div></div>`).join("")}
+    <button class="prcp" type="button">⧉ Copiar pronóstico</button></div>`;
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest(".prcp"); if(!b) return;
+  const l=L(), st=S(), last=st.hist[st.hist.length-1]; if(!last) return;
+  try{ const P=predict(GD(),last,st.hist[st.hist.length-2]), o=pronCalc(l,st,last,P);
+    copyTxt("🎯 *Pronóstico · "+l.name+"*\n⏰ Sorteo de "+(o.man?"mañana a ":"")+"las "+o.hLab+"\n"+o.R.map(x=>l.A[x.n][1]+" "+x.n+" "+l.A[x.n][0]).join("\n")+FOOTER,b,"⧉ Copiar pronóstico"); }catch(err){}
+});
 function senalHtml(l,st,last,P){
   const R=senalCalc(l,st,last,P), off=sgOff();
   const cfg=`<div class="sgcfg" hidden>${SG_DATOS().map(([k,t])=>`<label><input type="checkbox" data-k="${k}" ${off.includes(k)?"":"checked"}> ${t}</label>`).join("")}</div>`;
