@@ -778,7 +778,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171332";
+const BUILD="202611171448";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1039,6 +1039,7 @@ function render(){
     if(any) ac++;
   }
   hist.forEach((n,i)=>{
+    if(i<hist.length-300) return;
     if(i===0){rows.push({n,t:'<span class="tag na">primer registro</span>'});return;}
     let hit=false; for(let j=1;j<=W&&i-j>=0;j++) if(predict(g,hist[i-j],hist[i-j-1]).now.has(n)) hit=true;
     rows.push({n,t:hit?'<span class="tag ok">la guía lo marcó ✓</span>':'<span class="tag no">no estaba marcado</span>'});
@@ -1048,7 +1049,7 @@ function render(){
   $("sAzar").textContent=ev?fmt(exp/ev*100)+" %":"—";
   $("sInv").textContent=fmt(inv);
   const bal=ganado-inv, sb=$("sBal"); sb.textContent=(bal>0?"+":"")+fmt(bal); sb.className="v "+(bal>0?"pos":bal<0?"neg":"");
-  $("hist").innerHTML=rows.reverse().slice(0,300).map((r,k)=>`<div><span>#${rows.length-k} · ${l.A[r.n][1]} ${r.n} ${esc(l.A[r.n][0])}</span>${r.t}</div>`).join("");
+  $("hist").innerHTML=rows.reverse().slice(0,300).map((r,k)=>`<div><span>#${hist.length-k} · ${l.A[r.n][1]} ${r.n} ${esc(l.A[r.n][0])}</span>${r.t}</div>`).join("");
   renderJaulas();
   if(typeof renderMbar==="function") renderMbar();
   try{autoMsg();}catch(e){}
@@ -1298,9 +1299,28 @@ async function autoCargar(id,manual){
     else if(partes.length) AUTO.estado[id]={c:"ok",t:"Jaulas al día · revisado "+hh};
     else AUTO.estado[id]={c:"err",t:"Sin resultados automáticos para "+lot.name+" todavía. Puedes marcar los animales a mano."};
     save(); if(L().id===id){render();}
+    histServidor(id,d.hoy);
   }catch(e){
     AUTO.estado[id]={c:"err",t:"No se pudo conectar con los resultados de hoy. Puedes marcar los animales a mano."};
   }finally{AUTO.cargando[id]=false; if(L().id===id) autoMsg();}
+}
+/* ---- todos los teléfonos usan el mismo historial: el del servidor (1 año) ---- */
+async function histServidor(id,hoy){
+  try{
+    const D=await cargarHist(id); if(!D||D.err||!D.dias||!D.dias.length) return;
+    const lot=LOTS.find(x=>x.id===id), st=ST.lots[id]; if(!st) return;
+    const pasado=[], ult={};
+    D.dias.forEach(([f,it])=>{ if(f>=hoy) return;
+      it.slice().sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0).forEach(([h,a])=>{ if(lot.A[a]){ pasado.push(a); ult[a]=f; } }); });
+    if(!pasado.length) return;
+    const hoyPart=st.hoy&&st.hoy.fecha===hoy?st.hist.slice(st.hoy.ini):[];
+    const nuevo=pasado.concat(hoyPart);
+    if(st.srvN===pasado.length&&st.hist.length===nuevo.length) return;
+    st.hist=nuevo; st.hoy={fecha:hoy,ini:pasado.length}; st.srvN=pasado.length; st.lastUndo=[];
+    if(!st.last) st.last={};
+    for(const n in ult){ if(!st.last[n]||st.last[n]<ult[n]) st.last[n]=ult[n]; }
+    save(); if(L().id===id) render();
+  }catch(e){}
 }
 function autoTodas(manual){ LOTS.forEach(l=>autoCargar(l.id,manual)); }
 setInterval(()=>{ if(!document.body.classList.contains("locked")) autoTodas(false); },5*60000);
@@ -1641,8 +1661,9 @@ function senalCalc(l,st,last,P){
   const off=sgOff(), on=k=>!off.includes(k);
   const sn=st.cfg.sal==null?100:st.cfg.sal, h=sn?st.hist.slice(-sn):st.hist.slice();
   const cnt={}; h.forEach(k=>cnt[k]=(cnt[k]||0)+1);
-  const top=[...topSalidores()], H=st.hist, ac={};
-  for(let i=0;i<H.length-1;i++) if(H[i]===last) ac[H[i+1]]=(ac[H[i+1]]||0)+1;
+  const top=[...topSalidores()], H=st.hist, ac={}; let acT=0;
+  for(let i=0;i<H.length-1;i++) if(H[i]===last){ ac[H[i+1]]=(ac[H[i+1]]||0)+1; acT++; }
+  const acEsp=acT/l.order.length;
   const vf=vfInfo(last);
   const out=l.order.map(n=>{
     const f=[]; let sc=0;
@@ -1652,12 +1673,13 @@ function senalCalc(l,st,last,P){
     if(on("vf")&&vf&&vf.nums.includes(n)){ f.push([(vf.cls==="vff"?"🐾 Felino (salió veneno)":"☠ Veneno (salió felino)"),2]); sc+=2; }
     const r=top.indexOf(n);
     if(on("sal")&&r>=0){ const p=r<3?3:2; f.push(["🔥 Salidor ("+(cnt[n]||0)+" de "+h.length+")",p]); sc+=p; }
-    if(on("ac")&&ac[n]){ const p=Math.min(ac[n],3); f.push(["✓ Acertó "+ac[n]+(ac[n]===1?" vez":" veces")+" tras el "+last,p]); sc+=p; }
+    if(on("ac")&&ac[n]){ const q=acEsp>=2?ac[n]/acEsp:0, p=acEsp>=2?(q>=1.8?3:q>=1.4?2:q>=1.15?1:0):Math.min(ac[n],3);
+      if(p){ f.push(["✓ Salió "+ac[n]+(ac[n]===1?" vez":" veces")+" tras el "+last+(acEsp>=2?" (lo normal: "+Math.round(acEsp)+")":""),p]); sc+=p; } }
     const lv=jLevel(st,n);
     if(on("jaula")&&lv){ f.push(["🔒 "+(lv===2?"Jaula fuerte":"Jaula")+" "+daysSince(st.last[n])+"d",-3]); sc-=3; }
     return {n,sc,f};
   }).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc||l.order.indexOf(a.n)-l.order.indexOf(b.n)).slice(0,5);
-  out.forEach(x=>x.lv=x.sc>=8?5:x.sc>=6?4:x.sc>=4?3:x.sc>=2?2:1);
+  out.forEach(x=>x.lv=x.sc>=9?5:x.sc>=7?4:x.sc>=5?3:x.sc>=3?2:1);
   return out;
 }
 function SG_TXT(){ return ["","Débil","Baja","Media","Alta","Muy alta"]; }
