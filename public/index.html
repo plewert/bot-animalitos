@@ -840,11 +840,12 @@ const GD=()=>L().guides.find(g=>g.id===S().cfg.guide);
 const GRUPOS=[
   {lots:["activo","granjita","guacharo","inter"],a:["0","00","14","17"]},
   {lots:["activo","granjita","guacharo","inter"],a:["02","15","20","26","29"]},
-  {lots:["granjita","inter"],a:["09","11","20","34"]}
+  {lots:["granjita","inter"],a:["09","11","20","34"]},
+  {lots:["activo","granjita","inter"],a:["0","03","04","27","30","32"]}
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171916";
+const BUILD="202611171932";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
