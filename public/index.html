@@ -747,7 +747,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611162016";
+const BUILD="202611162048";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -795,6 +795,9 @@ function orden69(arr,P){
   arr.forEach(y=>{ if(!out.includes(y)) out.push(y); });
   return out;
 }
+/* ---- tripletas agregadas a mano (animal que sale - siguiente - tercero) ---- */
+const CAD_EXTRA={guacharo:[["53","38","32"],["53","33","23"],["53","15","51"]]};
+function cadExtra(id){ return (typeof CAD_EXTRA!=="undefined"&&CAD_EXTRA[id])||[]; }
 function predict(g,x,p){
   const now=new Map(), combos=[], cont=[];
   const add=(n,w)=>now.set(n,(now.get(n)||0)+w);
@@ -803,7 +806,11 @@ function predict(g,x,p){
     g.data.forEach(c=>{ if(c[0]===x){combos.push(c); add(c[1],1);} });
     if(p!=null) g.data.forEach(c=>{ if(c.length>2&&c[0]===p&&c[1]===x){cont.push(c); add(c[2],1);} });
   }else{
-    (g.data[x]||[]).forEach(grp=>{combos.push([x].concat(grp)); grp.forEach(n=>add(n,1));});
+    const ext=cadExtra(L().id);
+    const usados=new Set();
+    (g.data[x]||[]).forEach(grp=>{ const e=grp.length===1&&ext.find(c=>c[0]===x&&c[1]===grp[0]); if(e) usados.add(e); combos.push(e?e.slice():[x].concat(grp)); grp.forEach(n=>add(n,1)); });
+    ext.forEach(c=>{ if(c[0]===x&&!usados.has(c)){ combos.push(c.slice()); add(c[1],1); } });
+    if(p!=null) ext.forEach(c=>{ if(c[0]===p&&c[1]===x){cont.push(c); add(c[2],1);} });
   }
   // regla 6⇄9: si uno de estos está para jugar, su compañero entra a su lado
   const vadd=new Map();
@@ -1018,7 +1025,7 @@ function renderGuide(){
   try{renderVol();}catch(e){}
   const l=L(), g=GD(), q=norm($("gsearch").value.trim());
   const by={}; l.order.forEach(n=>by[n]=gruposDe(l.id,n));
-  if(g.type==="chain") g.data.forEach(c=>by[c[0]]&&by[c[0]].push(c)); else Object.keys(g.data).forEach(k=>g.data[k].forEach(grp=>by[k]&&by[k].push([k].concat(grp))));
+  if(g.type==="chain") g.data.forEach(c=>by[c[0]]&&by[c[0]].push(c)); else { const ext=cadExtra(l.id), us=new Set(); Object.keys(g.data).forEach(k=>g.data[k].forEach(grp=>{ const e=grp.length===1&&ext.find(c=>c[0]===k&&c[1]===grp[0]); if(e) us.add(e); by[k]&&by[k].push(e?e.slice():[k].concat(grp)); })); ext.forEach(c=>{ if(!us.has(c)&&by[c[0]]) by[c[0]].push(c.slice()); }); }
   const items=l.order.filter(n=>by[n].length).filter(n=>{ if(!q) return true; return by[n].some(c=>c.some(x=>x===q||x===q.padStart(2,"0")||norm(l.A[x][0]).includes(q))); });
   $("guideList").innerHTML=items.length?items.map(n=>`<div class="gi"><h3>${l.A[n][1]} ${n} ${esc(l.A[n][0])}</h3>${by[n].map(c=>chainHtml(l,c,g,null,false)).join("")}</div>`).join(""):'<div class="empty" style="color:var(--muted)">Nada coincide con la búsqueda.</div>';
 }
