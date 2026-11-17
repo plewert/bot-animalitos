@@ -827,7 +827,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171604";
+const BUILD="202611171621";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -902,6 +902,8 @@ function predict(g,x,p){
   const vadd=new Map();
   const base=[...now.keys()], subido=new Set(), salT=topSalidores();
   base.forEach(n=>par69(L().id,n).forEach(p=>{ if(!L().A[p]||subido.has(p)||!salT.has(p)||p===x) return; subido.add(p); if(!now.has(p)) vadd.set(p,n); add(p,1); }));
+  // Ballena y Delfín: en tripletas solo salen sus tripletas fijas (menos en Guácharo)
+  if(["0","00"].includes(x)&&extra.length) return {now,combos:[],cont:[],vadd,extra};
   return {now,combos,cont,vadd,extra};
 }
 
