@@ -509,6 +509,26 @@
   .tricpall{margin-left:auto;border:1px solid rgba(46,242,255,.6);color:var(--cyan);background:rgba(46,242,255,.1);border-radius:99px;padding:3px 11px;font:600 13px "Rajdhani",sans-serif;letter-spacing:0;text-transform:none;cursor:pointer}
   .tricpall.ok{border-color:rgba(45,255,138,.6);color:var(--grn)}
   .ch.tri3 .tnum{font:700 11px "Rajdhani",sans-serif;color:var(--gold);border:1px solid rgba(255,210,63,.5);border-radius:6px;padding:1px 6px;margin-right:2px;white-space:nowrap}
+  .hsel{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:700}
+  .hsel select{flex:1;background:#0a1022;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px;font:600 15px "Rajdhani",sans-serif}
+  .hres{display:flex;gap:10px;align-items:center;line-height:1.35}
+  .hres .e{font-size:36px}
+  .hres b{color:var(--gold)} .hres small{color:var(--muted)}
+  .ht{color:var(--cyan);font:700 12px "Orbitron",sans-serif;letter-spacing:.08em;margin:14px 0 6px;text-transform:uppercase}
+  .hbars{display:flex;gap:4px;align-items:flex-end;height:110px;border-bottom:1px solid var(--line)}
+  .hb{flex:1;position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end}
+  .hb i{display:block;background:#2a3558;border-radius:4px 4px 0 0}
+  .hb.hi i{background:var(--gold)}
+  .hb s{position:absolute;left:-1px;right:-1px;height:2px;background:rgba(255,255,255,.75)}
+  .hb .v{position:absolute;top:0;left:0;right:0;text-align:center;font-size:10.5px;color:var(--muted)}
+  .hlb{display:flex;gap:4px;font-size:9.5px;color:var(--muted)} .hlb span{flex:1;text-align:center}
+  .hpt{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .hpt div,.hdw div{border:1px solid #24304f;border-radius:10px;padding:7px 4px;text-align:center;background:#0a1022}
+  .hpt b{display:block;font-size:19px;color:var(--gold)} .hpt small,.hdw small{color:var(--muted);font-size:11px;display:block}
+  .hdw{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:12px}
+  .hdw b{display:block;font-size:15px}
+  .hpt .hi,.hdw .hi{border-color:rgba(255,210,63,.65)}
+  .hdw .hi b{color:var(--gold)}
 </style>
 </head>
 <body class="locked">
@@ -640,6 +660,12 @@
     <div id="triBox"></div>
   </div>
 
+  <div class="card" style="margin-top:16px" id="hcard" data-view="salidores">
+    <h2>📊 Historial de 1 año · <span id="hLot"></span></h2>
+    <div class="hsel"><label for="hSel">Animal:</label><select id="hSel"></select></div>
+    <div id="hBody"><p class="note">Cargando…</p></div>
+  </div>
+
   <div class="card" style="margin-top:16px" data-view="cuentas">
     <h2>Cargar resultados de golpe · <span id="pasteLot"></span></h2>
     <p class="note" style="margin-top:0">Pega resultados pasados, copiados de una página de resultados o de tus notas. Pueden traer horas, fechas y otro texto: el bot busca los animalitos por nombre o por número.</p>
@@ -747,7 +773,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611170717";
+const BUILD="202611171116";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1182,6 +1208,7 @@ function renderTri(l,st,hot,n){
 /* ---- más salidores ---- */
 let SAL_ALL=false;
 function renderSal(){
+  try{ renderHist(); }catch(e){}
   const l=L(), st=S(), N=l.order.length;
   const sn=st.cfg.sal==null?100:st.cfg.sal;
   $("sLot").textContent=l.name;
@@ -1650,6 +1677,55 @@ document.addEventListener("change",e=>{
   try{ localStorage.setItem("bot-senal-off",JSON.stringify([...new Set(off)])); }catch(err){}
   render(); setTimeout(()=>{ const c=document.querySelector(".senal .sgcfg"); if(c) c.hidden=false; },0);
 });
+
+/* ---- 📊 historial de 1 año (lo guarda el servidor) ---- */
+const HCACHE={}; let HSEL={};
+async function cargarHist(id){
+  const c=HCACHE[id]; if(c&&(c.err||Date.now()-c.t<10*60000)&&!c.cargando) return c;
+  const api=(typeof API_URL!=="undefined"&&API_URL)?API_URL:"";
+  if(!api){ HCACHE[id]={err:"sinapi",t:Date.now()}; return HCACHE[id]; }
+  try{ const r=await fetch(api+"/api/historial?lot="+id); const j=await r.json(); if(!j.ok) throw 0; j.t=Date.now(); HCACHE[id]=j; return j; }
+  catch(e){ return {err:"red",t:Date.now()}; }
+}
+function renderHist(){
+  const box=document.getElementById("hBody"); if(!box) return;
+  const l=L(), st=S(), sel=$("hSel"); $("hLot").textContent=l.name;
+  if(sel.dataset.lot!==l.id){ sel.innerHTML=l.order.map(n=>`<option value="${n}">${sinDib(l.A[n][1])} ${n} ${esc(l.A[n][0])}</option>`).join(""); sel.dataset.lot=l.id; }
+  const def=HSEL[l.id]||(st.hist.length?st.hist[st.hist.length-1]:l.order[0]); sel.value=def;
+  sel.onchange=()=>{ HSEL[l.id]=sel.value; pintarHist(); };
+  pintarHist();
+}
+async function pintarHist(){
+  const l=L(), box=$("hBody"), n=$("hSel").value, id=l.id;
+  const D=await cargarHist(id); if(L().id!==id||$("hSel").value!==n) return;
+  if(D.err==="sinapi"){ box.innerHTML='<p class="note">El historial de 1 año está en la página del bot: bot-animalitos.onrender.com</p>'; return; }
+  if(D.err){ box.innerHTML='<p class="note">No se pudo cargar el historial. Revisa tu conexión e intenta otra vez.</p>'; return; }
+  if(!D.dias.length){ box.innerHTML='<p class="note">El servidor todavía está guardando el historial'+(D.faltan?" (faltan "+D.faltan+" días)":"")+'. Vuelve en un rato.</p>'; return; }
+  const NA=l.order.length, hrs={}, horaN={}, partes=[0,0,0], partesT=[0,0,0], dow=[0,0,0,0,0,0,0], dowT=[0,0,0,0,0,0,0];
+  let N=0,c=0,ult=null;
+  const parte=h=>{ const x=+h.split(":")[0]; return x<12?0:x<17?1:2; };
+  D.dias.forEach(([f,it])=>{ const wd=new Date(f+"T12:00:00").getDay(), wi=(wd+6)%7;
+    it.forEach(([h,a])=>{ N++; hrs[h]=(hrs[h]||0)+1; partesT[parte(h)]++; dowT[wi]++;
+      if(a===n){ c++; horaN[h]=(horaN[h]||0)+1; partes[parte(h)]++; dow[wi]++; ult=[f,h]; } }); });
+  const H=Object.keys(hrs).sort(), esp=x=>x/NA, fx=x=>x<10?x.toFixed(1).replace(".",","):Math.round(x);
+  const mx=Math.max(1,...H.map(h=>Math.max(horaN[h]||0,esp(hrs[h]))));
+  const topH=H.reduce((a,h)=>(horaN[h]||0)>(horaN[a]||0)?h:a,H[0]);
+  const hl=h=>{ const [a,m]=h.split(":").map(Number); return ((a%12)||12)+(m?":"+String(m).padStart(2,"0"):"")+(a<12?"a":"p"); };
+  const fmtD=f=>{ const d=new Date(f+"T12:00:00"); return d.getDate()+"/"+(d.getMonth()+1)+"/"+d.getFullYear(); };
+  const PN=["Mañana","Tarde","Noche"], PS=["8 a 11 a. m.","12 a 4 p. m.","5 a 7 p. m."], DN=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+  const topP=partes.indexOf(Math.max(...partes)), topW=dow.indexOf(Math.max(...dow));
+  box.innerHTML=`<div class="hres"><span class="e">${l.A[n][1]}</span><div><b>${n} ${esc(l.A[n][0])}</b><br>Salió <b>${c}</b> ${c===1?"vez":"veces"} en ${N.toLocaleString("es")} sorteos <small>(lo esperado al azar: ${fx(esp(N))})</small><br><small>Del ${fmtD(D.desde)} al ${fmtD(D.hasta)}${ult?" · última vez: "+fmtD(ult[0])+", "+fmtH12(ult[1]):""}</small></div></div>
+  ${D.cargando?`<p class="note" style="margin:6px 0 0">⏳ Todavía se está completando el historial${D.faltan?" (faltan "+D.faltan+" días)":""}.</p>`:""}
+  <div class="ht">◆ Por hora</div>
+  <div class="hbars">${H.map(h=>{const v=horaN[h]||0;return `<div class="hb${c&&h===topH&&v?" hi":""}" title="${hl(h)}: ${v} (esperado ${fx(esp(hrs[h]))})"><span class="v">${v}</span><i style="height:${Math.max(2,v/mx*100)}%"></i><s style="bottom:${esp(hrs[h])/mx*100}%"></s></div>`;}).join("")}</div>
+  <div class="hlb">${H.map(h=>`<span>${hl(h)}</span>`).join("")}</div>
+  <div class="ht">◆ Por parte del día</div>
+  <div class="hpt">${PN.map((p,i)=>`<div class="${c&&i===topP?"hi":""}"><b>${partes[i]}</b><small>${p}<br>${PS[i]}<br>esperado ${fx(esp(partesT[i]))}</small></div>`).join("")}</div>
+  <div class="ht">◆ Por día de la semana</div>
+  <div class="hdw">${DN.map((d,i)=>`<div class="${c&&i===topW?"hi":""}">${d}<b>${dow[i]}</b><small>esp. ${fx(esp(dowT[i]))}</small></div>`).join("")}</div>
+  <p class="note" style="margin:10px 0 0">La rayita blanca en cada barra es lo esperado al azar. Una diferencia pequeña es normal, aunque la lotería sea pareja.</p>`;
+}
+function fmtH12(h){ const [a,m]=String(h).split(":").map(Number); return ((a%12)||12)+":"+String(m||0).padStart(2,"0")+(a<12?" a. m.":" p. m."); }
 
 function fmtFecha(ms){return new Date(ms).toLocaleString("es-VE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"numeric",minute:"2-digit"});}
 function unlock(code,fin){
