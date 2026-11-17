@@ -534,6 +534,34 @@
   .lk.off{border-color:#f5b83d;background:#3d2a05;color:#ffd27a}
   .lkmsg{display:none;margin:4px 0 8px;padding:8px 10px;border-radius:10px;background:#3d2a05;border:1px solid #f5b83d;color:#ffd27a;font-size:13px;text-align:center}
   .lkmsg.on{display:block}
+  .hsep{height:1px;background:var(--line);margin:16px 0 12px}
+  .hbtn{width:100%;margin:8px 0 2px;padding:8px;border-radius:99px;border:1px solid rgba(46,242,255,.6);background:rgba(46,242,255,.1);color:var(--cyan);font:700 15px "Rajdhani",sans-serif;cursor:pointer}
+  .hbtn.sm{width:auto;flex:1;font-size:14px;padding:6px 10px;margin:0}
+  .hbtn.gold{border-color:#f5b83d;background:#3d2a05;color:#ffd27a}
+  .hbtn.ok{border-color:rgba(45,255,138,.6);color:var(--grn)}
+  .hbtns{display:flex;gap:8px;margin:0 0 6px}
+  .hl{margin:6px 0;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)}
+  .hl summary{padding:8px 10px;font-weight:700;color:var(--cyan);cursor:pointer;display:flex;gap:8px;align-items:center}
+  .hl summary small{margin-left:auto;color:var(--muted);font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hl .r{display:flex;justify-content:space-between;padding:5px 10px;border-top:1px solid var(--line);font-size:14px}
+  .hl .r span{color:var(--muted)}
+  .ht{margin:6px 0;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .ht.win{border-color:#f5b83d;background:#2a1f06}
+  .ht .hzh{text-transform:none;letter-spacing:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .ht .hzh b{color:#ffd27a}
+  .ht .hzb{white-space:nowrap;margin-left:auto;background:#f5b83d;color:#3d2a05;font-weight:800;border-radius:99px;padding:1px 9px;font-size:12px}
+  .ht .hza{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:6px 0}
+  .ht .hza span{text-transform:none;letter-spacing:0;font-weight:600;padding:2px 7px;border-radius:8px;border:1px solid var(--line);font-size:14px}
+  .ht .hza span.y{border-color:#2fd39a;background:#0c3a2c}
+  .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .cgrid label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+  .cgrid input{width:100%;box-sizing:border-box}
+  .cani{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:4px;max-height:210px;overflow:auto}
+  .cani button{padding:4px 0;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:inherit;font:600 13px "Rajdhani",sans-serif;cursor:pointer;line-height:1.1}
+  .cani button.on{border-color:#f5b83d;background:#3d2a05;color:#ffd27a}
+  .cres{margin-top:8px;border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:15px;line-height:1.8}
+  .cres .r{display:flex;justify-content:space-between;gap:8px}
+  .cres .g{color:var(--grn)} .cres .o{color:#ffd27a}
 </style>
 </head>
 <body class="locked">
@@ -616,7 +644,26 @@
       </div>
 
       <div class="card" id="statsCard" data-view="cuentas" style="grid-area:stats;align-self:start">
-        <h2>Rendimiento de la guía</h2>
+        <h2>📋 Resultados de hoy</h2>
+        <div id="hoyRes"></div>
+        <button class="hbtn" id="hoyResCp" type="button">⧉ Copiar resultados para WhatsApp</button>
+        <div class="hsep"></div>
+        <div class="hh"><h2 style="margin:0">🎯 Tripletas de hoy · <span id="hoyTriLot"></span></h2></div>
+        <p class="note" style="margin:2px 0 6px">Las que dio el bot hoy. ✓ = ya salió en el día · ⏳ = falta.</p>
+        <div class="hbtns"><button class="hbtn sm" id="hoyTriAll" type="button">⧉ Copiar todas</button><button class="hbtn sm gold" id="hoyTriWin" type="button">⧉ Copiar ganadoras</button></div>
+        <div id="hoyTri"></div>
+        <div class="hsep"></div>
+        <h2>🧮 Calculadora de premios</h2>
+        <div class="cgrid">
+          <label>Monto por animal <input type="number" id="cMonto" min="0" step="1" value="10"></label>
+          <label>Paga animal × <input type="number" id="cPaga" min="1" step="1" value="30"></label>
+          <label>Monto tripleta <input type="number" id="cTMonto" min="0" step="1" value="10"></label>
+          <label>Paga tripleta × <input type="number" id="cTPaga" min="1" step="1" value="5000"></label>
+        </div>
+        <div class="note" style="margin:8px 0 4px">Toca los animales que jugó el cliente · <a href="#" id="cLimpiar" style="color:var(--cyan)">limpiar</a></div>
+        <div class="cani" id="cAni"></div>
+        <div class="cres" id="cRes"></div>
+        <div hidden id="oldStats">
         <div class="stats">
           <div class="st"><div class="v" id="sJug">0</div><div class="l">Jugadas evaluadas</div></div>
           <div class="st"><div class="v" id="sAc">0</div><div class="l">Aciertos de la guía</div></div>
@@ -640,6 +687,7 @@
           <span class="confirm" id="confirm"><span style="font-size:14px">¿Seguro?</span><button class="btn" id="yes">Sí, borrar</button><button class="btn" id="no">No</button></span>
         </div>
         <div class="hist" id="hist"></div>
+        </div>
       </div>
   </div>
 
@@ -702,7 +750,7 @@
   <button data-v="jugada"><span>➜</span>Jugada</button>
   <button data-v="salidores"><span>🔥</span>Salidores</button>
   <button data-v="jaulas"><span>🔒</span>Jaulas</button>
-  <button data-v="cuentas"><span>📊</span>Cuentas</button>
+  <button data-v="cuentas"><span>📋</span>Hoy</button>
   <button data-v="guia"><span>📖</span>Guía</button>
 </nav>
 <script>
@@ -778,7 +826,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171506";
+const BUILD="202611171522";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1051,6 +1099,7 @@ function render(){
   const bal=ganado-inv, sb=$("sBal"); sb.textContent=(bal>0?"+":"")+fmt(bal); sb.className="v "+(bal>0?"pos":bal<0?"neg":"");
   $("hist").innerHTML=rows.reverse().slice(0,300).map((r,k)=>`<div><span>#${hist.length-k} · ${l.A[r.n][1]} ${r.n} ${esc(l.A[r.n][0])}</span>${r.t}</div>`).join("");
   renderJaulas();
+  try{renderHoy();}catch(e){}
   if(typeof renderMbar==="function") renderMbar();
   try{autoMsg();}catch(e){}
   if(typeof renderSal==="function"&&document.getElementById("sBody")) try{renderSal();}catch(e){}
@@ -1298,7 +1347,7 @@ async function autoCargar(id,manual){
     if(hoyN!==null) AUTO.estado[id]={c:"ok",t:(hoyN?"Hoy: "+hoyN+" sorteo"+(hoyN>1?"s":""):"Todavía no hay sorteos hoy")+" · revisado "+hh+(AUTO.nuevos[id]&&hoyN?" · "+AUTO.nuevos[id]+" nuevo"+(AUTO.nuevos[id]>1?"s":""):"")};
     else if(partes.length) AUTO.estado[id]={c:"ok",t:"Jaulas al día · revisado "+hh};
     else AUTO.estado[id]={c:"err",t:"Sin resultados automáticos para "+lot.name+" todavía. Puedes marcar los animales a mano."};
-    save(); if(L().id===id){render();}
+    save(); if(L().id===id){render();} else { try{renderHoy();}catch(e){} }
     histServidor(id,d.hoy);
   }catch(e){
     AUTO.estado[id]={c:"err",t:"No se pudo conectar con los resultados de hoy. Puedes marcar los animales a mano."};
@@ -1406,7 +1455,7 @@ render();
     {sel:"#pred .trih",v:"jugada",t:"🎯 Tripletas",x:"Todas las combinaciones de tu guía numeradas: <b>Tripleta 1, 2, 3…</b> Cada una tiene su <b>Copiar</b>, y <b>Copiar todas</b> las manda juntas a WhatsApp."},
     {sel:"#scard",v:"salidores",t:"Salidores",x:"El ranking de los animales que <b>más</b> y <b>menos</b> han salido, cada lista con su <b>Copiar</b>. Abajo están las <b>Tripletas de salidores</b>."},
     {sel:"#jcard",v:"jaulas",t:"Jaulas",x:"Los animales que llevan días sin salir: <b>naranja</b> desde 5 días y <b>rojo</b> desde 12. Puedes cambiar esos límites."},
-    {sel:"#statsCard",v:"cuentas",t:"Cuentas",x:"Compara los aciertos de la guía con el azar y calcula cuánto se habría ganado o perdido. Más abajo puedes <b>pegar resultados pasados</b>."},
+    {sel:"#statsCard",v:"cuentas",t:"Hoy",x:"Los <b>resultados de hoy</b> de las 4 loterías, las <b>tripletas del día</b> con ✓ las que ya salieron y una <b>calculadora de premios</b>. Todo se puede copiar para WhatsApp."},
     {sel:"#guiaCard",v:"guia",t:"Guía completa",x:"Toda la guía de esta lotería, con buscador por número o nombre. ¡Listo! Puedes repetir este recorrido cuando quieras con el botón <b>🤖 Bot guía</b>."}
   ];
   const movil=()=>document.body.classList.contains("inapp");
@@ -1802,6 +1851,70 @@ document.getElementById("salir").onclick=()=>lock("");
   if(fin&&Date.now()<fin) startDemo(fin); else if(fin){ endDemo(); } else if(ini&&Date.now()>ini+DEMO_MIN*60000) demoUsada(); })();
 setInterval(()=>{const c=CUR;
   if(!DEMO&&c&&document.getElementById("app").style.display!=="none"){const r=check(c,false); if(!r.ok) lock("Tu semana de acceso terminó.");}},60000);
+
+/* ===== 📋 Hoy: resultados, tripletas del día y calculadora ===== */
+function hoyLots(){ const td=today(); return LOTS.map(l=>{ const st=ST.lots[l.id], d=st&&st.dia&&st.dia.fecha===td?st.dia.items.filter(x=>l.A[x.num]):[]; return {l,d}; }); }
+function triHoy(){
+  const l=L(), st=S(), td=today(); const dia=st.dia&&st.dia.fecha===td?st.dia.items.filter(x=>l.A[x.num]):[];
+  const nums=dia.map(x=>x.num), g=GD(), out=[], vist=new Set();
+  nums.forEach((x,i)=>{ let P; try{ P=predict(g,x,i?nums[i-1]:null); }catch(e){ return; }
+    [...(P.extra||[]),...(P.combos||[])].forEach(t=>{ if(!t||t.length<3) return; t=t.slice(0,3);
+      const despues=new Set(nums.slice(i+1));
+      const ok=t.map(n=>n===x||despues.has(n)), o={x,hora:dia[i].hora,i,t,ok,win:ok.every(Boolean),y:ok.filter(Boolean).length};
+      const k=[...t].sort().join("-"); const j=out.findIndex(z=>z.k===k); o.k=k;
+      if(j<0) out.push(o); else if(o.y>out[j].y) out[j]=o; }); });
+  out.sort((a,b)=>(b.win-a.win)||(b.y-a.y)||(b.i-a.i));
+  return out;
+}
+function triTxt(l,o){ return o.t.map((n,k)=>l.A[n][1]+" "+n+" "+l.A[n][0]+" "+(o.ok[k]?"✓":"⏳")).join(" - "); }
+function renderHoy(){
+  const box=$("hoyRes"); if(!box) return;
+  const td=today(), abiertos=HOYOPEN||{};
+  box.innerHTML=hoyLots().map(({l,d})=>{ const u=d[d.length-1];
+    return `<details class="hl" data-id="${l.id}" ${abiertos[l.id]||(abiertos[l.id]==null&&l.id===L().id)?"open":""}><summary>${esc(l.name)} · ${d.length} sorteo${d.length===1?"":"s"}<small>${u?"último: "+l.A[u.num][1]+" "+u.num+" "+esc(l.A[u.num][0]):"todavía no hay"}</small></summary>${d.slice().reverse().map(x=>`<div class="r"><span>${h12(x.hora)}</span><b>${l.A[x.num][1]} ${x.num} ${esc(l.A[x.num][0])}</b></div>`).join("")}</details>`; }).join("");
+  box.querySelectorAll("details").forEach(d=>d.ontoggle=()=>{HOYOPEN[d.dataset.id]=d.open;});
+  const l=L(); $("hoyTriLot").textContent=l.name;
+  const T=triHoy();
+  const caja=(o,k)=>`<div class="ht${o.win?" win":""}"><div class="hzh">Tras <b>${l.A[o.x][1]} ${o.x} ${esc(l.A[o.x][0])}</b> (${h12(o.hora)})${o.win?'<span class="hzb">¡GANADORA! 🏆</span>':`<span style="margin-left:auto">falta${o.ok.filter(v=>!v).length>1?"n":""} ${o.ok.filter(v=>!v).length}</span>`}</div>
+    <div class="hza">${o.t.map((n,j)=>`<span class="${o.ok[j]?"y":""}">${l.A[n][1]} ${n} ${esc(l.A[n][0])} ${o.ok[j]?"✓":"⏳"}</span>`).join("")}</div>
+    <button class="pkcp htcp" data-i="${k}" type="button">⧉ Copiar</button></div>`;
+  const nP=T.filter(o=>o.win||o.y>=2).length, resto=T.length-nP;
+  $("hoyTri").innerHTML=T.length?T.slice(0,nP).map(caja).join("")
+    +(resto?`<details class="hl"${HOYOPEN.tri?" open":""} id="triMas"><summary>Ver las demás (${resto})<small>les faltan 2</small></summary><div style="padding:0 8px 4px">${T.slice(nP).map((o,k)=>caja(o,k+nP)).join("")}</div></details>`:"")
+    :'<p class="note">Todavía no hay tripletas hoy en '+esc(l.name)+'. Aparecen cuando salgan los primeros resultados.</p>';
+  const tm=$("triMas"); if(tm) tm.ontoggle=()=>{HOYOPEN.tri=tm.open;};
+  renderCalc();
+}
+var HOYOPEN={}, CALC={sel:[]};
+try{ const c=JSON.parse(localStorage.getItem("bot-calc")||"{}"); ["cMonto","cPaga","cTMonto","cTPaga"].forEach(k=>{ if(c[k]!=null&&$(k)) $(k).value=c[k]; }); }catch(e){}
+function renderCalc(){
+  const l=L(), box=$("cAni"); if(!box) return;
+  if(box.dataset.lot!==l.id){ CALC.sel=[]; box.dataset.lot=l.id; box.innerHTML=l.order.map(n=>`<button type="button" data-n="${n}">${l.A[n][1]}<br>${n}</button>`).join(""); }
+  box.querySelectorAll("button").forEach(b=>b.classList.toggle("on",CALC.sel.includes(b.dataset.n)));
+  const v=k=>Math.max(0,+$(k).value||0), m=v("cMonto"), p=v("cPaga"), tm=v("cTMonto"), tp=v("cTPaga"), n=CALC.sel.length, f=x=>Math.round(x).toLocaleString("es-VE");
+  if(!n){ $("cRes").innerHTML='<span class="note">Elige uno o más animales.</span>'; return; }
+  let h=`<div class="r"><span>Jugados</span><b>${CALC.sel.map(x=>l.A[x][1]+" "+x).join(" · ")}</b></div>
+    <div class="r"><span>Apostado (${n} animal${n>1?"es":""})</span><b>${f(m*n)} Bs</b></div>
+    <div class="r"><span>Si sale 1 animal</span><b class="g">cobra ${f(m*p)} Bs</b></div>`;
+  if(n===3) h+=`<div class="r"><span>Tripleta ${CALC.sel.join("-")} (${f(tm)} Bs)</span><b class="o">cobra ${f(tm*tp)} Bs</b></div>`;
+  else h+=`<div class="r"><span class="note">Elige 3 animales para ver la tripleta</span></div>`;
+  $("cRes").innerHTML=h;
+}
+document.addEventListener("click",e=>{
+  const ca=e.target.closest("#cAni button");
+  if(ca){ const n=ca.dataset.n, i=CALC.sel.indexOf(n); if(i>=0) CALC.sel.splice(i,1); else CALC.sel.push(n); renderCalc(); return; }
+  if(e.target.id==="cLimpiar"){ e.preventDefault(); CALC.sel=[]; renderCalc(); return; }
+  const l=L();
+  const b=e.target.closest(".htcp");
+  if(b){ const o=triHoy()[+b.dataset.i]; if(o) copyTxt("🎯 *Tripleta · "+l.name+"*"+(o.win?" 🏆 *¡GANADORA!*":"")+"\n"+triTxt(l,o)+FOOTER,b,"⧉ Copiar"); return; }
+  if(e.target.id==="hoyTriAll"||e.target.id==="hoyTriWin"){ const w=e.target.id==="hoyTriWin", T=triHoy().filter(o=>!w||o.win), btn=e.target, lab=w?"⧉ Copiar ganadoras":"⧉ Copiar todas";
+    if(!T.length){ btn.textContent=w?"Todavía no hay ganadoras":"Todavía no hay tripletas"; clearTimeout(btn._t); btn._t=setTimeout(()=>btn.textContent=lab,2000); return; }
+    copyTxt("🎯 *"+(w?"Tripletas ganadoras de hoy 🏆":"Tripletas de hoy")+" · "+l.name+"*\n"+T.map((o,k)=>(k+1)+") "+triTxt(l,o)).join("\n")+FOOTER,btn,lab); return; }
+  if(e.target.id==="hoyResCp"){ const td=new Date().toLocaleDateString("es-VE",{weekday:"long",day:"2-digit",month:"2-digit"});
+    const txt="📋 *Resultados de hoy*\n"+td+"\n"+hoyLots().filter(x=>x.d.length).map(({l,d})=>"\n*"+l.name+"*\n"+d.map(x=>h12(x.hora)+" → "+l.A[x.num][1]+" "+x.num+" "+l.A[x.num][0]).join("\n")).join("\n");
+    copyTxt(hoyLots().some(x=>x.d.length)?txt+FOOTER:"📋 Todavía no hay resultados hoy.",e.target,"⧉ Copiar resultados para WhatsApp"); }
+});
+["cMonto","cPaga","cTMonto","cTPaga"].forEach(k=>{ const el=$(k); if(el) el.oninput=()=>{ try{ const c={}; ["cMonto","cPaga","cTMonto","cTPaga"].forEach(j=>c[j]=$(j).value); localStorage.setItem("bot-calc",JSON.stringify(c)); }catch(e){} renderCalc(); }; });
 
 (function candado(){
   const g=$("grid"), b=$("lockBtn"), m=$("lockMsg"); if(!g||!b) return;
