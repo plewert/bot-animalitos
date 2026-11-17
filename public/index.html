@@ -778,7 +778,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171501";
+const BUILD="202611171506";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -844,7 +844,7 @@ function predict(g,x,p){
     if(p!=null) ext.forEach(c=>{ if(c[0]===p&&c[1]===x){cont.push(c); add(c[2],1);} });
   }
   // reglas fijas en las 4 loterías: al salir X, se juega una tripleta completa
-  const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]]};
+  const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["00","32","33"],["00","16","35"],["00","29","36"]]};
   const extra=(REGLA_TRI[x]||[]).filter(t=>t.every(n=>L().A[n]));
   extra.forEach(t=>t.forEach(n=>{ if(n!==x) add(n,1); }));
   // regla 6⇄9: si uno de estos está para jugar, su compañero entra a su lado
