@@ -747,7 +747,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611162154";
+const BUILD="202611170708";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1341,11 +1341,15 @@ render();
 (function(){
   const PASOS=[
     {sel:"#tabs",t:"Loterías",x:"Aquí eliges la lotería: <b>Lotto Activo</b>, <b>La Granjita</b>, <b>Guácharo</b> o <b>Lotto Internacional</b>. Cada una tiene su propia guía, historial, jaulas y salidores."},
-    {sel:"#mbar",movil:true,t:"Barra de jugada",x:"Muestra el último animal que salió y lo que manda jugar la guía. <b>Copiar</b> lo manda a WhatsApp, <b>Deshacer</b> quita el último y <b>Limpiar</b> borra lo marcado en esta lotería."},
+    {sel:"#cdown",t:"Próximo sorteo",x:"Cuánto falta para el próximo sorteo de cada lotería. En <b>naranja</b> cuando faltan 5 minutos o menos. Tócala para cambiar a esa lotería."},
+    {sel:"#avisosBtn",t:"🔔 Avisos",x:"Activa aquí los <b>avisos al teléfono</b>: te llega una notificación con el resultado y los animales para jugar, aunque el bot esté cerrado."},
+    {sel:"#mbar",movil:true,t:"Barra de jugada",x:"El último animal que salió y lo que manda jugar la guía. Los <b>rosados ⇄</b> son volteos salidores. Si sale un felino o un veneno, aparece su recuadro aparte. <b>Copiar</b> lo manda a WhatsApp, <b>Deshacer</b> quita el último y <b>Limpiar</b> borra lo marcado."},
     {sel:"#autoSt",t:"Resultados automáticos",x:"Cuando esta línea está en <b>verde</b>, el bot carga solo los resultados del día y las jaulas. Con <b>Actualizar</b> revisa al momento."},
     {sel:"#panelCard",v:"panel",t:"Panel",x:"Toca aquí el animal que <b>acaba de salir</b>. En <b>dorado ★</b> lo que manda jugar la guía, en cian el que salió, y con <b>barrotes</b> los que llevan días sin salir."},
-    {sel:"#pred",v:"jugada",t:"Jugada",x:"Las combinaciones de tu guía para el próximo sorteo, cada una con su botón <b>Copiar</b>. Un <b>×2</b> o <b>×3</b> indica que ese animal aparece en varias combinaciones."},
-    {sel:"#scard",v:"salidores",t:"Salidores",x:"El ranking de los animales que <b>más</b> y <b>menos</b> han salido. Abajo están las <b>Tripletas de salidores</b>, listas para copiar."},
+    {sel:"#pred .picks",v:"jugada",t:"Animales para jugar",x:"Las tarjetas de lo que toca jugar, con su botón <b>Copiar</b>. Las <b>rosadas ⇄</b> son volteos salidores, y las que tienen <b>rejas</b> son jaula: <b>no jugarlas</b>. Un <b>×2</b> indica que ese animal sale en varias combinaciones."},
+    {sel:"#pred .rank",v:"jugada",t:"Señales",x:"<b>Los que más señales tienen</b> y <b>📡 Señal</b> juntan todos los datos (guía, salidores, aciertos, volteos y jaulas). Toca un animal para ver por qué está ahí."},
+    {sel:"#pred .trih",v:"jugada",t:"🎯 Tripletas",x:"Todas las combinaciones de tu guía numeradas: <b>Tripleta 1, 2, 3…</b> Cada una tiene su <b>Copiar</b>, y <b>Copiar todas</b> las manda juntas a WhatsApp."},
+    {sel:"#scard",v:"salidores",t:"Salidores",x:"El ranking de los animales que <b>más</b> y <b>menos</b> han salido, cada lista con su <b>Copiar</b>. Abajo están las <b>Tripletas de salidores</b>."},
     {sel:"#jcard",v:"jaulas",t:"Jaulas",x:"Los animales que llevan días sin salir: <b>naranja</b> desde 5 días y <b>rojo</b> desde 12. Puedes cambiar esos límites."},
     {sel:"#statsCard",v:"cuentas",t:"Cuentas",x:"Compara los aciertos de la guía con el azar y calcula cuánto se habría ganado o perdido. Más abajo puedes <b>pegar resultados pasados</b>."},
     {sel:"#guiaCard",v:"guia",t:"Guía completa",x:"Toda la guía de esta lotería, con buscador por número o nombre. ¡Listo! Puedes repetir este recorrido cuando quieras con el botón <b>🤖 Bot guía</b>."}
