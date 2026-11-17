@@ -773,7 +773,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171116";
+const BUILD="202611171155";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1714,7 +1714,7 @@ async function pintarHist(){
   const fmtD=f=>{ const d=new Date(f+"T12:00:00"); return d.getDate()+"/"+(d.getMonth()+1)+"/"+d.getFullYear(); };
   const PN=["Mañana","Tarde","Noche"], PS=["8 a 11 a. m.","12 a 4 p. m.","5 a 7 p. m."], DN=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
   const topP=partes.indexOf(Math.max(...partes)), topW=dow.indexOf(Math.max(...dow));
-  box.innerHTML=`<div class="hres"><span class="e">${l.A[n][1]}</span><div><b>${n} ${esc(l.A[n][0])}</b><br>Salió <b>${c}</b> ${c===1?"vez":"veces"} en ${N.toLocaleString("es")} sorteos <small>(lo esperado al azar: ${fx(esp(N))})</small><br><small>Del ${fmtD(D.desde)} al ${fmtD(D.hasta)}${ult?" · última vez: "+fmtD(ult[0])+", "+fmtH12(ult[1]):""}</small></div></div>
+  box.innerHTML=`<div class="hres"><span class="e">${l.A[n][1]}</span><div><b>${n} ${esc(l.A[n][0])}</b><br>Salió <b>${c}</b> ${c===1?"vez":"veces"} en ${N.toLocaleString("es")} sorteos <small>(lo esperado: ${fx(esp(N))})</small><br><small>Del ${fmtD(D.desde)} al ${fmtD(D.hasta)}${ult?" · última vez: "+fmtD(ult[0])+", "+fmtH12(ult[1]):""}</small></div></div>
   ${D.cargando?`<p class="note" style="margin:6px 0 0">⏳ Todavía se está completando el historial${D.faltan?" (faltan "+D.faltan+" días)":""}.</p>`:""}
   <div class="ht">◆ Por hora</div>
   <div class="hbars">${H.map(h=>{const v=horaN[h]||0;return `<div class="hb${c&&h===topH&&v?" hi":""}" title="${hl(h)}: ${v} (esperado ${fx(esp(hrs[h]))})"><span class="v">${v}</span><i style="height:${Math.max(2,v/mx*100)}%"></i><s style="bottom:${esp(hrs[h])/mx*100}%"></s></div>`;}).join("")}</div>
@@ -1723,7 +1723,7 @@ async function pintarHist(){
   <div class="hpt">${PN.map((p,i)=>`<div class="${c&&i===topP?"hi":""}"><b>${partes[i]}</b><small>${p}<br>${PS[i]}<br>esperado ${fx(esp(partesT[i]))}</small></div>`).join("")}</div>
   <div class="ht">◆ Por día de la semana</div>
   <div class="hdw">${DN.map((d,i)=>`<div class="${c&&i===topW?"hi":""}">${d}<b>${dow[i]}</b><small>esp. ${fx(esp(dowT[i]))}</small></div>`).join("")}</div>
-  <p class="note" style="margin:10px 0 0">La rayita blanca en cada barra es lo esperado al azar. Una diferencia pequeña es normal, aunque la lotería sea pareja.</p>`;
+  <p class="note" style="margin:10px 0 0">La rayita blanca en cada barra es <b>lo esperado</b>: las veces que saldría si todos los animales salieran por igual.</p>`;
 }
 function fmtH12(h){ const [a,m]=String(h).split(":").map(Number); return ((a%12)||12)+":"+String(m||0).padStart(2,"0")+(a<12?" a. m.":" p. m."); }
 
