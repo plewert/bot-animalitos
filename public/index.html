@@ -839,13 +839,19 @@ const GD=()=>L().guides.find(g=>g.id===S().cfg.guide);
 /* ---- combinaciones de grupos: los animales de un grupo van juntos ---- */
 const GRUPOS=[
   {lots:["activo","granjita","guacharo","inter"],a:["0","00","14","17"]},
-  {lots:["activo","granjita","guacharo","inter"],a:["02","15","20","26","29"]},
+  {lots:["guacharo"],a:["02","15","20","26","29"]},
+  {lots:["activo","granjita","inter"],a:["02","15","17","20","26","29"]},
   {lots:["granjita","inter"],a:["09","11","20","34"]},
-  {lots:["activo","granjita","inter"],a:["0","03","04","27","30","32"]}
+  {lots:["activo","granjita","inter"],a:["0","03","04","27","30","32"]},
+  {lots:["activo","granjita","inter"],a:["0","00","04","12","15","19","36"]},
+  {lots:["activo","granjita","inter"],a:["05","06","09","23","32","36"]},
+  {lots:["activo","granjita","inter"],a:["03","04","11","33","35","36"]},
+  {lots:["activo","granjita","inter"],a:["02","03","07","20","24","30"]},
+  {lots:["activo","granjita","inter"],a:["0","00","08","16","24","32"]}
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171932";
+const BUILD="202611171953";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
