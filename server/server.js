@@ -300,6 +300,7 @@ async function vigilar() {
       try {
         const r = await datos(lot, "resultados");
         if (!r.datos || !r.datos.length) continue;
+        try { await guardarDia(lot, hoyVE(), r.datos.map((x) => [x.hora, x.num])); HISTCACHE.delete(lot); } catch (e) {}
         const u = r.datos[r.datos.length - 1];
         const clave = hoyVE() + " " + u.hora + " " + u.num;
         const prev = await redis(["GET", "ult:" + lot]);
@@ -316,6 +317,51 @@ async function ultimos() {
   const vals = await redis(["MGET", ...lots.map((l) => "ult:" + l)]);
   const o = {}; lots.forEach((l, i) => { if (vals[i]) o[l] = Object.assign(JSON.parse(vals[i]), { lotNombre: (AVISO_GUIA[l] || {}).nombre || l }); });
   return o;
+}
+
+// ===================== HISTORIAL DE 1 AÑO =====================
+// Guarda en Upstash los sorteos de cada día: clave "h:<lotería>:<AAAA-MM-DD>" = [["13:00","09"], ...]
+// Al arrancar, completa poco a poco los días que falten del último año (sin apuro, para no cargar a lotoven).
+const HIST_DIAS = 365;
+const fechaMenos = (n) => { const d = new Date(hoyVE() + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+async function bajarDia(lot, fecha) {
+  const url = FUENTES[lot].resultados.replace(/\/?$/, "/") + fecha + "/";
+  const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (BotAnimalitos)", "Accept": "text/html" }, signal: AbortSignal.timeout(20000) });
+  if (r.status === 404) return [];
+  if (!r.ok) throw new Error("La página respondió " + r.status);
+  return parseResultados(await r.text(), lot).map((x) => [x.hora, x.num]);
+}
+async function guardarDia(lot, fecha, items) { await redis(["SET", "h:" + lot + ":" + fecha, JSON.stringify(items)]); }
+const HIST = { corriendo: false, hechos: 0, faltan: 0, errores: 0, ultimo: "" };
+async function completarHistorial() {
+  if (!R_URL || !R_TOK || HIST.corriendo) return;
+  HIST.corriendo = true;
+  try {
+    for (const lot of Object.keys(FUENTES)) {
+      const fechas = []; for (let i = 1; i <= HIST_DIAS; i++) fechas.push(fechaMenos(i));
+      const ya = [];
+      for (let i = 0; i < fechas.length; i += 100) ya.push(...(await redis(["MGET", ...fechas.slice(i, i + 100).map((f) => "h:" + lot + ":" + f)])));
+      const pend = fechas.filter((f, i) => ya[i] == null);
+      HIST.faltan += pend.length;
+      for (const f of pend) {
+        try { await guardarDia(lot, f, await bajarDia(lot, f)); HIST.hechos++; HIST.ultimo = lot + " " + f; }
+        catch (e) { HIST.errores++; }
+        HIST.faltan--;
+        await new Promise((ok) => setTimeout(ok, 2500));
+      }
+    }
+  } finally { HIST.corriendo = false; HISTCACHE.clear(); }
+}
+const HISTCACHE = new Map();
+async function historial(lot) {
+  const c = HISTCACHE.get(lot); if (c && Date.now() - c.t < 10 * 60000) return c.d;
+  const fechas = []; for (let i = HIST_DIAS; i >= 0; i--) fechas.push(fechaMenos(i));
+  const vals = [];
+  for (let i = 0; i < fechas.length; i += 100) vals.push(...(await redis(["MGET", ...fechas.slice(i, i + 100).map((f) => "h:" + lot + ":" + f)])));
+  const dias = []; fechas.forEach((f, i) => { if (vals[i]) { const it = JSON.parse(vals[i]); if (it.length) dias.push([f, it]); } });
+  const d = { ok: true, lot, desde: dias.length ? dias[0][0] : null, hasta: dias.length ? dias[dias.length - 1][0] : null, dias, cargando: HIST.corriendo, faltan: HIST.faltan };
+  HISTCACHE.set(lot, { t: Date.now(), d });
+  return d;
 }
 
 async function listaCodigos() {
@@ -379,6 +425,12 @@ const server = http.createServer(async (req, res) => {
       const b = await leerCuerpo(req);
       try { return enviar(res, 200, await suscribir(b)); } catch (e) { return enviar(res, 503, { ok: false, motivo: "error" }); }
     }
+    if (u.pathname === "/api/historial") {
+      const lot = u.searchParams.get("lot");
+      if (!FUENTES[lot]) return enviar(res, 400, { ok: false, motivo: "loteria" });
+      try { return enviar(res, 200, await historial(lot)); } catch (e) { return enviar(res, 503, { ok: false, motivo: String(e.message) === "no_config" ? "no_config" : "error" }); }
+    }
+    if (u.pathname === "/api/historial/estado") return enviar(res, 200, { ok: true, corriendo: HIST.corriendo, hechos: HIST.hechos, faltan: HIST.faltan, errores: HIST.errores, ultimo: HIST.ultimo });
     if (u.pathname === "/admin") return enviar(res, 200, ADMIN_HTML, "text/html; charset=utf-8");
     if (u.pathname.startsWith("/admin/api/")) {
       if (!CLAVE || req.headers["x-clave"] !== CLAVE) return enviar(res, 401, { error: "Clave incorrecta" });
@@ -430,6 +482,7 @@ const PORT = process.env.PORT || 10000;
 if (require.main === module) {
   server.listen(PORT, () => console.log("Servidor de resultados listo en el puerto " + PORT));
   setTimeout(vigilar, 20000); setInterval(vigilar, 2 * 60000);
+  setTimeout(completarHistorial, 60000); setInterval(completarHistorial, 6 * 3600000);
 }
 
-module.exports = { parseEstadisticas, parseResultados, aTexto, hoyVE, horaVE, vigilar, empujar, suscribir, ultimos, enviarAvisos };
+module.exports = { bajarDia, historial, completarHistorial, HIST, parseEstadisticas, parseResultados, aTexto, hoyVE, horaVE, vigilar, empujar, suscribir, ultimos, enviarAvisos };
