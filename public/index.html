@@ -778,7 +778,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171448";
+const BUILD="202611171501";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -832,7 +832,7 @@ function cadExtra(id){ return (typeof CAD_EXTRA!=="undefined"&&CAD_EXTRA[id])||[
 function predict(g,x,p){
   const now=new Map(), combos=[], cont=[];
   const add=(n,w)=>now.set(n,(now.get(n)||0)+w);
-  gruposDe(L().id,x).forEach(c=>{combos.push(c); c.slice(1).forEach(n=>add(n,1));});
+  gruposDe(L().id,x).forEach(c=>{const t=c.slice(0,3); t.grp=true; combos.push(t); c.slice(1).forEach(n=>add(n,1));});
   if(g.type==="chain"){
     g.data.forEach(c=>{ if(c[0]===x){combos.push(c); add(c[1],1);} });
     if(p!=null) g.data.forEach(c=>{ if(c.length>2&&c[0]===p&&c[1]===x){cont.push(c); add(c[2],1);} });
