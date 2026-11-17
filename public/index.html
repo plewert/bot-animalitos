@@ -773,7 +773,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171220";
+const BUILD="202611171229";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1023,8 +1023,7 @@ function render(){
       ${rankHtml(l,st,last,arr,P)}${senalHtml(l,st,last,P)}
       ${(()=>{ const hay=[...P.cont,...P.combos,...(P.extra||[])].length>0; TRI_N={n:1};
         const h=`${hay?'<div class="trih"><span>🎯 Tripletas</span><button class="tricpall" type="button">⧉ Copiar todas</button></div>':""}<div class="chains">${(P.extra||[]).map(t=>`<div class="ch chc tri3"><div class="cad"><span class="tnum">Tripleta ${TRI_N.n++}</span>${t.map(n=>tag(l,n,n!==last)).join('<span class="ar">-</span>')}</div><button class="ccp" data-c="${t.join(",")}" data-k="tri">⧉ Copiar</button></div>`).join("")}${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>`;
-        TRI_N=null; return h; })()}
-      <div class="note">Probabilidad real de que salga alguno en el próximo sorteo: <b>${arr.length} de ${N} (${fmt(arr.length/N*100)} %)</b>, igual que con cualquier otro grupo de ${arr.length} ${arr.length===1?"animal":"animales"}.</div>`;
+        TRI_N=null; return h; })()}`;
   }
   const W=st.cfg.win||1;
   let ev=0,ac=0,inv=0,ganado=0,exp=0; const rows=[];
