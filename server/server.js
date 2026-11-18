@@ -276,6 +276,94 @@ async function suscribir(b) {
   await redis(["SET", subKey(endpoint), JSON.stringify({ sub, lots, hash, fin, t: Date.now() })]);
   return { ok: true, lots };
 }
+
+// ---- 🔥 Patrones confirmados (el mismo cálculo que el bot): se buscan en 9 meses y se prueban en los últimos 3 ----
+const PATS = new Map();
+function patFr(h) { return parseInt(h, 10) <= 13 ? "m" : "t"; }
+function patTail(k, n, p) {
+  if (k <= 0) return 1; if (p <= 0) return 0; if (p >= 1) return 1;
+  const lf = [0]; for (let i = 1; i <= n; i++) lf[i] = lf[i - 1] + Math.log(i);
+  let s = 0; for (let i = k; i <= n; i++) s += Math.exp(lf[n] - lf[i] - lf[n - i] + i * Math.log(p) + (n - i) * Math.log(1 - p));
+  return Math.min(1, s);
+}
+function patStats(A, dias) {
+  const S = { T: 0, cnt: {}, na: {}, cab: {}, nd: 0, dh: {}, cp: {} };
+  const inc = (o, k) => (o[k] = (o[k] || 0) + 1);
+  dias.forEach(([f, it]) => {
+    const its = it.filter((x) => A[x[1]]).slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)); if (!its.length) return;
+    S.nd++;
+    its.forEach(([h, n], i) => { S.T++; inc(S.cnt, n); if (i < its.length - 1) { inc(S.na, n); inc(S.cab, n + "|" + its[i + 1][1]); } });
+    const u = [...new Set(its.map((x) => x[1]))]; u.forEach((n) => inc(S.dh, n));
+    for (let i = 0; i < u.length; i++) for (let j = 0; j < u.length; j++) if (i !== j) inc(S.cp, u[i] + "|" + u[j]);
+  });
+  return S;
+}
+async function patronesLot(lot) {
+  const hoy = hoyVE(), c = PATS.get(lot); if (c && c.fecha === hoy) return c.conf;
+  const g = AVISO_GUIA[lot]; if (!g) return [];
+  const A = g.A, order = Object.keys(A);
+  const H = await historial(lot), dd = (H.dias || []).filter((x) => x[0] < hoy).sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  if (dd.length < 150) { PATS.set(lot, { fecha: hoy, conf: [] }); return []; }
+  const lim = new Date(dd[dd.length - 1][0] + "T12:00:00Z"); lim.setUTCDate(lim.getUTCDate() - 90);
+  const fl = lim.toISOString().slice(0, 10), Aa = patStats(A, dd.filter((x) => x[0] < fl)), B = patStats(A, dd.filter((x) => x[0] >= fl));
+  const gg = (o, k) => o[k] || 0, conf = [];
+  const ok = (tn, tk, tp) => tn >= 15 && tk >= 4 && tk / tn >= tp * 1.4 && patTail(tk, tn, tp) < 0.001;
+  order.forEach((a) => {
+    if (gg(Aa.na, a) >= 20) order.forEach((b) => { const cc = gg(Aa.cab, a + "|" + b), r = cc / Aa.na[a], base = gg(Aa.cnt, b) / Aa.T;
+      if (cc >= 4 && base && r >= base * 1.6) { const tn = gg(B.na, a), tk = gg(B.cab, a + "|" + b), tp = gg(B.cnt, b) / (B.T || 1); if (ok(tn, tk, tp)) conf.push({ tipo: "seq", a, b, k: tk, n: tn, p: tp }); } });
+    if (gg(Aa.dh, a) >= 15) order.forEach((b) => { if (b === a || !(a < b)) return; const cc = gg(Aa.cp, a + "|" + b), r = cc / Aa.dh[a], base = gg(Aa.dh, b) / Aa.nd;
+      if (cc >= 8 && base && r >= base * 1.3) { const tn = gg(B.dh, a), tk = gg(B.cp, a + "|" + b), tp = gg(B.dh, b) / (B.nd || 1); if (ok(tn, tk, tp)) conf.push({ tipo: "par", a, b, k: tk, n: tn, p: tp }); } });
+  });
+  PATS.set(lot, { fecha: hoy, conf });
+  return conf;
+}
+async function alertasPatron(lot, num, deHoy) {
+  try {
+    const conf = await patronesLot(lot), A = (AVISO_GUIA[lot] || {}).A || {}, nom = (n) => ((A[n] || [])[1] ? A[n][1] + " " : "") + n + " " + ((A[n] || [])[0] || "");
+    const salio = new Set(deHoy), out = [];
+    conf.forEach((c) => {
+      if (c.tipo === "seq" && c.a === num) out.push("Después del " + num + " suele salir el " + nom(c.b));
+      if (c.tipo === "par" && (c.a === num || c.b === num)) { const o = c.a === num ? c.b : c.a; if (!salio.has(o)) out.push("El " + num + " suele salir el mismo día que el " + nom(o)); }
+    });
+    return out.slice(0, 3);
+  } catch (e) { return []; }
+}
+
+// ---- 🔀 Cruces entre loterías: un animal sale en una lotería y después en otra el mismo día ----
+let CRUCES = { fecha: "", conf: [] };
+async function crucesConf() {
+  const hoy = hoyVE(); if (CRUCES.fecha === hoy) return CRUCES.conf;
+  const ids = Object.keys(FUENTES).filter((id) => AVISO_GUIA[id]), por = {}, fset = new Set();
+  for (const id of ids) { const H = await historial(id); por[id] = {}; (H.dias || []).forEach(([f, it]) => { if (f < hoy) { por[id][f] = it.slice().sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)); fset.add(f); } }); }
+  const ok_ = ids.filter((id) => Object.keys(por[id]).length >= 150);
+  if (ok_.length < 2) { CRUCES = { fecha: hoy, conf: [] }; return []; }
+  const comun = Object.keys(AVISO_GUIA[ok_[0]].A).filter((n) => ok_.every((id) => AVISO_GUIA[id].A[n]));
+  const fechas = [...fset].sort(), lim = new Date(fechas[fechas.length - 1] + "T12:00:00Z"); lim.setUTCDate(lim.getUTCDate() - 90);
+  const fl = lim.toISOString().slice(0, 10), freq = {};
+  ok_.forEach((id) => { const c = {}; let T = 0; fechas.filter((f) => f < fl).forEach((f) => (por[id][f] || []).forEach(([h, n]) => { c[n] = (c[n] || 0) + 1; T++; })); freq[id] = { c, T }; });
+  const ev = (X, Y, n, test) => { let N = 0, K = 0, P = 0; const r = (freq[Y].c[n] || 0) / (freq[Y].T || 1);
+    fechas.forEach((f) => { if ((f >= fl) !== test) return; const ix = (por[X][f] || []).find((x) => x[1] === n); if (!ix) return; const ys = por[Y][f]; if (!ys || !ys.length) return;
+      const rest = ys.filter((y) => y[0] > ix[0]); if (!rest.length) return; N++; if (rest.some((y) => y[1] === n)) K++; P += 1 - Math.pow(1 - r, rest.length); });
+    return { n: N, k: K, p: N ? P / N : 0 }; };
+  const conf = [];
+  ok_.forEach((X) => ok_.forEach((Y) => { if (X === Y) return; comun.forEach((n) => {
+    const A = ev(X, Y, n, false); if (A.n < 15 || A.k < 5 || !A.p || A.k / A.n < A.p * 1.4) return;
+    const B = ev(X, Y, n, true); if (B.n >= 15 && B.k >= 5 && B.k / B.n >= B.p * 1.4 && patTail(B.k, B.n, B.p) < 0.002) conf.push({ a: n, x: X, y: Y, k: B.k, n: B.n, p: B.p }); }); }));
+  CRUCES = { fecha: hoy, conf };
+  return conf;
+}
+async function alertasCruce(lot, num) {
+  try {
+    const conf = await crucesConf(), hoy = hoyVE(), out = [];
+    for (const c of conf) {
+      if (c.x !== lot || c.a !== num) continue;
+      const H = await historial(c.y), d = (H.dias || []).find((x) => x[0] === hoy);
+      if (d && d[1].some((x) => x[1] === num)) continue;
+      out.push("🔀 El " + num + " suele cruzar a " + ((AVISO_GUIA[c.y] || {}).nombre || c.y) + " hoy");
+    }
+    return out;
+  } catch (e) { return []; }
+}
 async function enviarAvisos(lot) {
   const keys = (await redis(["KEYS", "sub:*"])) || [];
   if (!keys.length) return 0;
@@ -306,7 +394,8 @@ async function vigilar() {
         const prev = await redis(["GET", "ult:" + lot]);
         if (prev && JSON.parse(prev).clave === clave) continue;
         const g = AVISO_GUIA[lot] || { A: {}, sig: {} }, a = g.A[u.num] || [u.nombre || "", ""];
-        await redis(["SET", "ult:" + lot, JSON.stringify({ lot, clave, hora: u.hora, num: u.num, nombre: a[0], emoji: a[1], picks: (g.sig[u.num] || []).map((k) => ((g.A[k] || [])[1] || "") + " " + k), ts: Date.now() })]);
+        const pat = (await alertasPatron(lot, u.num, r.datos.slice(0, -1).map((x) => x.num))).concat(await alertasCruce(lot, u.num));
+        await redis(["SET", "ult:" + lot, JSON.stringify({ lot, clave, hora: u.hora, num: u.num, nombre: a[0], emoji: a[1], picks: (g.sig[u.num] || []).map((k) => ((g.A[k] || [])[1] || "") + " " + k), pat, ts: Date.now() })]);
         if (prev) await enviarAvisos(lot); // la primera vez solo se guarda, para no avisar algo viejo
       } catch (e) {}
     }
