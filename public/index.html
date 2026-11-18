@@ -432,7 +432,12 @@
   .rank .rh{color:var(--cyan);font:700 12.5px "Orbitron",sans-serif;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
   .rr{display:grid;grid-template-columns:18px 32px 1fr auto;align-items:center;gap:8px;border:1px solid #24304f;border-radius:12px;padding:7px 10px;margin-top:6px;background:#0a1022}
   .rr.top{border-color:rgba(255,210,63,.6);background:rgba(255,210,63,.07)}
-  .rr.jl1{border-color:rgba(255,159,28,.45)} .rr.jl2{border-color:rgba(255,59,92,.45)}
+  .rr.jl1{border-color:#ff9f1c;box-shadow:0 0 14px rgba(255,159,28,.3);background:rgba(255,159,28,.07)} .rr.jl2{border-color:#ff3b5c;box-shadow:0 0 14px rgba(255,59,92,.3);background:rgba(255,59,92,.07)}
+  .rr .re{position:relative}
+  .rr .rcage{position:absolute;inset:-6px -2px;border-radius:8px;pointer-events:none;opacity:.85;background:repeating-linear-gradient(90deg,transparent 0 6px,#ff9f1c 6px 8px)}
+  .rr.jl2 .rcage{background:repeating-linear-gradient(90deg,transparent 0 6px,#ff3b5c 6px 8px)}
+  .rr .rjl{margin-top:4px;font-size:12.5px;font-weight:800;color:#ff9f1c} .rr.jl2 .rjl{color:#ff3b5c}
+  .rr.jl1 .rs,.rr.jl2 .rs{opacity:.35}
   .rr .ri{color:var(--muted);font-size:12px;text-align:center}
   .rr .re{font-size:22px;text-align:center}
   .rr .rn{font-size:15px;font-weight:600}
@@ -920,7 +925,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611180226";
+const BUILD="202611181420";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -934,8 +939,7 @@ const PAR69={"06":["09"],"09":["06"],"16":["19"],"19":["16"],"26":["29"],"29":["
 const PAR69G={"16":["19","61"],"19":["16","61"],"61":["16","19"]};
 function par69(id,n){ const a=((id==="guacharo"&&PAR69G[n])?PAR69G[n]:(PAR69[n]||[])).slice(); const l=LOTS.find(x=>x.id===id); const v=l?volteo(l,n):null; if(v&&!a.includes(v)) a.push(v); return a; }
 /* ---- los que más señales tienen (en Jugada) ---- */
-function rankHtml(l,st,last,arr,P){
-  if(!arr||!arr.length) return "";
+function rankRows(l,st,last,arr,P){
   const sn=st.cfg.sal==null?100:st.cfg.sal, h=sn?st.hist.slice(-sn):st.hist.slice();
   const cnt={}; h.forEach(k=>cnt[k]=(cnt[k]||0)+1);
   const top=[...topSalidores()];
@@ -949,10 +953,14 @@ function rankHtml(l,st,last,arr,P){
     if(sal) tags.push("🔥 salidor");
     if(a) tags.push("✓ acertó "+a+(a===1?" vez":" veces"));
     if(v) tags.push("⇄ volteo 🔥");
-    if(lv) tags.push("🔒 "+(lv===2?"jaula fuerte ":"jaula ")+daysSince(st.last[n])+"d");
     return {n,c,lv,sc,st3,tags};
   }).sort((x,y)=>(!!x.lv-!!y.lv)||(y.sc-x.sc)||(y.c-x.c));
-  return `<div class="rank"><div class="rh">◆ Los que más señales tienen</div>${rows.map((r,i)=>`<div class="rr${i===0&&!r.lv&&r.st3?" top":""}${r.lv?" jl"+r.lv:""}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${r.tags.length?`<div class="rt">${r.tags.map(t=>`<span>${t}</span>`).join("")}</div>`:""}</div><span class="rs">${r.lv?"—":"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`;
+  return rows;
+}
+function rankHtml(l,st,last,arr,P){
+  if(!arr||!arr.length) return "";
+  const rows=rankRows(l,st,last,arr,P);
+  return `<div class="rank"><div class="rh">◆ Ordenados por señales: el 1 es el más fuerte</div>${rows.map((r,i)=>`<div class="rr${i===0&&!r.lv&&r.st3?" top":""}${r.lv?" jl"+r.lv:""}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}${r.lv?'<i class="rcage"></i>':""}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${r.tags.length?`<div class="rt">${r.tags.map(t=>`<span>${t}</span>`).join("")}</div>`:""}${r.lv?`<div class="rjl">🔒 ${r.lv===2?"Jaula fuerte":"Jaula"} · ${daysSince(st.last[r.n])} días · no jugarlo</div>`:""}</div><span class="rs">${r.lv?"—":"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`;
 }
 /* los 10 que más han salido (igual que la sección Salidores) */
 function topSalidores(){
@@ -1171,9 +1179,8 @@ function render(){
       <div class="from">Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>. Para el próximo sorteo la guía marca:</div>
       ${ventanaHtml(st)}
       ${patAlerta(l,st,last)}<div class="pkhead"><span>🎯 Animales para jugar</span><button class="pkcp" type="button">⧉ Copiar</button></div>
-      <div class="picks">${arr.map(([n,c])=>{const lv=jLevel(st,n);
-        return `<div class="pk${contSet.has(n)?" cont":""}${lv?" j"+lv:""}${P.vadd.has(n)?" v69":""}">${P.vadd.has(n)?`<span class="v69t">⇄ 🔥</span>`:""}${c>1?`<span class="cnt">×${c}</span>`:""}${lv?`<i class="cage"></i><span class="pjt">${lv===2?"JAULA FUERTE":"JAULA"}</span><span class="pjd">${daysSince(st.last[n])}d</span>`:""}<span class="e">${l.A[n][1]}</span><b>${n}</b>${esc(l.A[n][0])}${lv?`<span class="pno">${lv===2?"Jaula fuerte · no jugarlo":"Jaula · no jugarlo"}</span>`:""}</div>`;}).join("")}</div>
-      ${pronHtml(l,st,last,P)}${rankHtml(l,st,last,arr,P)}${senalHtml(l,st,last,P)}
+      ${rankHtml(l,st,last,arr,P)}
+      ${pronHtml(l,st,last,P)}${senalHtml(l,st,last,P)}
       ${(()=>{ const hay=[...P.cont,...P.combos,...(P.extra||[])].length>0; TRI_N={n:1};
         const h=`${hay?'<div class="trih"><span>🎯 Tripletas</span><button class="tricpall" type="button">⧉ Copiar todas</button></div>':""}<div class="chains">${P.combos.filter(c=>c.length>=5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}${(P.extra||[]).map(t=>`<div class="ch chc tri3"><div class="cad"><span class="tnum">${TRI_N.n++}</span>${t.map(n=>tag(l,n,n!==last)).join('<span class="ar">-</span>')}</div><button class="ccp" data-c="${t.join(",")}" data-k="tri" aria-label="Copiar tripleta">⧉</button></div>`).join("")}${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.filter(c=>c.length<5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>`;
         TRI_N=null; return h; })()}`;
@@ -1555,7 +1562,7 @@ render();
     {sel:"#autoSt",t:"Resultados automáticos",x:"Cuando esta línea está en <b>verde</b>, el bot carga solo los resultados del día y las jaulas. Con <b>Actualizar</b> revisa al momento."},
     {sel:"#panelCard",v:"panel",t:"Panel",x:"Todos los animales. En <b>dorado ★</b> lo que manda jugar la guía, en cian el que salió, y con <b>barrotes</b> los que llevan días sin salir."},
     {sel:"#lockBtn",v:"panel",t:"🔒 Candado",x:"El panel está <b>bloqueado</b> para que nadie marque un animal sin querer: los resultados entran solos. Si necesitas marcar uno a mano, toca el candado 🔓; se vuelve a bloquear solo en 1 minuto."},
-    {sel:"#pred .picks",v:"jugada",t:"Animales para jugar",x:"Lo que toca jugar en el próximo sorteo, con su botón <b>Copiar</b>. Aquí entran tu guía, tus <b>grupos de fijos</b> (Perro, Caballo, Rana, Gato, Toro, Perico, Ratón…) y los <b>volteos ⇄</b> salidores. Las que tienen <b>rejas</b> son jaula: <b>no jugarlas</b>. Un <b>×2</b> indica que sale en varias combinaciones."},
+    {sel:"#pred .pkhead",v:"jugada",t:"Animales para jugar",x:"Lo que toca jugar en el próximo sorteo, con su botón <b>Copiar</b>. Aquí entran tu guía, tus <b>grupos de fijos</b> (Perro, Caballo, Rana, Gato, Toro, Perico, Ratón…) y los <b>volteos ⇄</b> salidores. Las que tienen <b>rejas</b> son jaula: <b>no jugarlas</b>. Un <b>×2</b> indica que sale en varias combinaciones."},
     {sel:"#pred .pron",v:"jugada",t:"🎯 Pronóstico",x:"El resumen más fácil: los <b>3 animales más fuertes</b> para el próximo sorteo, con el porqué en etiquetas: 📖 guía, ⇄ volteo, 📈 salidor, 🔁 pareja fuerte, ⏰ salidor a esa hora, 🔥 caliente esta semana y 🐾☠ felino o veneno. Las barras <b>rojas</b> marcan el más fuerte. <b>Copiar pronóstico</b> lo manda a WhatsApp."},
     {sel:"#pred .rank",v:"jugada",t:"Señales",x:"<b>Los que más señales tienen ⭐</b> y <b>📡 Señal</b> juntan todos los datos: guía, salidores, aciertos, volteos, jaulas y venenos/felinos. Toca un animal de la Señal para ver sus puntos, y con <b>⚙ Qué datos usar</b> eliges qué contar."},
     {sel:"#pred .trih",v:"jugada",t:"🎯 Tripletas",x:"Las tripletas del animal que salió: <b>Tripleta 1, 2, 3…</b> Primero salen las <b>tripletas fijas</b> (Mono, Delfín, Ballena, Pulpo) y la <b>Combinación del Pulpo</b> en Guácharo; luego las de tu guía. Cada una tiene su <b>Copiar</b>, y <b>Copiar todas</b> las manda juntas."},
@@ -1811,7 +1818,7 @@ document.addEventListener("click",e=>{
   const l=L(), st=S(), g=GD(), h=st.hist, last=h[h.length-1]; if(last==null) return;
   const P=predict(g,last,h[h.length-2]);
   const arr=orden69([...P.now.entries()].sort((a,c)=>l.order.indexOf(a[0])-l.order.indexOf(c[0])),P);
-  const lin=arr.map(([n,c])=>{ const lv=jLevel(st,n); return (P.vadd.has(n)?"⇄ ":"")+l.A[n][1]+" "+n+" "+l.A[n][0]+(c>1?" ×"+c:"")+(lv?" ("+(lv===2?"jaula fuerte":"jaula")+" · no jugarlo)":""); });
+  const lin=rankRows(l,st,last,arr,P).filter(r=>!r.lv).map((r,i)=>(i+1)+". "+(P.vadd.has(r.n)?"⇄ ":"")+l.A[r.n][1]+" "+r.n+" "+l.A[r.n][0]+(r.st3?" "+"⭐".repeat(r.st3):""));
   copyTxt("🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+horaSalio(st)+"\n\n🎯 *Animales para jugar en el próximo sorteo:*\n"+lin.join("\n")+ventanaTxt(st)+FOOTER,b,"⧉ Copiar");
 });
 
