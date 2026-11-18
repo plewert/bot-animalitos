@@ -88,6 +88,19 @@
   .pred .from b{color:var(--cyan)}
   .salio{display:flex;align-items:center;gap:10px;margin:4px 0 12px;padding:8px 12px;border-left:5px solid #2df28a;border-radius:10px;background:rgba(45,242,138,.08)}
   .salio .stg{background:#2df28a;color:#04120a;font-weight:800;border-radius:8px;padding:3px 8px;font-size:13px}
+  .acw{margin:-4px 0 14px;border:2px solid #2df28a;border-radius:16px;padding:10px;background:rgba(45,242,138,.06);box-shadow:0 0 20px rgba(45,242,138,.3)}
+  .acw .ah{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;color:#2df28a}
+  .acw .ah b{background:#2df28a;color:#04120a;border-radius:8px;padding:2px 8px;white-space:nowrap}
+  .acw .as{color:var(--muted);font-size:14px;margin:4px 0 6px} .acw .acn{color:var(--gold)} .acw .acp{color:#2df28a}
+  .acw .acb{border:1px solid #24304f;border-radius:14px;padding:8px 10px;margin-top:8px;background:rgba(10,16,34,.6)}
+  .acw .act{color:#f5b83d;font-weight:800;font-size:13.5px;letter-spacing:.04em} .acw .act small{color:var(--muted);font-weight:600;margin-left:4px}
+  .acw .prr{display:flex;gap:10px;align-items:center;padding:8px 10px;margin:6px 0;border-radius:14px;border:1px solid var(--line)}
+  .acw .pre{font-size:26px} .acw .prn{display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:600} .acw .prn b{color:var(--gold)}
+  .acw .hit{border:2px solid #2df28a!important;background:rgba(45,242,138,.12)!important;box-shadow:0 0 0 3px rgba(45,242,138,.18),0 0 18px rgba(45,242,138,.55)!important}
+  .acw .hit .prn b,.acw .hit .rn b{color:#2df28a!important} .acw .miss{opacity:.45}
+  .hb{display:inline-block;width:fit-content;margin-top:5px;background:#2df28a;color:#04120a;font-weight:800;font-size:12.5px;border-radius:99px;padding:2px 10px;box-shadow:0 0 10px rgba(45,242,138,.7);white-space:nowrap}
+  .mbar .top .hitS{border-bottom:3px solid #2df28a;padding-bottom:2px;box-shadow:0 6px 10px -6px rgba(45,242,138,.8)}
+  .hbS{margin-left:6px;background:#2df28a;color:#04120a;font-weight:800;font-size:11.5px;border-radius:99px;padding:1px 7px;white-space:nowrap}
   .salio .se{font-size:34px;line-height:1}
   .salio .sn{font:800 22px "Orbitron",sans-serif;color:var(--gold)}
   .salio .snm{font-size:20px;font-weight:700;color:#fff}
@@ -931,7 +944,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611181430";
+const BUILD="202611181545";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1047,6 +1060,36 @@ function ventanaHtml(st){
   const pct=Math.max(0,Math.min(100,(now-w.base.getTime())/(w.fin.getTime()+10*60000-w.base.getTime())*100));
   return `<div class="clk"><span>⏰</span><div style="flex:1">${manana?"Mañana: jugar ":"Jugar "}${rango} (${w.fin.getTime()===w.ini.getTime()?"último sorteo del día":"próximos 2 sorteos"})<div class="bar"><i style="width:${pct.toFixed(0)}%"></i></div></div></div>`;
 }
+/* ---- ✅ Acierto: si el que salió estaba en el pronóstico o en las señales del sorteo anterior ---- */
+var AC_CACHE={k:"",v:null};
+function aciertoCalc(l,st){
+  const H=st.hist; if(!H||H.length<2) return null;
+  const y=H[H.length-1], x=H[H.length-2], k=l.id+"|"+H.length+"|"+x+"|"+y+"|"+(st.last[y]||"");
+  if(AC_CACHE.k===k) return AC_CACHE.v;
+  let v=null;
+  try{
+    st.hist=H.slice(0,-1);
+    const g=GD(), P=predict(g,x,H[H.length-3]);
+    let pr=null; try{ const o=pronCalc(l,st,x,P); const i=o.R.findIndex(r=>r.n===y); if(i>=0) pr={R:o.R,i}; }catch(e){}
+    let rk=null; try{ const arr=orden69([...P.now.entries()].sort((a,b)=>l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
+      if(arr.length){ const rows=rankRows(l,st,x,arr,P).filter(r=>!r.lv); const i=rows.findIndex(r=>r.n===y); if(i>=0&&i<5) rk={rows,i}; } }catch(e){}
+    if(pr||rk) v={x,y,pr,rk};
+  }catch(e){} finally{ st.hist=H; }
+  AC_CACHE={k,v}; return v;
+}
+function aciertoHtml(l,st){
+  const a=aciertoCalc(l,st); if(!a) return "";
+  let h=""; try{ const w=ventana(st); if(w) h=fmtH(w.base); }catch(e){}
+  const y=a.y, nm=`${l.A[y][1]} <b class="acn">${y}</b> ${esc(l.A[y][0])}`;
+  const sal=`<span class="hb">✅ ¡SALIÓ!${h?" "+h:""}</span>`;
+  let o=`<div class="acw"><div class="ah"><b>✅ ¡ACERTÓ!</b><span>${a.pr&&a.rk?"El pronóstico y las señales dieron en el blanco":a.pr?"El pronóstico dio en el blanco":"Las señales dieron en el blanco"}</span></div>
+    <div class="as">Salió ${nm}${h?" a las "+h:""}${a.pr?` y estaba de <b class="acp">#${a.pr.i+1}</b> en el pronóstico`:""}${a.rk?`${a.pr?" y de ":" y estaba de "}<b class="acp">#${a.rk.i+1}</b> en las señales`:""}</div>`;
+  if(a.pr) o+=`<div class="acb pron"><div class="act">🎯 Pronóstico que se dio <small>tras ${l.A[a.x][1]} ${a.x}</small></div>${a.pr.R.map((r,i)=>`<div class="prr${i===a.pr.i?" hit":" miss"}"><div class="pre">${l.A[r.n][1]}</div><div style="flex:1;min-width:0"><div class="prn"><span><b>${r.n}</b> ${esc(l.A[r.n][0])}</span><span class="prb${r.lv>=5?" max":""}">${[1,2,3,4,5].map(k=>`<i class="${k<=r.lv?"on":""}" style="height:${4+k*3}px"></i>`).join("")}</span></div><div>${r.t.map(([c,t])=>`<span class="prt t-${c}">${esc(t)}</span>`).join("")}</div>${i===a.pr.i?sal:""}</div></div>`).join("")}</div>`;
+  if(a.rk){ const n=Math.min(a.rk.rows.length,Math.max(3,a.rk.i+1));
+    o+=`<div class="acb"><div class="act">◆ Señales que se dieron <small>tras ${l.A[a.x][1]} ${a.x}</small></div>${a.rk.rows.slice(0,n).map((r,i)=>`<div class="rr${i===a.rk.i?" hit":" miss"}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${i===a.rk.i?`<div>${sal}</div>`:""}</div><span class="rs">${"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`; }
+  return o+`</div>`;
+}
+function aciertoBadge(l,st){ const a=aciertoCalc(l,st); if(!a) return ""; return `<span class="hbS">✅ ${a.pr?"estaba en el pronóstico":"estaba en las señales #"+(a.rk.i+1)}</span>`; }
 function salioHtml(l,st,last){ let h=""; try{ const w=ventana(st); if(w) h=fmtH(w.base); }catch(e){}
   return `<div class="salio"><span class="stg">SALIÓ</span><span class="se">${l.A[last][1]}</span><span class="sn">${last}</span><span class="snm">${esc(l.A[last][0])}</span>${h?`<span class="shr">${h}</span>`:""}</div>`; }
 function horaSalio(st){ try{ const w=ventana(st); return w?" ("+fmtH(w.base)+")":""; }catch(e){ return ""; } }
@@ -1177,14 +1220,14 @@ function render(){
     pred.innerHTML='<h2>Jugada según la guía</h2><div class="empty">Todavía no has marcado ningún resultado en '+esc(l.name)+'.</div>';
   }else if(!P.now.size){
     const vv0=volteo(l,last);
-    pred.innerHTML=`<h2>Jugada según la guía</h2>${vv0?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv0][1]} ${vv0} ${esc(l.A[vv0][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv0}">⧉ Copiar</button></div>`:""}${salioHtml(l,st,last)}<div class="empty">Tu guía de ${esc(l.name)} no tiene combinaciones para este animal.</div>`;
+    pred.innerHTML=`<h2>Jugada según la guía</h2>${vv0?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv0][1]} ${vv0} ${esc(l.A[vv0][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv0}">⧉ Copiar</button></div>`:""}${salioHtml(l,st,last)}${aciertoHtml(l,st)}<div class="empty">Tu guía de ${esc(l.name)} no tiene combinaciones para este animal.</div>`;
   }else{
     const contSet=new Set(P.cont.map(c=>c[2]));
     const arr=orden69([...P.now.entries()].sort((a,b)=>l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
     const vv=volteo(l,last);
     pred.innerHTML=`<h2>Jugada según la guía</h2>
       ${vv?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv][1]} ${vv} ${esc(l.A[vv][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv}">⧉ Copiar</button></div>`:""}
-      ${salioHtml(l,st,last)}<div class="from">Para el próximo sorteo la guía marca:</div>
+      ${salioHtml(l,st,last)}${aciertoHtml(l,st)}<div class="from">Para el próximo sorteo la guía marca:</div>
       ${ventanaHtml(st)}
       ${patAlerta(l,st,last)}<div class="pkhead"><span>🎯 Animales para jugar</span><button class="pkcp" type="button">⧉ Copiar</button></div>
       ${rankHtml(l,st,last,arr,P)}
@@ -1512,7 +1555,8 @@ function renderMbar(){
     const P=predict(g,last,h[h.length-2]); const cs=new Set(P.cont.map(c=>c[2]));
     const arr=orden69([...P.now.entries()].sort((a,b)=>l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
     const mv=volteo(l,last);
-    mb.innerHTML=`<div class="top"><span>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b></span>${mv?`<span class="mvol">⇄ Volteo: <b>${l.A[mv][1]} ${mv}</b></span>`:""}</div>
+    const acB=aciertoBadge(l,st);
+    mb.innerHTML=`<div class="top"><span${acB?' class="hitS"':""}>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>${acB}</span>${mv?`<span class="mvol">⇄ Volteo: <b>${l.A[mv][1]} ${mv}</b></span>`:""}</div>
       <div class="acts" id="macts"><button class="undo cp" id="mcopy">⧉ Copiar</button><button class="undo" id="mundo">↶ Deshacer</button><button class="undo lp" id="mclear">🧹 Limpiar</button></div>
       <div class="acts conf" id="mconf" style="display:none"><span>¿Borrar todo lo marcado en ${esc(l.name)}?</span><button class="undo" id="mno">Cancelar</button><button class="undo yes" id="myes">Sí, limpiar</button></div>
       ${arr.length?'<div class="pdesc">🎯 Animales para jugar en el próximo sorteo:</div>':""}
