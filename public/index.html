@@ -629,7 +629,16 @@
   .ch.tri3:not(.comb) .ccp.ok{font-size:0} .ch.tri3:not(.comb) .ccp.ok::before{content:"✓";font-size:14px}
   body:not(.inapp) #fijCard{display:none!important}
   body.inapp #fijSlotPc{display:none}
-  .pron .t-q{border-color:#2ef2ff;background:rgba(46,242,255,.16);color:#bff9ff}
+  .pron .t-y{border-color:#2df28a;background:rgba(45,242,138,.14);color:#9ff5c8}
+.t-z{border-color:#ff6b6b;background:rgba(255,90,90,.12);color:#ffa0a0}
+.cyc .ch{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#2df28a;font-weight:800;letter-spacing:.06em;font-size:14px}
+.cyc .cycCp{border:1px solid #2ef2ff;color:#2ef2ff;background:transparent;border-radius:10px;padding:5px 10px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+.cyc .cs{color:var(--muted);font-size:13px;margin:2px 0 8px}
+.cyc .cr{display:flex;align-items:center;gap:10px;border:1px solid #1f2a48;border-radius:12px;padding:7px 10px;margin:6px 0;background:#0a1022}
+.cyc .ci{color:var(--muted);width:16px}.cyc .ce{font-size:24px}.cyc .cn{font-weight:700;font-size:15px}.cyc .cn b{color:var(--gold)}
+.cyc .cd{margin-left:auto;text-align:right;font-size:12.5px;color:#2df28a;font-weight:700}.cyc .cd small{display:block;color:var(--muted);font-weight:500}
+.cyc .cf{margin-top:8px;font-size:12.5px;color:var(--muted)}.cyc .cf b.ok{color:#2df28a}.cyc .cf b.no{color:#ff8b8b}
+.t-q{border-color:#2ef2ff;background:rgba(46,242,255,.16);color:#bff9ff}
   .pron.pat{border-color:rgba(46,242,255,.6);margin:0}
   .pat .patf{display:flex;gap:5px;flex-wrap:wrap;margin:4px 0 8px}
   .pat .patf button,.pat .patfr button{border:1px solid var(--line);background:none;color:var(--muted);border-radius:99px;padding:3px 10px;font:700 13px "Rajdhani",sans-serif;cursor:pointer}
@@ -849,7 +858,8 @@
     <div id="preview"></div>
   </div>
 
-  <div class="card" style="margin-top:16px" id="revCard" data-view="guia"><div id="revBox"></div></div>
+  <div class="card" style="margin-top:16px" id="cycCard" data-view="guia"><div id="cycBox"></div></div>
+<div class="card" style="margin-top:16px" id="revCard" data-view="guia"><div id="revBox"></div></div>
 
   <div class="card" style="margin-top:16px;display:none" data-view="guia" id="volCard">
     <h2>Volteos · <span id="volLot">Guácharo</span></h2>
@@ -955,7 +965,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611182012";
+const BUILD="202611182130";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -976,13 +986,15 @@ function rankRows(l,st,last,arr,P){
   const H=st.hist, ac={}; for(let i=0;i<H.length-1;i++) if(H[i]===last) ac[H[i+1]]=(ac[H[i+1]]||0)+1;
   const rows=arr.map(([n,c])=>{
     const lv=jLevel(st,n), sal=top.includes(n), a=ac[n]||0, v=P.vadd&&P.vadd.has(n);
-    const sc=(c-1)*2+(sal?2:0)+Math.min(a,3)*1.5;
+    let cy=null; try{ cy=cycInfo(l,st,n); }catch(e){}
+    const sc=(c-1)*2+(sal?2:0)+Math.min(a,3)*1.5+(cy?cy.p:0);
     const st3=lv?0:(sc>=4?3:sc>=2?2:sc>0?1:0);
     const tags=[];
     if(c>1) tags.push("×"+c+" en la guía");
     if(sal) tags.push("🔥 salidor");
     if(a) tags.push("✓ acertó "+a+(a===1?" vez":" veces"));
     if(v) tags.push("⇄ volteo 🔥");
+    if(cy) tags.push(cy.corto);
     return {n,c,lv,sc,st3,tags};
   }).sort((x,y)=>(!!x.lv-!!y.lv)||(y.sc-x.sc)||(y.c-x.c));
   return rows;
@@ -1024,17 +1036,19 @@ function predict(g,x,p){
     if(p!=null) ext.forEach(c=>{ if(c[0]===p&&c[1]===x){cont.push(c); add(c[2],1);} });
   }
   // reglas fijas en las 4 loterías: al salir X, se juega una tripleta completa
-  const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["00","32","33"],["00","16","35"],["00","29","36"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]]};
-  const REGLA_NO={"00":["guacharo"],"0":["guacharo"]};
+  const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["00","32","33"],["00","16","35"],["00","29","36"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]]};
+  const REGLA_NO={"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"]};
   const extra=(REGLA_NO[x]||[]).includes(L().id)?[]:(REGLA_TRI[x]||[]).filter(t=>t.every(n=>L().A[n]));
-  const TRI_APARTE=["52","00"];
+  const TRI_APARTE=["52","00","18","36"];
   if(!TRI_APARTE.includes(x)) extra.forEach(t=>t.forEach(n=>{ if(n!==x) add(n,1); }));
     // regla 6⇄9: si uno de estos está para jugar, su compañero entra a su lado
   const vadd=new Map();
   const base=[...now.keys()], subido=new Set(), salT=topSalidores();
   base.forEach(n=>par69(L().id,n).forEach(p=>{ if(!L().A[p]||subido.has(p)||!salT.has(p)||p===x) return; subido.add(p); if(!now.has(p)) vadd.set(p,n); add(p,1); }));
   // Ballena y Delfín: en tripletas solo salen sus tripletas fijas (menos en Guácharo)
-  if(["0","00"].includes(x)&&extra.length) return {now,combos:[],cont:[],vadd,extra};
+  // fijos por hora: al salir X, solo se juegan estos (menos en Guácharo)
+  const FIJOS_X={"36":["01","05","10","11","35"]}; if(FIJOS_X[x]&&!(REGLA_NO[x]||[]).includes(L().id)){ now.clear(); vadd.clear(); FIJOS_X[x].forEach(n=>{ if(L().A[n]) add(n,1); }); }
+  if(["0","00","18","36"].includes(x)&&extra.length) return {now,combos:[],cont:[],vadd,extra};
   return {now,combos,cont,vadd,extra};
 }
 
@@ -1638,7 +1652,7 @@ render();
     {sel:"#pred .pkhead",v:"jugada",t:"Animales para jugar",x:"Lo que toca jugar en el próximo sorteo, con su botón <b>Copiar</b>. Aquí entran tu guía, tus <b>grupos de fijos</b> (Perro, Caballo, Rana, Gato, Toro, Perico, Ratón…) y los <b>volteos ⇄</b> salidores. Las que tienen <b>rejas</b> son jaula: <b>no jugarlas</b>. Un <b>×2</b> indica que sale en varias combinaciones."},
     {sel:"#pred .pron",v:"jugada",t:"🎯 Pronóstico",x:"El resumen más fácil: los <b>3 animales más fuertes</b> para el próximo sorteo, con el porqué en etiquetas: 📖 guía, ⇄ volteo, 📈 salidor, 🔁 pareja fuerte, ⏰ salidor a esa hora, 🔥 caliente esta semana y 🐾☠ felino o veneno. Las barras <b>rojas</b> marcan el más fuerte. <b>Copiar pronóstico</b> lo manda a WhatsApp."},
     {sel:"#pred .rank",v:"jugada",t:"Señales",x:"<b>Los que más señales tienen ⭐</b> y <b>📡 Señal</b> juntan todos los datos: guía, salidores, aciertos, volteos, jaulas y venenos/felinos. Toca un animal de la Señal para ver sus puntos, y con <b>⚙ Qué datos usar</b> eliges qué contar."},
-    {sel:"#pred .trih",v:"jugada",t:"🎯 Tripletas",x:"Las tripletas del animal que salió: <b>Tripleta 1, 2, 3…</b> Primero salen las <b>tripletas fijas</b> (Mono, Delfín, Ballena, Pulpo) y la <b>Combinación del Pulpo</b> en Guácharo; luego las de tu guía. Cada una tiene su <b>Copiar</b>, y <b>Copiar todas</b> las manda juntas."},
+    {sel:"#pred .trih",v:"jugada",t:"🎯 Tripletas",x:"Las tripletas del animal que salió: <b>Tripleta 1, 2, 3…</b> Primero salen las <b>tripletas fijas</b> (Mono, Delfín, Ballena, Burro, Culebra, Pulpo) y la <b>Combinación del Pulpo</b> en Guácharo; luego las de tu guía. Cada una tiene su <b>Copiar</b>, y <b>Copiar todas</b> las manda juntas."},
     {sel:"#scard",v:"salidores",t:"Salidores",x:"El ranking de los animales que <b>más</b> y <b>menos</b> han salido, cada lista con su <b>Copiar</b>. "},
     {sel:"#patCard",v:"salidores",t:"🔍 Patrones",x:"El bot busca patrones en 9 meses de resultados (secuencias, franjas de mañana y tarde, días, pares y 🔀 cruces entre loterías) y los <b>prueba en los últimos 3 meses</b>. Solo los que acertaron claramente más que el azar salen como <b>✅ Confirmado</b> y suman puntos en el Pronóstico, la Señal y las Tripletas más fijas."},
     {sel:"#hcard",v:"salidores",t:"📊 Historial de 1 año",x:"Elige un animal y mira <b>cuándo sale</b>: a qué horas y qué días, con lo esperado al lado. Sale del historial del servidor."},
@@ -2166,6 +2180,43 @@ document.addEventListener("click",e=>{
 
 function SG_DATOS(){ return [["guia","📖 Guía"],["vol","⇄ Volteos"],["vf","🐾 Veneno ⇄ felinos"],["sal","🔥 Salidores"],["ac","✓ Aciertos anteriores"],["jaula","🔒 Jaulas (restan)"]]; }
 function sgOff(){ try{ return JSON.parse(localStorage.getItem("bot-senal-off")||"[]"); }catch(e){ return []; } }
+/* ===== 🔄 Ciclo: cuántos sorteos lleva cada animal sin salir (aprendido del historial del servidor) ===== */
+var CYC_CACHE={};
+const CYC_EDG=[2,5,12,24,48,96,200]; const cycBin=g=>{ if(g>=99999) return 8; for(let i=0;i<CYC_EDG.length;i++) if(g<=CYC_EDG[i]) return i; return 7; };
+function cycSeq(l,hasta){ let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
+  const q=[]; D.slice().sort((a,b)=>a[0]<b[0]?-1:1).forEach(([f,it])=>{ if(hasta&&f>=hasta) return; it.filter(x=>l.A[x[1]]).slice().sort((a,b)=>a[0]<b[0]?-1:1).forEach(x=>q.push(x[1])); }); return q; }
+function cycLearn(l,seq){ const N=l.order.length, h={}, e={}, li={};
+  seq.forEach((n,i)=>{ if(i>300) l.order.forEach(a=>{ const b=cycBin(a in li?i-li[a]:99999); e[b]=(e[b]||0)+1/N; if(a===n) h[b]=(h[b]||0)+1; }); li[n]=i; });
+  const t={}; Object.keys(e).forEach(b=>t[b]=((h[b]||0)+5)/(e[b]+5)); return t; }
+function cycTabla(l){ let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
+  if(D.length<60) return null; const k=l.id+"|"+D.length+"|"+D[D.length-1][0];
+  if(CYC_CACHE[k]) return CYC_CACHE[k]; const t=cycLearn(l,cycSeq(l)); CYC_CACHE={}; CYC_CACHE[k]=t; return t; }
+function cycGap(st,n){ const H=st.hist; for(let i=H.length-1;i>=0;i--) if(H[i]===n) return H.length-i; return 99999; }
+function cycInfo(l,st,n){ const t=cycTabla(l); if(!t) return null; const g=cycGap(st,n), r=t[cycBin(g)]||1;
+  const p=Math.max(-6,Math.min(4,Math.round((r-1)*10))); if(!p) return null;
+  const dd=(g/12).toFixed(1).replace(".0","");
+  const lab=p>0?"🔄 En su punto · "+dd+(dd==="1"?" día":" días")+" sin salir":(g<=12?"⏸ Acaba de salir ("+g+(g===1?" sorteo":" sorteos")+")":"🔒 Jaula muy larga ("+dd+" días)");
+  const corto=p>0?"🔄 en su punto":(g<=12?"⏸ acaba de salir":"🔒 jaula muy larga");
+  return {p,g,r,lab,corto}; }
+function cycTop(l,st,k){ const t=cycTabla(l); if(!t) return []; const H=st.hist, last=H[H.length-1];
+  return l.order.filter(n=>n!==last).map(n=>{ const g=cycGap(st,n); return {n,g,r:t[cycBin(g)]||1}; }).sort((a,b)=>b.r-a.r||a.g-b.g).slice(0,k||5); }
+function cycCheck(l){ let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
+  if(D.length<90) return null; const k="chk|"+l.id+"|"+D.length+"|"+D[D.length-1][0]; if(CYC_CACHE[k]) return CYC_CACHE[k];
+  const ds=D.map(x=>x[0]).sort(), corte=ds[Math.max(0,ds.length-30)];
+  const t=cycLearn(l,cycSeq(l,corte)), all=cycSeq(l), n0=cycSeq(l,corte).length, N=l.order.length, li={};
+  let hit=0, tot=0; all.forEach((n,i)=>{ if(i>=n0){ const top=l.order.filter(a=>a!==all[i-1]).map(a=>[a,t[cycBin(a in li?i-li[a]:99999)]||1]).sort((a,b)=>b[1]-a[1]).slice(0,5).map(x=>x[0]); tot++; if(top.includes(n)) hit++; } li[n]=i; });
+  const v=tot?{hit,tot,x:hit/(tot*5/N)}:null; CYC_CACHE[k]=v; return v; }
+function renderCyc(){ const box=$("cycBox"); if(!box) return; const l=L(), st=S();
+  let top=[]; try{ top=cycTop(l,st,5); }catch(e){}
+  if(!top.length){ box.innerHTML=`<div class="cyc"><div class="ch"><span>🔄 ANIMALES EN SU PUNTO · ${esc(l.name)}</span></div><p class="note" style="margin:6px 0 0">Hace falta el historial del servidor. Si acabas de abrir el bot, aparece en unos segundos.</p></div>`; return; }
+  let c=null; try{ c=cycCheck(l); }catch(e){}
+  box.innerHTML=`<div class="cyc"><div class="ch"><span>🔄 ANIMALES EN SU PUNTO · ${esc(l.name)}</span><button class="cycCp" type="button">⧉ Copiar</button></div>
+    <div class="cs">Los que están en la mejor parte de su ciclo para el próximo sorteo, estén o no en la guía.</div>
+    ${top.map((x,i)=>`<div class="cr"><span class="ci">${i+1}</span><span class="ce">${l.A[x.n][1]}</span><span class="cn"><b>${x.n}</b> ${esc(l.A[x.n][0])}</span><span class="cd">×${x.r.toFixed(2)}<small>${x.g<99999?x.g+(x.g===1?" sorteo":" sorteos")+" sin salir ("+(x.g/12).toFixed(1).replace(".0","")+" días)":"sin datos"}</small></span></div>`).join("")}
+    ${c?`<div class="cf">¿Le está funcionando? Últimos 30 días: <b class="${c.x>=1?"ok":"no"}">×${c.x.toFixed(2)}</b> vs lo normal (${c.hit} de ${c.tot} sorteos)</div>`:""}</div>`;
+  const b=box.querySelector(".cycCp"); if(b) b.onclick=()=>{ const txt="🔄 Animales en su punto · "+l.name+"\n"+top.map((x,i)=>(i+1)+". "+l.A[x.n][1]+" "+x.n+" "+l.A[x.n][0]).join("\n");
+    try{ navigator.clipboard.writeText(txt).then(()=>{ b.textContent="✓ Copiado"; setTimeout(()=>b.textContent="⧉ Copiar",1500); }); }catch(e){} };
+}
 function senalCalc(l,st,last,P){
   const off=sgOff(), on=k=>!off.includes(k);
   const sn=st.cfg.sal==null?100:st.cfg.sal, h=sn?st.hist.slice(-sn):st.hist.slice();
@@ -2186,6 +2237,7 @@ function senalCalc(l,st,last,P){
     if(on("ac")&&ac[n]){ const q=acEsp>=2?ac[n]/acEsp:0, p=acEsp>=2?(q>=1.8?3:q>=1.4?2:q>=1.15?1:0):Math.min(ac[n],3);
       if(p){ f.push(["✓ Salió "+ac[n]+(ac[n]===1?" vez":" veces")+" tras el "+last+(acEsp>=2?" (lo normal: "+Math.round(acEsp)+")":""),p]); sc+=p; } }
     const lv=jLevel(st,n);
+    { let cy=null; try{ cy=cycInfo(l,st,n); }catch(e){} if(cy){ f.push([cy.lab,cy.p]); sc+=cy.p; } }
     if(on("jaula")&&lv){ f.push(["🔒 "+(lv===2?"Jaula fuerte":"Jaula")+" "+daysSince(st.last[n])+"d",-3]); sc-=3; }
     return {n,sc,f};
   }).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc||l.order.indexOf(a.n)-l.order.indexOf(b.n)).slice(0,5);
@@ -2214,6 +2266,7 @@ function pronCalc(l,st,last,P){
     if(on("ac")&&acEsp>=2&&ac[n]){ const q=ac[n]/acEsp; if(q>=1.4){ sc+=q>=1.8?3:2; t.push(["p","🔁 Pareja fuerte del "+last,q>=1.8?3:2]); } }
     if(hT>=30&&hc[n]>=Math.max(3,hEsp*1.4)){ sc+=2; t.push(["h","⏰ Salidor a las "+hLab,2]); }
     if(nd>=30&&(c7[n]||0)>=3&&c7[n]>=2*(cy[n]/nd*7)){ sc+=2; t.push(["c","🔥 Caliente esta semana",2]); }
+    { let cy=null; try{ cy=cycInfo(l,st,n); }catch(e){} if(cy){ sc+=cy.p; t.push([cy.p>0?"y":"z",cy.lab,cy.p]); } }
     let jd=0; if(on("jaula")&&jLevel(st,n)){ sc-=3; jd=daysSince(st.last[n]); }
     return {n,sc,t,jd};
   }).filter(x=>x.sc>0&&x.t.length&&x.n!==last).sort((a,b)=>b.sc-a.sc||b.t.length-a.t.length||l.order.indexOf(a.n)-l.order.indexOf(b.n)).slice(0,3);
@@ -2470,6 +2523,7 @@ function renderHoy(){
   try{ renderFij(); }catch(e){}
   try{ renderPat(); }catch(e){}
   try{ renderRev(); }catch(e){}
+  try{ renderCyc(); }catch(e){}
   renderCalc();
 }
 var HOYOPEN={}, CALC={sel:[]};
