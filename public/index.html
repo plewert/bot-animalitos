@@ -666,6 +666,8 @@
         <div id="hoyRes"></div>
         <button class="hbtn" id="hoyResCp" type="button">⧉ Copiar resultados para WhatsApp</button>
         <div class="hsep"></div>
+        <div id="hoyFij"></div>
+        <div class="hsep"></div>
         <div class="hh"><h2 style="margin:0">🎯 Tripletas de hoy · <span id="hoyTriLot"></span></h2></div>
         <p class="note" style="margin:2px 0 6px">Las que dio el bot hoy. ✓ = ya salió en el día · ⏳ = falta.</p>
         <div class="hbtns"><button class="hbtn sm" id="hoyTriAll" type="button">⧉ Copiar todas</button><button class="hbtn sm gold" id="hoyTriWin" type="button">⧉ Copiar ganadoras</button></div>
@@ -851,7 +853,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611171953";
+const BUILD="202611172012";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1941,6 +1943,67 @@ function triHoy(){
   return out;
 }
 function triTxt(l,o){ return o.t.map((n,k)=>l.A[n][1]+" "+n+" "+l.A[n][0]+" "+(o.ok[k]?"✓":"⏳")).join(" - "); }
+/* ===== 🎯 Tripletas más fijas (para mañana o para hoy) ===== */
+var FIJ_CACHE={}, FIJ_PEND={};
+function fijDia(){
+  const now=new Date(), d=new Date(now); let man=now.getHours()>=ULTIMO;
+  if(man) d.setDate(d.getDate()+1);
+  const t=d.toLocaleDateString("es-VE",{weekday:"long",day:"2-digit",month:"2-digit"});
+  return (man?"para mañana ":"para hoy ")+t;
+}
+function fijCalc(l){
+  let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
+  const key=l.id+"|"+D.length+"|"+(D.length?D[D.length-1][0]+D[D.length-1][1].length:"")+"|"+BUILD;
+  if(FIJ_CACHE[key]) return FIJ_CACHE[key];
+  if(D.length<30) return {R:[],falta:true};
+  const nd=D.length, pd={}, par={}, trio={}, f30={}; let t30=0;
+  const lim=new Date(); lim.setDate(lim.getDate()-30); const fl=lim.toISOString().slice(0,10);
+  D.forEach(([f,it])=>{ const u=[...new Set(it.map(x=>x[1]).filter(n=>l.A[n]))];
+    u.forEach(n=>pd[n]=(pd[n]||0)+1);
+    for(let i=0;i<u.length;i++) for(let j=i+1;j<u.length;j++){ const k=[u[i],u[j]].sort().join("|"); par[k]=(par[k]||0)+1; }
+    if(f>=fl) it.forEach(([h,n])=>{ if(l.A[n]){ f30[n]=(f30[n]||0)+1; t30++; } });
+    });
+  const sets=D.map(([f,it])=>new Set(it.map(x=>x[1])));
+  const esp30=t30/l.order.length, sal=n=>(f30[n]||0)>=esp30*1.3&&(f30[n]||0)>=2;
+  const g=GD(), vist=new Map();
+  l.order.forEach(x=>{ let P; try{ P=predict(g,x,null); }catch(e){ return; }
+    const src=[...(P.extra||[]).map(t=>[t,"g","📖 Tripleta fija "+l.A[x][0]]),...(P.combos||[]).map(t=>[t,t.grp?"g":"v",t.grp?"📌 Grupo de fijos":"📖 De tu guía"])];
+    src.forEach(([t,c,lab])=>{ if(!t||t.length<3) return; t=t.slice(0,3); if(new Set(t).size<3) return;
+      const k=[...t].sort().join("-"); const pri=c==="g"?2:1; const o=vist.get(k);
+      if(!o||pri>o.pri) vist.set(k,{t,pri,lab,c}); }); });
+  const R=[...vist.values()].map(o=>{ const t=o.t; let sc=o.pri; const tags=[[o.c,o.lab]];
+    const ss=t.filter(sal);
+    if(ss.length===3){ sc+=3; tags.push(["c","🔥 Los 3 salidores (30 días)"]); }
+    else if(ss.length===2){ sc+=2; tags.push(["c","📈 "+ss.join(" y ")+" salidores"]); }
+    let best=null; for(let i=0;i<3;i++) for(let j=i+1;j<3;j++){ const a=t[i],b=t[j], c=par[[a,b].sort().join("|")]||0, e=(pd[a]||0)*(pd[b]||0)/nd;
+      if(e>0&&c>=e*1.25&&c>=e+3){ const q=c/e; if(!best||q>best.q) best={a,b,q}; } }
+    if(best){ sc+=2; tags.push(["p","👥 "+best.a+" y "+best.b+" salen juntos"]); }
+    let tc=0; sets.forEach(S=>{ if(S.has(t[0])&&S.has(t[1])&&S.has(t[2])) tc++; });
+    if(tc>=2){ sc+=Math.min(3,tc-1); tags.push(["h","✅ Salió completa "+tc+" veces en el año"]); }
+    return {t,sc,tags};
+  }).sort((a,b)=>b.sc-a.sc||b.tags.length-a.tags.length||l.order.indexOf(a.t[0])-l.order.indexOf(b.t[0])).slice(0,5);
+  R.forEach(x=>x.lv=x.sc>=9?5:x.sc>=7?4:x.sc>=5?3:x.sc>=3?2:1);
+  const out={R}; FIJ_CACHE[key]=out; return out;
+}
+function fijTxt(l,t){ return t.map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join(" - "); }
+function renderFij(){
+  const box=$("hoyFij"); if(!box) return; const l=L(); let o;
+  try{ o=fijCalc(l); }catch(e){ o={R:[],err:true}; }
+  const head=`<div class="prh">🎯 Tripletas más fijas · ${esc(l.name)}</div><div class="prs"><span>${fijDia()} · todo el día</span></div>`;
+  if(!o.R.length){ box.innerHTML=`<div class="pron">${head}<p class="note" style="margin:4px 0">Hace falta el historial del servidor (al menos 30 días). Si acabas de abrir el bot, aparecen en unos segundos.</p></div>`; if(o.falta&&!(FIJ_PEND[l.id]>Date.now())){ FIJ_PEND[l.id]=Date.now()+300000; try{ cargarHist(l.id).then(()=>{ if(L().id===l.id) renderFij(); }); }catch(e){} } return; }
+  box.innerHTML=`<div class="pron">${head}
+    ${o.R.map((x,i)=>`<div class="prr${i===0?" top":""}" style="display:block"><div class="prn"><span style="font-size:16px">${x.t.map(n=>`${l.A[n][1]} <b>${n}</b> ${esc(l.A[n][0])}`).join(' <span style="color:var(--muted)">-</span> ')}</span><span class="prb${x.lv>=5?" max":""}">${[1,2,3,4,5].map(k=>`<i class="${k<=x.lv?"on":""}" style="height:${4+k*3}px"></i>`).join("")}</span></div>
+      <div>${x.tags.map(([c,t])=>`<span class="prt t-${c}">${esc(t)}</span>`).join("")}</div>
+      <div style="text-align:right;margin-top:4px"><button class="pkcp fjcp" data-i="${i}" type="button">⧉ Copiar</button></div></div>`).join("")}
+    <button class="prcp fjall" type="button">⧉ Copiar las ${o.R.length} tripletas</button></div>`;
+}
+document.addEventListener("click",e=>{
+  const one=e.target.closest(".fjcp"), all=e.target.closest(".fjall"); if(!one&&!all) return;
+  const l=L(); let o; try{ o=fijCalc(l); }catch(err){ return; } if(!o.R.length) return;
+  const cab="🎯 *Tripletas más fijas · "+l.name+"*\n📅 "+fijDia().replace(/^./,c=>c.toUpperCase())+"\n";
+  if(one){ const x=o.R[+one.dataset.i]; if(x) copyTxt(cab+fijTxt(l,x.t)+FOOTER,one,"⧉ Copiar"); }
+  else copyTxt(cab+o.R.map((x,i)=>(i+1)+") "+fijTxt(l,x.t)).join("\n")+FOOTER,all,"⧉ Copiar las "+o.R.length+" tripletas");
+});
 function renderHoy(){
   const box=$("hoyRes"); if(!box) return;
   const td=today(), abiertos=HOYOPEN||{};
@@ -1957,6 +2020,7 @@ function renderHoy(){
     +(resto?`<details class="hl"${HOYOPEN.tri?" open":""} id="triMas"><summary>Ver las demás (${resto})<small>les faltan 2</small></summary><div style="padding:0 8px 4px">${T.slice(nP).map((o,k)=>caja(o,k+nP)).join("")}</div></details>`:"")
     :'<p class="note">Todavía no hay tripletas hoy en '+esc(l.name)+'. Aparecen cuando salgan los primeros resultados.</p>';
   const tm=$("triMas"); if(tm) tm.ontoggle=()=>{HOYOPEN.tri=tm.open;};
+  try{ renderFij(); }catch(e){}
   renderCalc();
 }
 var HOYOPEN={}, CALC={sel:[]};
