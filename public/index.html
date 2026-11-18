@@ -945,7 +945,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611181610";
+const BUILD="202611181925";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1073,7 +1073,7 @@ function aciertoCalc(l,st){
     const g=GD(), P=predict(g,x,H[H.length-3]);
     let pr=null; try{ const o=pronCalc(l,st,x,P); const i=o.R.findIndex(r=>r.n===y); if(i>=0) pr={R:o.R,i}; }catch(e){}
     let rk=null; try{ const arr=orden69([...P.now.entries()].sort((a,b)=>l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
-      if(arr.length){ const rows=rankRows(l,st,x,arr,P).filter(r=>!r.lv); const i=rows.findIndex(r=>r.n===y); if(i>=0&&i<5) rk={rows,i}; } }catch(e){}
+      if(arr.length){ const rows=rankRows(l,st,x,arr,P).filter(r=>!r.lv); const i=rows.findIndex(r=>r.n===y); if(i>=0&&(i<5||rows[i].st3>=3)) rk={rows,i}; } }catch(e){}
     let sg=null; try{ const R=senalCalc(l,st,x,P); const i=R.findIndex(r=>r.n===y); if(i>=0) sg={R,i}; }catch(e){}
     if(pr||rk||sg) v={x,y,pr,rk,sg};
   }catch(e){} finally{ st.hist=H; }
@@ -1085,7 +1085,7 @@ function aciertoHtml(l,st){
   const y=a.y, nm=`${l.A[y][1]} <b class="acn">${y}</b> ${esc(l.A[y][0])}`;
   const sal=`<span class="hb">✅ ¡SALIÓ!${h?" "+h:""}</span>`;
   let o=`<div class="acw"><div class="ah"><b>✅ ¡ACERTÓ!</b><span>${(()=>{ const q=[a.pr&&"el pronóstico",a.rk&&"las señales",a.sg&&"la 📡 Señal"].filter(Boolean); const t=q.length>1?q.slice(0,-1).join(", ")+" y "+q[q.length-1]:q[0]; return t.charAt(0).toUpperCase()+t.slice(1)+(q.length>1||a.rk?" dieron":" dio")+" en el blanco"; })()}</span></div>
-    <div class="as">Salió ${nm}${h?" a las "+h:""}${(()=>{ const q=[a.pr&&`<b class="acp">#${a.pr.i+1}</b> en el pronóstico`,a.rk&&`<b class="acp">#${a.rk.i+1}</b> en las señales`,a.sg&&`<b class="acp">#${a.sg.i+1}</b> en la 📡 Señal`].filter(Boolean); return " y estaba de "+(q.length>1?q.slice(0,-1).join(", de ")+" y de "+q[q.length-1]:q[0]); })()}</div>`;
+    <div class="as">Salió ${nm}${h?" a las "+h:""}${(()=>{ const q=[a.pr&&`<b class="acp">#${a.pr.i+1}</b> en el pronóstico`,a.rk&&`<b class="acp">#${a.rk.i+1}</b> en las señales${a.rk.rows[a.rk.i].st3?" con "+"⭐".repeat(a.rk.rows[a.rk.i].st3):""}`,a.sg&&`<b class="acp">#${a.sg.i+1}</b> en la 📡 Señal`].filter(Boolean); return " y estaba de "+(q.length>1?q.slice(0,-1).join(", de ")+" y de "+q[q.length-1]:q[0]); })()}</div>`;
   if(a.pr) o+=`<div class="acb pron"><div class="act">🎯 Pronóstico que se dio <small>tras ${l.A[a.x][1]} ${a.x}</small></div>${a.pr.R.map((r,i)=>`<div class="prr${i===a.pr.i?" hit":" miss"}"><div class="pre">${l.A[r.n][1]}</div><div style="flex:1;min-width:0"><div class="prn"><span><b>${r.n}</b> ${esc(l.A[r.n][0])}</span><span class="prb${r.lv>=5?" max":""}">${[1,2,3,4,5].map(k=>`<i class="${k<=r.lv?"on":""}" style="height:${4+k*3}px"></i>`).join("")}</span></div><div>${r.t.map(([c,t])=>`<span class="prt t-${c}">${esc(t)}</span>`).join("")}</div>${i===a.pr.i?sal:""}</div></div>`).join("")}</div>`;
   if(a.rk){ const n=Math.min(a.rk.rows.length,Math.max(3,a.rk.i+1));
     o+=`<div class="acb"><div class="act">◆ Señales que se dieron <small>tras ${l.A[a.x][1]} ${a.x}</small></div>${a.rk.rows.slice(0,n).map((r,i)=>`<div class="rr${i===a.rk.i?" hit":" miss"}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${i===a.rk.i?`<div>${sal}</div>`:""}</div><span class="rs">${"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`; }
