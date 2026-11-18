@@ -575,6 +575,7 @@
   .pron .prt{display:inline-block;margin:3px 4px 0 0;padding:1px 8px;border-radius:99px;font-size:12.5px;font-weight:700;border:1px solid;text-transform:none;letter-spacing:0}
   .pron .t-g{border-color:#f5b83d;background:#3d2a05;color:#ffd27a} .pron .t-p{border-color:#2fd39a;background:#0c3a2c;color:#9ff0cf}
   .pron .t-h{border-color:#2ef2ff;background:rgba(46,242,255,.1);color:#9ff7ff} .pron .t-c{border-color:#ff7a3c;background:rgba(255,90,60,.15);color:#ffb08a}
+  .pron .t-x{border-color:#ff3b5c;background:rgba(255,59,92,.12);color:#ff9fb0}
   .pron .t-v{border-color:#b18cff;background:rgba(177,140,255,.12);color:#d8c6ff}
   .pron .prb{display:inline-flex;gap:2px;align-items:flex-end;flex:none}
   .pron .prb i{width:5px;border-radius:2px;background:#26324f}
@@ -853,7 +854,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611172022";
+const BUILD="202611172056";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1953,7 +1954,8 @@ function fijDia(){
 }
 function fijCalc(l){
   let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
-  const key=l.id+"|"+D.length+"|"+(D.length?D[D.length-1][0]+D[D.length-1][1].length:"")+"|"+BUILD;
+  const st=S(), H=st.hist, last=H[H.length-1];
+  const key=l.id+"|"+D.length+"|"+(D.length?D[D.length-1][0]+D[D.length-1][1].length:"")+"|"+BUILD+"|"+H.length+"|"+last;
   if(FIJ_CACHE[key]) return FIJ_CACHE[key];
   if(D.length<30) return {R:[],falta:true};
   const nd=D.length, pd={}, par={}, trio={}, f30={}; let t30=0;
@@ -1966,6 +1968,8 @@ function fijCalc(l){
   const sets=D.map(([f,it])=>new Set(it.map(x=>x[1])));
   const esp30=t30/l.order.length, sal=n=>(f30[n]||0)>=esp30*1.3&&(f30[n]||0)>=2;
   const g=GD(), vist=new Map();
+  const topS=new Set(topSalidores()); let sen=new Set();
+  if(last&&l.A[last]){ try{ const P0=predict(g,last,H[H.length-2]); sen=new Set(senalCalc(l,st,last,P0).map(x=>x.n)); }catch(e){} }
   l.order.forEach(x=>{ let P; try{ P=predict(g,x,null); }catch(e){ return; }
     const src=[...(P.extra||[]).map(t=>[t,"g","📖 Tripleta fija "+l.A[x][0]]),...(P.combos||[]).map(t=>[t,t.grp?"g":"v",t.grp?"📌 Grupo de fijos":"📖 De tu guía"])];
     src.forEach(([t,c,lab])=>{ if(!t||t.length<3) return; t=t.slice(0,3); if(new Set(t).size<3) return;
@@ -1980,6 +1984,10 @@ function fijCalc(l){
     if(best){ sc+=2; tags.push(["p","👥 "+best.a+" y "+best.b+" salen juntos"]); }
     let tc=0; sets.forEach(S=>{ if(S.has(t[0])&&S.has(t[1])&&S.has(t[2])) tc++; });
     if(tc>=2){ sc+=Math.min(3,tc-1); }
+    for(const n of t){ const v=par69(l.id,n).find(z=>topS.has(z)&&!t.includes(z)); if(v){ sc+=2; tags.push(["v","⇄ "+n+" tiene volteo salidor ("+v+")"]); break; } }
+    const enS=t.filter(n=>sen.has(n)); if(enS.length){ sc+=enS.length>1?3:2; tags.push(["h","📡 "+enS.join(" y ")+(enS.length>1?" están":" está")+" en la Señal"]); }
+    let jw=null; t.forEach(n=>{ if(jLevel(st,n)){ sc-=2; const d=daysSince(st.last[n]); if(!jw||d>jw.d) jw={n,d}; } });
+    if(jw) tags.push(["x","🔒 "+jw.n+" lleva "+jw.d+" días sin salir"]);
     return {t,sc,tags};
   }).sort((a,b)=>b.sc-a.sc||b.tags.length-a.tags.length||l.order.indexOf(a.t[0])-l.order.indexOf(b.t[0])).slice(0,5);
   R.forEach(x=>x.lv=x.sc>=9?5:x.sc>=7?4:x.sc>=5?3:x.sc>=3?2:1);
