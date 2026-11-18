@@ -581,6 +581,17 @@
   .pron .prb i{width:5px;border-radius:2px;background:#26324f}
   .pron .prb i.on{background:#2fd39a} .pron .prb.max i.on{background:#ff3b3b}
   .pron .prcp{width:100%;margin-top:6px;padding:7px;border-radius:99px;border:1px solid rgba(46,242,255,.6);background:rgba(46,242,255,.1);color:var(--cyan);font:700 15px "Rajdhani",sans-serif;cursor:pointer}
+  /* tripletas en una sola línea */
+  .ch.tri3:not(.comb){padding:5px 5px;gap:4px}
+  .ch.tri3:not(.comb) .cad{flex-wrap:nowrap;gap:1px;overflow:hidden}
+  .ch.tri3:not(.comb) .tnum{flex:none;width:18px;height:18px;padding:0;margin-right:2px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px}
+  .ch.tri3:not(.comb) .x{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:12px;padding:1px 4px;letter-spacing:-.2px}
+  .ch.tri3:not(.comb) .x img{vertical-align:middle;width:16px;height:16px}
+  .ch.tri3:not(.comb) .ar{flex:none;margin:0;font-size:11px}
+  .ch.tri3:not(.comb) .lbl{flex:none;font-size:8px;margin-right:2px}
+  .ch.tri3:not(.comb) .ccp{padding:5px 7px;font-size:14px;min-width:30px}
+  @media (max-width:375px){ .ch.tri3:not(.comb) .x{font-size:11px;padding:1px 3px;letter-spacing:-.4px} .ch.tri3:not(.comb) .x img{width:14px;height:14px} .ch.tri3:not(.comb) .tnum{width:16px;height:16px} }
+  .ch.tri3:not(.comb) .ccp.ok{font-size:0} .ch.tri3:not(.comb) .ccp.ok::before{content:"✓";font-size:14px}
 </style>
 </head>
 <body class="locked">
@@ -854,7 +865,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611172141";
+const BUILD="202611172152";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1071,7 +1082,7 @@ function chainHtml(l,c,g,hotSet,isCont,cp){
     return `<div class="ch chc tri3 comb"><div class="cad"><span class="tnum cmb">${l.A[c[0]][1]} Combinación del ${esc(l.A[c[0]][0])}</span>${c.slice(1).map(n=>tag(l,n,true)).join('<span class="ar">-</span>')}</div><button class="ccp" data-c="${c.join(",")}" data-k="comb">⧉ Copiar</button></div>`; }
   if(cp&&TRI_N){ const k=TRI_N.n++;
     const t3=c.map((n,i)=>tag(l,n,hotSet&&hotSet.has(n)&&(tipo==="chain"?((isCont&&i===2)||(!isCont&&i===1)):i>0))).join('<span class="ar">-</span>');
-    return `<div class="ch chc tri3${isCont?" cont":""}"><div class="cad"><span class="tnum">Tripleta ${k}</span>${isCont?'<span class="lbl">EN CURSO</span>':""}${t3}</div><button class="ccp" data-c="${c.join(",")}" data-k="tri">⧉ Copiar</button></div>`; }
+    return `<div class="ch chc tri3${isCont?" cont":""}"><div class="cad"><span class="tnum" title="Tripleta ${k}">${k}</span>${isCont?'<span class="lbl">EN CURSO</span>':""}${t3}</div><button class="ccp" data-c="${c.join(",")}" data-k="tri" aria-label="Copiar tripleta">⧉</button></div>`; }
   if(!cp) return `<div class="ch${isCont?" cont":""}">${inner}</div>`;
   return `<div class="ch chc${isCont?" cont":""}"><div class="cad">${inner}</div><button class="ccp" data-c="${c.join(",")}" data-k="${tipo}">⧉ Copiar</button></div>`;
 }
@@ -1109,7 +1120,7 @@ function render(){
         return `<div class="pk${contSet.has(n)?" cont":""}${lv?" j"+lv:""}${P.vadd.has(n)?" v69":""}">${P.vadd.has(n)?`<span class="v69t">⇄ 🔥</span>`:""}${c>1?`<span class="cnt">×${c}</span>`:""}${lv?`<i class="cage"></i><span class="pjt">${lv===2?"JAULA FUERTE":"JAULA"}</span><span class="pjd">${daysSince(st.last[n])}d</span>`:""}<span class="e">${l.A[n][1]}</span><b>${n}</b>${esc(l.A[n][0])}${lv?`<span class="pno">${lv===2?"Jaula fuerte · no jugarlo":"Jaula · no jugarlo"}</span>`:""}</div>`;}).join("")}</div>
       ${pronHtml(l,st,last,P)}${rankHtml(l,st,last,arr,P)}${senalHtml(l,st,last,P)}
       ${(()=>{ const hay=[...P.cont,...P.combos,...(P.extra||[])].length>0; TRI_N={n:1};
-        const h=`${hay?'<div class="trih"><span>🎯 Tripletas</span><button class="tricpall" type="button">⧉ Copiar todas</button></div>':""}<div class="chains">${P.combos.filter(c=>c.length>=5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}${(P.extra||[]).map(t=>`<div class="ch chc tri3"><div class="cad"><span class="tnum">Tripleta ${TRI_N.n++}</span>${t.map(n=>tag(l,n,n!==last)).join('<span class="ar">-</span>')}</div><button class="ccp" data-c="${t.join(",")}" data-k="tri">⧉ Copiar</button></div>`).join("")}${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.filter(c=>c.length<5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>`;
+        const h=`${hay?'<div class="trih"><span>🎯 Tripletas</span><button class="tricpall" type="button">⧉ Copiar todas</button></div>':""}<div class="chains">${P.combos.filter(c=>c.length>=5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}${(P.extra||[]).map(t=>`<div class="ch chc tri3"><div class="cad"><span class="tnum">${TRI_N.n++}</span>${t.map(n=>tag(l,n,n!==last)).join('<span class="ar">-</span>')}</div><button class="ccp" data-c="${t.join(",")}" data-k="tri" aria-label="Copiar tripleta">⧉</button></div>`).join("")}${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.filter(c=>c.length<5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>`;
         TRI_N=null; return h; })()}`;
   }
   const W=st.cfg.win||1;
@@ -1226,7 +1237,7 @@ document.addEventListener("click",ev=>{
   const b=ev.target.closest&&ev.target.closest(".ccp:not(.ccpv)"); if(!b) return;
   const l=L(), c=b.dataset.c.split(","), sep=b.dataset.k==="chain"?" ➜ ":" ➜ ";
   if(b.dataset.k==="comb"){ copyTxt("🎯 *Combinación del "+l.A[c[0]][0]+" · "+l.name+"*\n"+c.slice(1).map(n=>l.A[n][1]+" "+n).join(" - ")+"\n("+c.slice(1).map(n=>l.A[n][0]).join(" - ")+")"+ventanaTxt(S())+FOOTER,b,"⧉ Copiar"); return; }
-  if(b.dataset.k==="tri"){ copyTxt("🎯 *Tripleta · "+l.name+"*\n"+c.map(n=>l.A[n][1]+" "+n).join(" - ")+"\n("+c.map(n=>l.A[n][0]).join(" - ")+")"+ventanaTxt(S())+FOOTER,b,"⧉ Copiar"); return; }
+  if(b.dataset.k==="tri"){ copyTxt("🎯 *Tripleta · "+l.name+"*\n"+c.map(n=>l.A[n][1]+" "+n).join(" - ")+"\n("+c.map(n=>l.A[n][0]).join(" - ")+")"+ventanaTxt(S())+FOOTER,b,"⧉"); return; }
   const t=b.dataset.k==="chain"?c.map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join(sep)
     :l.A[c[0]][1]+" "+c[0]+" "+l.A[c[0]][0]+" ➜ "+c.slice(1).map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join(" - ");
   copyTxt("🎯 *Combinación · "+l.name+"*\n"+t+ventanaTxt(S())+FOOTER,b,"⧉ Copiar");
