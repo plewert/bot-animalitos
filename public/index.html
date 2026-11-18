@@ -853,7 +853,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611172012";
+const BUILD="202611172022";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1979,7 +1979,7 @@ function fijCalc(l){
       if(e>0&&c>=e*1.25&&c>=e+3){ const q=c/e; if(!best||q>best.q) best={a,b,q}; } }
     if(best){ sc+=2; tags.push(["p","👥 "+best.a+" y "+best.b+" salen juntos"]); }
     let tc=0; sets.forEach(S=>{ if(S.has(t[0])&&S.has(t[1])&&S.has(t[2])) tc++; });
-    if(tc>=2){ sc+=Math.min(3,tc-1); tags.push(["h","✅ Salió completa "+tc+" veces en el año"]); }
+    if(tc>=2){ sc+=Math.min(3,tc-1); }
     return {t,sc,tags};
   }).sort((a,b)=>b.sc-a.sc||b.tags.length-a.tags.length||l.order.indexOf(a.t[0])-l.order.indexOf(b.t[0])).slice(0,5);
   R.forEach(x=>x.lv=x.sc>=9?5:x.sc>=7?4:x.sc>=5?3:x.sc>=3?2:1);
