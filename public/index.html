@@ -743,11 +743,10 @@
     <h2>Más salidores · <span id="sLot"></span></h2>
     <div class="seg" id="sSeg" style="margin-bottom:12px"><button data-s="50">Últimos 50</button><button data-s="100">Últimos 100</button><button data-s="0">Todos</button></div>
     <div id="sBody"></div>
-    <div id="triBox"></div>
   </div>
 
   <div class="card" style="margin-top:16px" id="fijCard" data-view="fijas">
-    <div id="hoyFij"></div>
+    <div id="fijWrap"><div id="hoyFij"></div><div id="triWrap" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><div id="triBox"></div></div></div>
   </div>
 
   <div class="card" style="margin-top:16px" id="hcard" data-view="salidores">
@@ -871,7 +870,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611172215";
+const BUILD="202611172246";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1433,7 +1432,7 @@ function setView(v){VIEW=v; try{localStorage.setItem("bot-view",v)}catch(e){}
   document.querySelectorAll("[data-view]").forEach(el=>el.classList.toggle("vis",el.dataset.view===v));
   document.querySelectorAll("#bnav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
   if(MQ.matches) window.scrollTo(0,0);}
-function placeFij(){ const f=$("hoyFij"), slot=$("fijSlotPc"), card=$("fijCard"); if(!f||!slot||!card) return;
+function placeFij(){ const f=$("fijWrap"), slot=$("fijSlotPc"), card=$("fijCard"); if(!f||!slot||!card) return;
   if(MQ.matches){ if(f.parentNode!==card) card.appendChild(f); } else { if(f.parentNode!==slot) slot.appendChild(f); } }
 function applyMQ(){document.body.classList.toggle("inapp",MQ.matches); placeFij(); setView(VIEW);}
 try{MQ.addEventListener("change",applyMQ);}catch(e){MQ.addListener(applyMQ);}
@@ -1509,11 +1508,11 @@ render();
     {sel:"#pred .pron",v:"jugada",t:"🎯 Pronóstico",x:"El resumen más fácil: los <b>3 animales más fuertes</b> para el próximo sorteo, con el porqué en etiquetas: 📖 guía, ⇄ volteo, 📈 salidor, 🔁 pareja fuerte, ⏰ salidor a esa hora, 🔥 caliente esta semana y 🐾☠ felino o veneno. Las barras <b>rojas</b> marcan el más fuerte. <b>Copiar pronóstico</b> lo manda a WhatsApp."},
     {sel:"#pred .rank",v:"jugada",t:"Señales",x:"<b>Los que más señales tienen ⭐</b> y <b>📡 Señal</b> juntan todos los datos: guía, salidores, aciertos, volteos, jaulas y venenos/felinos. Toca un animal de la Señal para ver sus puntos, y con <b>⚙ Qué datos usar</b> eliges qué contar."},
     {sel:"#pred .trih",v:"jugada",t:"🎯 Tripletas",x:"Las tripletas del animal que salió: <b>Tripleta 1, 2, 3…</b> Primero salen las <b>tripletas fijas</b> (Mono, Delfín, Ballena, Pulpo) y la <b>Combinación del Pulpo</b> en Guácharo; luego las de tu guía. Cada una tiene su <b>Copiar</b>, y <b>Copiar todas</b> las manda juntas."},
-    {sel:"#scard",v:"salidores",t:"Salidores",x:"El ranking de los animales que <b>más</b> y <b>menos</b> han salido, cada lista con su <b>Copiar</b>. Abajo están las <b>Tripletas de salidores</b>."},
+    {sel:"#scard",v:"salidores",t:"Salidores",x:"El ranking de los animales que <b>más</b> y <b>menos</b> han salido, cada lista con su <b>Copiar</b>. "},
     {sel:"#hcard",v:"salidores",t:"📊 Historial de 1 año",x:"Elige un animal y mira <b>cuándo sale</b>: a qué horas y qué días, con lo esperado al lado. Sale del historial del servidor."},
     {sel:"#jcard",v:"jaulas",t:"Jaulas",x:"Los animales que llevan días sin salir: <b>naranja</b> desde 5 días y <b>rojo</b> desde 12. Puedes cambiar esos límites."},
     {sel:"#hoyRes",v:"cuentas",t:"📋 Resultados de hoy",x:"Los resultados del día de las <b>4 loterías</b> con su hora. Toca una lotería para abrirla o cerrarla, y <b>Copiar resultados</b> los manda a WhatsApp con tu marca."},
-    {sel:"#hoyFij",v:"fijas",t:"🎯 Fijas",x:"Las <b>5 tripletas más fuertes</b> para hoy, o para mañana después de las 7 p. m. Revisa tu guía, tripletas fijas y grupos de fijos, y les da puntos por salidores, parejas que salen juntas, volteos y Señal; la jaula las baja. Cada una con su <b>Copiar</b>."},
+    {sel:"#fijWrap",v:"fijas",t:"🎯 Fijas",x:"Dos secciones de tripletas. Arriba, las <b>5 tripletas más fuertes</b> para hoy, o para mañana después de las 7 p. m. Revisa tu guía, tripletas fijas y grupos de fijos, y les da puntos por salidores, parejas que salen juntas, volteos y Señal; la jaula las baja. Cada una con su <b>Copiar</b>. Abajo, las <b>Tripletas de salidores</b>: se arman con los más salidores que <b>aún no han salido hoy</b> y cambian durante el día."},
     {sel:"#hoyTri",v:"cuentas",t:"🎯 Tripletas de hoy",x:"Las tripletas que dio el bot en el día, con <b>✓</b> los animales que ya salieron y <b>⏳</b> los que faltan. Las completas salen como <b>¡GANADORA! 🏆</b>. Puedes copiar una, todas o solo las ganadoras."},
     {sel:"#cAni",v:"cuentas",t:"🧮 Calculadora",x:"Pon el monto y lo que paga, toca los animales que jugó el cliente y te dice <b>cuánto cobra</b> por animal y por tripleta. Los montos se quedan guardados."},
     {sel:"#guiaCard",v:"guia",t:"Guía completa",x:"Toda la guía de esta lotería, con buscador por número o nombre. ¡Listo! Puedes repetir este recorrido cuando quieras con el botón <b>🤖 Bot guía</b>."}
