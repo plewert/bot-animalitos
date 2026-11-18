@@ -611,6 +611,20 @@
   .pat .patb{display:flex;gap:8px;align-items:center;margin-top:5px;font-size:13px} .pat .patb span{width:108px;flex:none} .pat .patb b{width:64px;text-align:right;flex:none}
   .pat .patb div{flex:1;height:8px;border-radius:9px;background:#151e38;overflow:hidden} .pat .patb i{display:block;height:100%}
   .pat .patb.az{color:var(--muted)} .pat .patb.az i{background:#5b6b8f}
+  .pat .patn div.ok.fire{border-color:#ff8a2a;background:rgba(255,120,30,.1)}
+  .pat .patal{display:table;margin:6px auto 0;padding:3px 12px;border-radius:99px;background:linear-gradient(90deg,#ff5a1f,#ffb020);color:#2a0d00;font-style:normal;font-weight:800;font-size:13px;box-shadow:0 0 14px rgba(255,120,30,.7)}
+  .pron .prt.patfire{background:linear-gradient(90deg,#ff5a1f,#ffb020);color:#2a0d00;border-color:#ffb020;box-shadow:0 0 12px rgba(255,120,30,.6)}
+  .palert{margin:8px 0 10px;padding:10px 12px;border-radius:14px;border:1px solid #ffb020;background:linear-gradient(90deg,rgba(255,90,31,.22),rgba(255,176,32,.1));box-shadow:0 0 16px rgba(255,120,30,.35)}
+  .palert .pahd{display:flex;align-items:center;gap:8px;font-weight:800;color:#ffd27a;font-size:15px}
+  .palert .pahd span{margin-left:auto;font-size:11px;padding:1px 8px;border-radius:99px;background:linear-gradient(90deg,#ff5a1f,#ffb020);color:#2a0d00}
+  .palert .parow{margin-top:7px;font-size:15px;line-height:1.5} .palert .parow small{display:block;font-size:12px;color:var(--muted)}
+  .palert .pach{display:inline-flex;gap:4px;align-items:center;padding:1px 9px;border-radius:99px;background:rgba(255,176,32,.2);color:#ffd27a;font-weight:800}
+  .ch.tri3.patri{border-color:#ffb020;background:linear-gradient(90deg,rgba(255,90,31,.2),rgba(255,176,32,.08));box-shadow:0 0 12px rgba(255,120,30,.35);flex-wrap:wrap}
+  .ch.tri3.patri .tnum.pfi{border:0;background:none;width:auto;font-size:14px}
+  .patnote{flex-basis:100%;font-size:12.5px;color:#ffd27a;font-weight:700;margin:2px 0 0 4px}
+  .patpill{font-style:normal;margin-left:6px;font-size:11px;padding:1px 8px;border-radius:99px;background:linear-gradient(90deg,#ff5a1f,#ffb020);color:#2a0d00;letter-spacing:0;white-space:nowrap;vertical-align:middle}
+  .pron .t-f{background:linear-gradient(90deg,#ff5a1f,#ffb020);color:#2a0d00;border-color:#ffb020;box-shadow:0 0 10px rgba(255,120,30,.5)}
+  .ht .patnote{margin-left:0}
 </style>
 </head>
 <body class="locked">
@@ -889,7 +903,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611172343";
+const BUILD="202611180006";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1139,13 +1153,14 @@ function render(){
       ${vv?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv][1]} ${vv} ${esc(l.A[vv][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv}">⧉ Copiar</button></div>`:""}
       <div class="from">Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>. Para el próximo sorteo la guía marca:</div>
       ${ventanaHtml(st)}
-      <div class="pkhead"><span>🎯 Animales para jugar</span><button class="pkcp" type="button">⧉ Copiar</button></div>
+      ${patAlerta(l,st,last)}<div class="pkhead"><span>🎯 Animales para jugar</span><button class="pkcp" type="button">⧉ Copiar</button></div>
       <div class="picks">${arr.map(([n,c])=>{const lv=jLevel(st,n);
         return `<div class="pk${contSet.has(n)?" cont":""}${lv?" j"+lv:""}${P.vadd.has(n)?" v69":""}">${P.vadd.has(n)?`<span class="v69t">⇄ 🔥</span>`:""}${c>1?`<span class="cnt">×${c}</span>`:""}${lv?`<i class="cage"></i><span class="pjt">${lv===2?"JAULA FUERTE":"JAULA"}</span><span class="pjd">${daysSince(st.last[n])}d</span>`:""}<span class="e">${l.A[n][1]}</span><b>${n}</b>${esc(l.A[n][0])}${lv?`<span class="pno">${lv===2?"Jaula fuerte · no jugarlo":"Jaula · no jugarlo"}</span>`:""}</div>`;}).join("")}</div>
       ${pronHtml(l,st,last,P)}${rankHtml(l,st,last,arr,P)}${senalHtml(l,st,last,P)}
       ${(()=>{ const hay=[...P.cont,...P.combos,...(P.extra||[])].length>0; TRI_N={n:1};
         const h=`${hay?'<div class="trih"><span>🎯 Tripletas</span><button class="tricpall" type="button">⧉ Copiar todas</button></div>':""}<div class="chains">${P.combos.filter(c=>c.length>=5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}${(P.extra||[]).map(t=>`<div class="ch chc tri3"><div class="cad"><span class="tnum">${TRI_N.n++}</span>${t.map(n=>tag(l,n,n!==last)).join('<span class="ar">-</span>')}</div><button class="ccp" data-c="${t.join(",")}" data-k="tri" aria-label="Copiar tripleta">⧉</button></div>`).join("")}${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.filter(c=>c.length<5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>`;
         TRI_N=null; return h; })()}`;
+    try{ patMarcarTri(l); }catch(e){}
   }
   const W=st.cfg.win||1;
   let ev=0,ac=0,inv=0,ganado=0,exp=0; const rows=[];
@@ -1261,7 +1276,7 @@ document.addEventListener("click",ev=>{
   const b=ev.target.closest&&ev.target.closest(".ccp:not(.ccpv)"); if(!b) return;
   const l=L(), c=b.dataset.c.split(","), sep=b.dataset.k==="chain"?" ➜ ":" ➜ ";
   if(b.dataset.k==="comb"){ copyTxt("🎯 *Combinación del "+l.A[c[0]][0]+" · "+l.name+"*\n"+c.slice(1).map(n=>l.A[n][1]+" "+n).join(" - ")+"\n("+c.slice(1).map(n=>l.A[n][0]).join(" - ")+")"+ventanaTxt(S())+FOOTER,b,"⧉ Copiar"); return; }
-  if(b.dataset.k==="tri"){ copyTxt("🎯 *Tripleta · "+l.name+"*\n"+c.map(n=>l.A[n][1]+" "+n).join(" - ")+"\n("+c.map(n=>l.A[n][0]).join(" - ")+")"+ventanaTxt(S())+FOOTER,b,"⧉"); return; }
+  if(b.dataset.k==="tri"){ const pc=patTri(l,c); copyTxt("🎯 *Tripleta · "+l.name+"*\n"+c.map(n=>l.A[n][1]+" "+n).join(" - ")+"\n("+c.map(n=>l.A[n][0]).join(" - ")+")"+(pc?"\n"+patTriTxt(l,pc):"")+ventanaTxt(S())+FOOTER,b,"⧉"); return; }
   const t=b.dataset.k==="chain"?c.map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join(sep)
     :l.A[c[0]][1]+" "+c[0]+" "+l.A[c[0]][0]+" ➜ "+c.slice(1).map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join(" - ");
   copyTxt("🎯 *Combinación · "+l.name+"*\n"+t+ventanaTxt(S())+FOOTER,b,"⧉ Copiar");
@@ -1270,7 +1285,7 @@ document.addEventListener("click",ev=>{
   const b=ev.target.closest&&ev.target.closest(".tricpall"); if(!b) return;
   const l=L(), tr=[...document.querySelectorAll('#pred .ccp[data-k="tri"]')].map(x=>x.dataset.c.split(","));
   if(!tr.length) return;
-  copyTxt("🎯 *Tripletas · "+l.name+"*\n"+tr.map((c,i)=>(i+1)+") "+c.map(n=>l.A[n][1]+" "+n).join(" - ")).join("\n")+ventanaTxt(S())+FOOTER,b,"⧉ Copiar todas");
+  copyTxt("🎯 *Tripletas · "+l.name+"*\n"+tr.map((c,i)=>(i+1)+") "+c.map(n=>l.A[n][1]+" "+n).join(" - ")+(patTri(l,c)?" 🔥":"")).join("\n")+(tr.some(c=>patTri(l,c))?"\n🔥 = patrón confirmado":"")+ventanaTxt(S())+FOOTER,b,"⧉ Copiar todas");
 });
 /* ---- tripletas de salidores ---- */
 // Solo se arman con salidores que AÚN NO han salido hoy.
@@ -1528,7 +1543,7 @@ render();
     {sel:"#pred .rank",v:"jugada",t:"Señales",x:"<b>Los que más señales tienen ⭐</b> y <b>📡 Señal</b> juntan todos los datos: guía, salidores, aciertos, volteos, jaulas y venenos/felinos. Toca un animal de la Señal para ver sus puntos, y con <b>⚙ Qué datos usar</b> eliges qué contar."},
     {sel:"#pred .trih",v:"jugada",t:"🎯 Tripletas",x:"Las tripletas del animal que salió: <b>Tripleta 1, 2, 3…</b> Primero salen las <b>tripletas fijas</b> (Mono, Delfín, Ballena, Pulpo) y la <b>Combinación del Pulpo</b> en Guácharo; luego las de tu guía. Cada una tiene su <b>Copiar</b>, y <b>Copiar todas</b> las manda juntas."},
     {sel:"#scard",v:"salidores",t:"Salidores",x:"El ranking de los animales que <b>más</b> y <b>menos</b> han salido, cada lista con su <b>Copiar</b>. "},
-    {sel:"#patCard",v:"salidores",t:"🔍 Patrones",x:"El bot busca patrones en 9 meses de resultados (secuencias, franjas de mañana, mediodía y tarde, días y pares) y los <b>prueba en los últimos 3 meses</b>. Solo los que acertaron claramente más que el azar salen como <b>✅ Confirmado</b> y suman puntos en el Pronóstico, la Señal y las Tripletas más fijas."},
+    {sel:"#patCard",v:"salidores",t:"🔍 Patrones",x:"El bot busca patrones en 9 meses de resultados (secuencias, franjas de mañana y tarde, días y pares) y los <b>prueba en los últimos 3 meses</b>. Solo los que acertaron claramente más que el azar salen como <b>✅ Confirmado</b> y suman puntos en el Pronóstico, la Señal y las Tripletas más fijas."},
     {sel:"#hcard",v:"salidores",t:"📊 Historial de 1 año",x:"Elige un animal y mira <b>cuándo sale</b>: a qué horas y qué días, con lo esperado al lado. Sale del historial del servidor."},
     {sel:"#jcard",v:"jaulas",t:"Jaulas",x:"Los animales que llevan días sin salir: <b>naranja</b> desde 5 días y <b>rojo</b> desde 12. Puedes cambiar esos límites."},
     {sel:"#hoyRes",v:"cuentas",t:"📋 Resultados de hoy",x:"Los resultados del día de las <b>4 loterías</b> con su hora. Toca una lotería para abrirla o cerrarla, y <b>Copiar resultados</b> los manda a WhatsApp con tu marca."},
@@ -1785,9 +1800,9 @@ document.addEventListener("click",e=>{
 /* ---- 📡 Señal: junta todos los datos y da puntos a cada animal ---- */
 /* ===== 🔍 Patrones: se buscan en 9 meses y se prueban en los últimos 3 ===== */
 var PAT_CACHE={}, PATF="todos", PATFR=null;
-const PAT_FR={m:["🌅","Mañana"],d:["☀️","Mediodía"],t:["🌇","Tarde"]};
+const PAT_FR={m:["🌅","Mañana"],t:["🌇","Tarde"]};
 const PAT_DIAS=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
-function patFr(h){ const x=parseInt(h,10); return x<=11?"m":x<=14?"d":"t"; }
+function patFr(h){ const x=parseInt(h,10); return x<=13?"m":"t"; }
 function patWd(f){ return new Date(f+"T12:00:00").getDay(); }
 function patTail(k,n,p){ // probabilidad de acertar k o más de n por puro azar
   if(k<=0) return 1; if(p<=0) return 0; if(p>=1) return 1;
@@ -1796,7 +1811,7 @@ function patTail(k,n,p){ // probabilidad de acertar k o más de n por puro azar
   return Math.min(1,s);
 }
 function patStats(l,dias){
-  const S={T:0,cnt:{},Tf:{m:0,d:0,t:0},cf:{m:{},d:{},t:{}},Tw:[0,0,0,0,0,0,0],cw:[{},{},{},{},{},{},{}],na:{},cab:{},nd:0,dh:{},cp:{},dm:{},dt:{},cmt:{}};
+  const S={T:0,cnt:{},Tf:{m:0,t:0},cf:{m:{},t:{}},Tw:[0,0,0,0,0,0,0],cw:[{},{},{},{},{},{},{}],na:{},cab:{},nd:0,dh:{},cp:{},dm:{},dt:{},cmt:{}};
   const inc=(o,k)=>o[k]=(o[k]||0)+1;
   dias.forEach(([f,it])=>{ const its=it.filter(x=>l.A[x[1]]).slice().sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0); if(!its.length) return;
     const w=patWd(f); S.nd++;
@@ -1823,7 +1838,7 @@ function patCalc(l){
     if(g(A.na,a)>=20) l.order.forEach(b=>{ const c=g(A.cab,a+"|"+b), r=c/A.na[a], base=g(A.cnt,b)/A.T;
       if(c>=4&&base&&r>=base*1.6) add({tipo:"seq",a,b,ratio:r/base},g(B.na,a),g(B.cab,a+"|"+b),g(B.cnt,b)/(B.T||1)); });
     // franjas: a sale más en una franja
-    ["m","d","t"].forEach(fr=>{ const c=g(A.cf[fr],a), r=c/(A.Tf[fr]||1), base=g(A.cnt,a)/A.T;
+    ["m","t"].forEach(fr=>{ const c=g(A.cf[fr],a), r=c/(A.Tf[fr]||1), base=g(A.cnt,a)/A.T;
       if(c>=10&&base&&r>=base*1.15) add({tipo:"fr",a,fr,ratio:r/base},B.Tf[fr],g(B.cf[fr],a),g(B.cnt,a)/(B.T||1)); });
     // días de la semana
     for(let w=0;w<7;w++){ const c=g(A.cw[w],a), r=c/(A.Tw[w]||1), base=g(A.cnt,a)/A.T;
@@ -1837,7 +1852,7 @@ function patCalc(l){
   });
   const conf=C.filter(c=>c.ok).sort((x,y)=>x.pv-y.pv), fail=C.filter(c=>!c.ok&&c.n>=15).sort((x,y)=>y.ratio-x.ratio).slice(0,6);
   const all=patStats(l,dd), top={};
-  ["m","d","t"].forEach(fr=>{ top[fr]={lst:Object.entries(all.cf[fr]).sort((a,b)=>b[1]-a[1]).slice(0,5),norm:all.Tf[fr]/l.order.length}; });
+  ["m","t"].forEach(fr=>{ top[fr]={lst:Object.entries(all.cf[fr]).sort((a,b)=>b[1]-a[1]).slice(0,5),norm:all.Tf[fr]/l.order.length}; });
   const out={conf,fail,tot:C.length,top,desde:dd[0][0],fl}; PAT_CACHE[key]=out; return out;
 }
 function patNom(l,n){ return l.A[n][1]+" "+n+" "+l.A[n][0]; }
@@ -1874,6 +1889,31 @@ function patHits(l,st,last){
   M.forEach(v=>v.forEach(x=>x[2]=pct(x[1])));
   return M;
 }
+function patAlerta(l,st,last){
+  let M; try{ M=patHits(l,st,last); }catch(e){ return ""; } if(!M||!M.size) return "";
+  const ch=n=>`<span class="pach">${l.A[n][1]} ${n} ${esc(l.A[n][0])}</span>`, F=f=>PAT_FR[f][1].toLowerCase();
+  const rows=[], vis=new Set();
+  M.forEach((v,n)=>v.forEach(([t,c])=>{ const k=c.tipo+c.a+(c.b||c.fr||c.w)+n; if(vis.has(k)) return; vis.add(k);
+    let tx;
+    if(c.tipo==="seq") tx=`Después del ${l.A[c.a][1]} <b>${c.a}</b> ${esc(l.A[c.a][0])} suele salir el ${ch(n)}`;
+    else if(c.tipo==="fr") tx=`En la ${PAT_FR[c.fr][0]} ${F(c.fr)} suele salir el ${ch(n)}`;
+    else if(c.tipo==="dw") tx=`Los ${PAT_DIAS[c.w]} suele salir el ${ch(n)}`;
+    else if(c.tipo==="mt") tx=`Salió el <b>${c.a}</b> en la mañana: en la tarde suele salir el ${ch(n)}`;
+    else tx=`El <b>${n===c.a?c.b:c.a}</b> ya salió hoy y suele salir el mismo día que el ${ch(n)}`;
+    rows.push(`<div class="parow">${tx}<small>Últimos 3 meses: ${Math.round(c.k/c.n*100)} de 100 · al azar: ${Math.round(c.p*100)} de 100</small></div>`); }));
+  return `<div class="palert"><div class="pahd">🔥 ¡Patrón activo!<span>Alerta</span></div>${rows.slice(0,4).join("")}</div>`;
+}
+function patTri(l,t){ try{ return patCalc(l).conf.find(c=>(c.tipo==="seq"||c.tipo==="par"||c.tipo==="mt")&&t.includes(c.a)&&t.includes(c.b))||null; }catch(e){ return null; } }
+function patTriTxt(l,c){ return "🔥 Patrón confirmado: "+patTxt(l,c)+" ("+Math.round(c.k/c.n*100)+" de 100 · azar "+Math.round(c.p*100)+")"; }
+function patMarcarTri(l){
+  const box=document.querySelector("#pred .chains"); if(!box) return; let k=0; const first=box.firstChild;
+  [...box.querySelectorAll('.ch.tri3:not(.comb)')].forEach(r=>{ const b=r.querySelector('.ccp[data-k="tri"]'); if(!b) return;
+    const c=patTri(l,b.dataset.c.split(",")); if(!c) return; k++;
+    r.classList.add("patri"); const n=r.querySelector(".tnum"); if(n){ n.textContent="🔥"; n.classList.add("pfi"); }
+    const d=document.createElement("div"); d.className="patnote"; d.textContent=patTriTxt(l,c); r.appendChild(d);
+    box.insertBefore(r,box.querySelector(".ch.tri3.comb")?box.querySelector(".ch.tri3.comb").nextSibling:box.firstChild); });
+  const h=document.querySelector("#pred .trih span"); if(h&&k) h.insertAdjacentHTML("beforeend",` <em class="patpill">🔥 ${k} con patrón</em>`);
+}
 function renderPat(){
   const box=$("patBox"); if(!box) return; const l=L(); let o;
   try{ o=patCalc(l); }catch(e){ o={falta:true,conf:[],fail:[]}; }
@@ -1882,7 +1922,7 @@ function renderPat(){
   if(!PATFR){ try{ PATFR=patFr(String(proxSorteo(l).d.getHours())); }catch(e){ PATFR="m"; } }
   const filt=c=>PATF==="todos"||PAT_TIPO[c.tipo]===PATF;
   const fila=(c,ok)=>{ const a=Math.round(c.k/c.n*100), b=Math.round(c.p*100), mx=Math.max(a,b,1);
-    return `<div class="prr pr${ok?" ok":""}" style="display:block"><div class="prn"><span style="font-size:15px">${patTit(l,c)}</span><span class="prt ${ok?"t-p":"t-x"}" style="margin:0;white-space:nowrap">${ok?"✅ Confirmado":"❌ Casualidad"}</span></div>
+    return `<div class="prr pr${ok?" ok":""}" style="display:block"><div class="prn"><span style="font-size:15px">${patTit(l,c)}</span><span class="prt ${ok?"t-p patfire":"t-x"}" style="margin:0;white-space:nowrap">${ok?"🔥 Alerta · Confirmado":"❌ Casualidad"}</span></div>
       <div class="pats">${esc(patTxt(l,c))}</div>
       <div class="patb"><span>Últimos 3 meses</span><div><i style="width:${a/mx*100}%;background:${ok?"#2fd39a":"#ff7a3c"}"></i></div><b>${a} de 100</b></div>
       <div class="patb az"><span>Al azar</span><div><i style="width:${b/mx*100}%"></i></div><b>${b} de 100</b></div></div>`; };
@@ -1890,12 +1930,12 @@ function renderPat(){
   box.innerHTML=`<div class="pron pat">${head}
     <div class="prs"><span>Buscados en 9 meses · probados en los últimos 3</span></div>
     <div class="patf">${["todos","Secuencias","Franjas","Días","Pares"].map(t=>`<button type="button" data-f="${t}" class="${PATF===t?"on":""}">${t==="todos"?"Todos":t}</button>`).join("")}</div>
-    <div class="patn"><div class="ok"><b>${o.conf.length}</b><span>confirmado${o.conf.length===1?"":"s"}</span></div><div><b>${o.tot-o.conf.length}</b><span>casualidad</span></div></div>
-    ${PATF==="todos"||PATF==="Franjas"?`<div class="patfr">${["m","d","t"].map(f=>`<button type="button" data-fr="${f}" class="${PATFR===f?"on":""}"><span>${PAT_FR[f][0]}</span><b>${PAT_FR[f][1]}</b><small>${f==="m"?"8 a 11 a. m.":f==="d"?"12 a 2 p. m.":"3 a 7 p. m."}</small></button>`).join("")}</div>
+    <div class="patn"><div class="ok${o.conf.length?" fire":""}"><b>${o.conf.length}</b><span>confirmado${o.conf.length===1?"":"s"}</span>${o.conf.length?'<em class="patal">🔥 ¡Alerta activa!</em>':""}</div><div><b>${o.tot-o.conf.length}</b><span>sumados</span></div></div>
+    ${PATF==="todos"||PATF==="Franjas"?`<div class="patfr">${["m","t"].map(f=>`<button type="button" data-fr="${f}" class="${PATFR===f?"on":""}"><span>${PAT_FR[f][0]}</span><b>${PAT_FR[f][1]}</b><small>${f==="m"?(l.id==="inter"?"8:30 a. m. a 1:30 p. m.":"8 a. m. a 1 p. m."):(l.id==="inter"?"2:30 a 7:30 p. m.":"2 a 7 p. m.")}</small></button>`).join("")}</div>
     <div class="pattop"><div class="note" style="margin:0 0 5px">${PAT_FR[PATFR][0]} Lo que más sale en la ${PAT_FR[PATFR][1].toLowerCase()} (todo el historial):</div>${T.lst.map(([n,c])=>`<span>${l.A[n][1]} ${n} <small>${c}</small></span>`).join("")}<div class="note" style="margin:5px 0 0">Lo normal serían ${Math.round(T.norm)} veces cada uno.</div></div>`:""}
     ${o.conf.filter(filt).map(c=>fila(c,true)).join("")||'<p class="note" style="margin:8px 0">Ningún patrón de este tipo pasó la prueba: lo que parecía repetirse fue casualidad.</p>'}
     ${o.fail.filter(filt).length?`<details class="hl" style="margin-top:8px"><summary>Ver los que fueron casualidad (${o.fail.filter(filt).length})</summary><div style="padding:0 8px 6px">${o.fail.filter(filt).map(c=>fila(c,false)).join("")}</div></details>`:""}
-    <div class="note" style="margin:8px 0 0">Solo se marca ✅ si en la prueba acertó claramente más que el azar. Los confirmados suman puntos en el Pronóstico, la Señal y las Tripletas más fijas. Se actualiza solo cada día. Los sorteos son al azar: un patrón confirmado puede dejar de cumplirse.</div>
+    <div class="note" style="margin:8px 0 0">Solo se marca 🔥 si en la prueba acertó claramente más que el azar. Los confirmados suman puntos en el Pronóstico, la Señal y las Tripletas más fijas. Se actualiza solo cada día.</div>
     ${o.conf.length?'<button class="prcp patcp" type="button">⧉ Copiar patrones confirmados</button>':""}</div>`;
 }
 document.addEventListener("click",e=>{
@@ -2158,7 +2198,7 @@ function fijCalc(l){
     const enS=t.filter(n=>sen.has(n)); if(enS.length){ sc+=enS.length>1?3:2; tags.push(["h","📡 "+enS.join(" y ")+(enS.length>1?" están":" está")+" en la Señal"]); }
     let PC=[]; try{ PC=patCalc(l).conf; }catch(e){}
     const pz=PC.find(c=>(c.tipo==="par"||c.tipo==="seq"||c.tipo==="mt")&&t.includes(c.a)&&t.includes(c.b));
-    if(pz){ sc+=2; tags.push(["q","🔍 Patrón: "+pz.a+" y "+pz.b+(pz.tipo==="par"?" el mismo día":pz.tipo==="seq"?" seguidos":" mañana → tarde")]); }
+    if(pz){ sc+=2; tags.push(["f","🔥 Patrón confirmado: "+pz.a+" y "+pz.b+(pz.tipo==="par"?" el mismo día":pz.tipo==="seq"?" seguidos":" mañana → tarde")]); }
     let jw=null; t.forEach(n=>{ if(jLevel(st,n)){ sc-=2; const d=daysSince(st.last[n]); if(!jw||d>jw.d) jw={n,d}; } });
     if(jw) tags.push(["x","🔒 "+jw.n+" lleva "+jw.d+" días sin salir"]);
     return {t,sc,tags};
@@ -2194,6 +2234,7 @@ function renderHoy(){
   const l=L(); $("hoyTriLot").textContent=l.name;
   const T=triHoy();
   const caja=(o,k)=>`<div class="ht${o.win?" win":""}"><div class="hzh">Tras <b>${l.A[o.x][1]} ${o.x} ${esc(l.A[o.x][0])}</b> (${h12(o.hora)})${o.win?'<span class="hzb">¡GANADORA! 🏆</span>':`<span style="margin-left:auto">falta${o.ok.filter(v=>!v).length>1?"n":""} ${o.ok.filter(v=>!v).length}</span>`}</div>
+    ${(()=>{ const pc=patTri(l,o.t); return pc?`<div class="patnote" style="margin:4px 0 0">${esc(patTriTxt(l,pc))}</div>`:""; })()}
     <div class="hza">${o.t.map((n,j)=>`<span class="${o.ok[j]?"y":""}">${l.A[n][1]} ${n} ${esc(l.A[n][0])} ${o.ok[j]?"✓":"⏳"}</span>`).join("")}</div>
     <button class="pkcp htcp" data-i="${k}" type="button">⧉ Copiar</button></div>`;
   const nP=T.filter(o=>o.win||o.y>=2).length, resto=T.length-nP;
@@ -2226,7 +2267,7 @@ document.addEventListener("click",e=>{
   if(e.target.id==="cLimpiar"){ e.preventDefault(); CALC.sel=[]; renderCalc(); return; }
   const l=L();
   const b=e.target.closest(".htcp");
-  if(b){ const o=triHoy()[+b.dataset.i]; if(o) copyTxt("🎯 *Tripleta · "+l.name+"*"+(o.win?" 🏆 *¡GANADORA!*":"")+"\n"+triTxt(l,o)+FOOTER,b,"⧉ Copiar"); return; }
+  if(b){ const o=triHoy()[+b.dataset.i]; if(o){ const pc=patTri(l,o.t); copyTxt("🎯 *Tripleta · "+l.name+"*"+(o.win?" 🏆 *¡GANADORA!*":"")+"\n"+triTxt(l,o)+(pc?"\n"+patTriTxt(l,pc):"")+FOOTER,b,"⧉ Copiar"); } return; }
   if(e.target.id==="hoyTriAll"||e.target.id==="hoyTriWin"){ const w=e.target.id==="hoyTriWin", T=triHoy().filter(o=>!w||o.win), btn=e.target, lab=w?"⧉ Copiar ganadoras":"⧉ Copiar todas";
     if(!T.length){ btn.textContent=w?"Todavía no hay ganadoras":"Todavía no hay tripletas"; clearTimeout(btn._t); btn._t=setTimeout(()=>btn.textContent=lab,2000); return; }
     copyTxt("🎯 *"+(w?"Tripletas ganadoras de hoy 🏆":"Tripletas de hoy")+" · "+l.name+"*\n"+T.map((o,k)=>(k+1)+") "+triTxt(l,o)).join("\n")+FOOTER,btn,lab); return; }
