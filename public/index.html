@@ -854,7 +854,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611172056";
+const BUILD="202611172129";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1777,11 +1777,12 @@ function pronCalc(l,st,last,P){
   D.forEach(([f,it])=>it.forEach(([h,n])=>{ if(!l.A[n]) return; cy[n]=(cy[n]||0)+1; if(f>=fl) c7[n]=(c7[n]||0)+1; if(h===hk){ hc[n]=(hc[n]||0)+1; hT++; } }));
   const nd=D.length, hEsp=hT/l.order.length;
   const H=st.hist, ac={}; let acT=0; for(let i=0;i<H.length-1;i++) if(H[i]===last){ ac[H[i+1]]=(ac[H[i+1]]||0)+1; acT++; }
-  const acEsp=acT/l.order.length, top=[...topSalidores()];
+  const acEsp=acT/l.order.length, top=[...topSalidores()], vf=vfInfo(last);
   const R=l.order.map(n=>{ let sc=0; const t=[];
     const c=P.now.get(n)||0, v=P.vadd&&P.vadd.has(n);
     if(on("guia")&&c&&!v){ sc+=2*c; t.push(["g","📖 En tu guía"+(c>1?" ×"+c:"")]); }
     if(on("vol")&&v){ sc+=2; t.push(["v","⇄ Volteo"]); }
+    if(on("vf")&&vf&&vf.nums.includes(n)){ sc+=2; t.push(["x",vf.cls==="vff"?"🐾 Felino (salió veneno)":"☠ Veneno (salió felino)"]); }
     const r=top.indexOf(n); if(on("sal")&&r>=0){ sc+=r<3?3:2; t.push(["c","📈 Salidor"]); }
     if(on("ac")&&acEsp>=2&&ac[n]){ const q=ac[n]/acEsp; if(q>=1.4){ sc+=q>=1.8?3:2; t.push(["p","🔁 Pareja fuerte del "+last]); } }
     if(hT>=30&&hc[n]>=Math.max(3,hEsp*1.4)){ sc+=2; t.push(["h","⏰ Salidor a las "+hLab]); }
