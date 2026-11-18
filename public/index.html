@@ -86,6 +86,12 @@
   .pred .empty{color:var(--muted);padding:18px 4px;text-align:center;border:1px dashed var(--line);border-radius:14px}
   .pred .from{font-size:15px;color:var(--muted);margin-bottom:12px}
   .pred .from b{color:var(--cyan)}
+  .salio{display:flex;align-items:center;gap:10px;margin:4px 0 12px;padding:8px 12px;border-left:5px solid #2df28a;border-radius:10px;background:rgba(45,242,138,.08)}
+  .salio .stg{background:#2df28a;color:#04120a;font-weight:800;border-radius:8px;padding:3px 8px;font-size:13px}
+  .salio .se{font-size:34px;line-height:1}
+  .salio .sn{font:800 22px "Orbitron",sans-serif;color:var(--gold)}
+  .salio .snm{font-size:20px;font-weight:700;color:#fff}
+  .salio .shr{margin-left:auto;color:#2df28a;font:700 16px "Rajdhani",system-ui,sans-serif;white-space:nowrap}
   .picks{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   .pk{position:relative;border-radius:16px;padding:14px 6px 12px;text-align:center;border:1px solid rgba(255,210,63,.5);
     background:radial-gradient(circle at 50% 0%,rgba(255,210,63,.22),transparent 70%),rgba(10,16,34,.7);box-shadow:0 0 24px rgba(255,210,63,.25),inset 0 0 20px rgba(255,210,63,.08);
@@ -925,7 +931,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611181420";
+const BUILD="202611181430";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1041,6 +1047,8 @@ function ventanaHtml(st){
   const pct=Math.max(0,Math.min(100,(now-w.base.getTime())/(w.fin.getTime()+10*60000-w.base.getTime())*100));
   return `<div class="clk"><span>⏰</span><div style="flex:1">${manana?"Mañana: jugar ":"Jugar "}${rango} (${w.fin.getTime()===w.ini.getTime()?"último sorteo del día":"próximos 2 sorteos"})<div class="bar"><i style="width:${pct.toFixed(0)}%"></i></div></div></div>`;
 }
+function salioHtml(l,st,last){ let h=""; try{ const w=ventana(st); if(w) h=fmtH(w.base); }catch(e){}
+  return `<div class="salio"><span class="stg">SALIÓ</span><span class="se">${l.A[last][1]}</span><span class="sn">${last}</span><span class="snm">${esc(l.A[last][0])}</span>${h?`<span class="shr">${h}</span>`:""}</div>`; }
 function horaSalio(st){ try{ const w=ventana(st); return w?" ("+fmtH(w.base)+")":""; }catch(e){ return ""; } }
 function ventanaTxt(st){
   const w=ventana(st); if(!w) return "";
@@ -1169,14 +1177,14 @@ function render(){
     pred.innerHTML='<h2>Jugada según la guía</h2><div class="empty">Todavía no has marcado ningún resultado en '+esc(l.name)+'.</div>';
   }else if(!P.now.size){
     const vv0=volteo(l,last);
-    pred.innerHTML=`<h2>Jugada según la guía</h2>${vv0?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv0][1]} ${vv0} ${esc(l.A[vv0][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv0}">⧉ Copiar</button></div>`:""}<div class="from">Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>.</div><div class="empty">Tu guía de ${esc(l.name)} no tiene combinaciones para este animal.</div>`;
+    pred.innerHTML=`<h2>Jugada según la guía</h2>${vv0?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv0][1]} ${vv0} ${esc(l.A[vv0][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv0}">⧉ Copiar</button></div>`:""}${salioHtml(l,st,last)}<div class="empty">Tu guía de ${esc(l.name)} no tiene combinaciones para este animal.</div>`;
   }else{
     const contSet=new Set(P.cont.map(c=>c[2]));
     const arr=orden69([...P.now.entries()].sort((a,b)=>l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
     const vv=volteo(l,last);
     pred.innerHTML=`<h2>Jugada según la guía</h2>
       ${vv?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv][1]} ${vv} ${esc(l.A[vv][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv}">⧉ Copiar</button></div>`:""}
-      <div class="from">Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>. Para el próximo sorteo la guía marca:</div>
+      ${salioHtml(l,st,last)}<div class="from">Para el próximo sorteo la guía marca:</div>
       ${ventanaHtml(st)}
       ${patAlerta(l,st,last)}<div class="pkhead"><span>🎯 Animales para jugar</span><button class="pkcp" type="button">⧉ Copiar</button></div>
       ${rankHtml(l,st,last,arr,P)}
@@ -1804,7 +1812,7 @@ function vfJugada(l,last){
   const pred=$("pred"); if(!pred) return;
   pred.querySelectorAll(".vfbox").forEach(x=>x.remove());
   const h=vfHtml(l,last,false); if(!h) return;
-  const at=pred.querySelector(".from"); if(at) at.insertAdjacentHTML("beforebegin",h); else { const h2=pred.querySelector("h2"); if(h2) h2.insertAdjacentHTML("afterend",h); }
+  const at=pred.querySelector(".salio")||pred.querySelector(".from"); if(at) at.insertAdjacentHTML("beforebegin",h); else { const h2=pred.querySelector("h2"); if(h2) h2.insertAdjacentHTML("afterend",h); }
 }
 document.addEventListener("click",e=>{
   const b=e.target.closest(".vfcp"); if(!b) return;
