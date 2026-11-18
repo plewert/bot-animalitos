@@ -592,6 +592,8 @@
   .ch.tri3:not(.comb) .ccp{padding:5px 7px;font-size:14px;min-width:30px}
   @media (max-width:375px){ .ch.tri3:not(.comb) .x{font-size:11px;padding:1px 3px;letter-spacing:-.4px} .ch.tri3:not(.comb) .x img{width:14px;height:14px} .ch.tri3:not(.comb) .tnum{width:16px;height:16px} }
   .ch.tri3:not(.comb) .ccp.ok{font-size:0} .ch.tri3:not(.comb) .ccp.ok::before{content:"✓";font-size:14px}
+  body:not(.inapp) #fijCard{display:none!important}
+  body.inapp #fijSlotPc{display:none}
 </style>
 </head>
 <body class="locked">
@@ -666,6 +668,7 @@
       <div class="row" id="guideRow" style="margin-top:-6px"></div>
       <div class="legend" id="legend"><span><i style="background:var(--grn);box-shadow:0 0 8px var(--grn)"></i>0 y 00</span><span><i style="background:var(--red);box-shadow:0 0 8px var(--red)"></i>Rojos</span><span><i style="background:var(--vio);box-shadow:0 0 8px var(--vio)"></i>Negros</span><span><i style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></i>Salió</span><span><i style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></i>Compañeros</span></div>
       <div class="grid" id="grid"></div>
+      <div id="fijSlotPc" style="margin-top:16px"></div>
     </div>
 
       <div class="card pred" id="pred" data-view="jugada" style="grid-area:pred">
@@ -868,7 +871,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611172205";
+const BUILD="202611172215";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1430,7 +1433,9 @@ function setView(v){VIEW=v; try{localStorage.setItem("bot-view",v)}catch(e){}
   document.querySelectorAll("[data-view]").forEach(el=>el.classList.toggle("vis",el.dataset.view===v));
   document.querySelectorAll("#bnav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
   if(MQ.matches) window.scrollTo(0,0);}
-function applyMQ(){document.body.classList.toggle("inapp",MQ.matches); setView(VIEW);}
+function placeFij(){ const f=$("hoyFij"), slot=$("fijSlotPc"), card=$("fijCard"); if(!f||!slot||!card) return;
+  if(MQ.matches){ if(f.parentNode!==card) card.appendChild(f); } else { if(f.parentNode!==slot) slot.appendChild(f); } }
+function applyMQ(){document.body.classList.toggle("inapp",MQ.matches); placeFij(); setView(VIEW);}
 try{MQ.addEventListener("change",applyMQ);}catch(e){MQ.addListener(applyMQ);}
 document.querySelectorAll("#bnav button").forEach(b=>b.onclick=()=>setView(b.dataset.v));
 function renderMbar(){
