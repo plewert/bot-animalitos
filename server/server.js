@@ -411,7 +411,8 @@ async function ultimos() {
 // ===================== HISTORIAL DE 1 AÑO =====================
 // Guarda en Upstash los sorteos de cada día: clave "h:<lotería>:<AAAA-MM-DD>" = [["13:00","09"], ...]
 // Al arrancar, completa poco a poco los días que falten del último año (sin apuro, para no cargar a lotoven).
-const HIST_DIAS = 365;
+const HIST_DIAS = 365;   // lo que usa el bot
+const HIST_MAX = 1095;   // 3 años guardados para estudiar los datos (/api/historial?lot=x&dias=1095)
 const fechaMenos = (n) => { const d = new Date(hoyVE() + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
 async function bajarDia(lot, fecha) {
   const url = FUENTES[lot].resultados.replace(/\/?$/, "/") + fecha + "/";
@@ -426,8 +427,8 @@ async function completarHistorial() {
   if (!R_URL || !R_TOK || HIST.corriendo) return;
   HIST.corriendo = true;
   try {
-    for (const lot of Object.keys(FUENTES)) {
-      const fechas = []; for (let i = 1; i <= HIST_DIAS; i++) fechas.push(fechaMenos(i));
+    for (const [desde, hasta] of [[1, HIST_DIAS], [HIST_DIAS + 1, HIST_MAX]]) for (const lot of Object.keys(FUENTES)) {
+      const fechas = []; for (let i = desde; i <= hasta; i++) fechas.push(fechaMenos(i));
       const ya = [];
       for (let i = 0; i < fechas.length; i += 100) ya.push(...(await redis(["MGET", ...fechas.slice(i, i + 100).map((f) => "h:" + lot + ":" + f)])));
       const pend = fechas.filter((f, i) => ya[i] == null);
@@ -442,14 +443,14 @@ async function completarHistorial() {
   } finally { HIST.corriendo = false; HISTCACHE.clear(); }
 }
 const HISTCACHE = new Map();
-async function historial(lot) {
-  const c = HISTCACHE.get(lot); if (c && Date.now() - c.t < 10 * 60000) return c.d;
-  const fechas = []; for (let i = HIST_DIAS; i >= 0; i--) fechas.push(fechaMenos(i));
+async function historial(lot, nd = HIST_DIAS) {
+  const ck = lot + ":" + nd, c = HISTCACHE.get(ck); if (c && Date.now() - c.t < 10 * 60000) return c.d;
+  const fechas = []; for (let i = nd; i >= 0; i--) fechas.push(fechaMenos(i));
   const vals = [];
   for (let i = 0; i < fechas.length; i += 100) vals.push(...(await redis(["MGET", ...fechas.slice(i, i + 100).map((f) => "h:" + lot + ":" + f)])));
   const dias = []; fechas.forEach((f, i) => { if (vals[i]) { const it = JSON.parse(vals[i]); if (it.length) dias.push([f, it]); } });
   const d = { ok: true, lot, desde: dias.length ? dias[0][0] : null, hasta: dias.length ? dias[dias.length - 1][0] : null, dias, cargando: HIST.corriendo, faltan: HIST.faltan };
-  HISTCACHE.set(lot, { t: Date.now(), d });
+  HISTCACHE.set(ck, { t: Date.now(), d });
   return d;
 }
 
@@ -517,7 +518,8 @@ const server = http.createServer(async (req, res) => {
     if (u.pathname === "/api/historial") {
       const lot = u.searchParams.get("lot");
       if (!FUENTES[lot]) return enviar(res, 400, { ok: false, motivo: "loteria" });
-      try { return enviar(res, 200, await historial(lot)); } catch (e) { return enviar(res, 503, { ok: false, motivo: String(e.message) === "no_config" ? "no_config" : "error" }); }
+      const nd = Math.min(HIST_MAX, Math.max(1, parseInt(u.searchParams.get("dias"), 10) || HIST_DIAS));
+      try { return enviar(res, 200, await historial(lot, nd)); } catch (e) { return enviar(res, 503, { ok: false, motivo: String(e.message) === "no_config" ? "no_config" : "error" }); }
     }
     if (u.pathname === "/api/historial/estado") return enviar(res, 200, { ok: true, corriendo: HIST.corriendo, hechos: HIST.hechos, faltan: HIST.faltan, errores: HIST.errores, ultimo: HIST.ultimo });
     if (u.pathname === "/admin") return enviar(res, 200, ADMIN_HTML, "text/html; charset=utf-8");
