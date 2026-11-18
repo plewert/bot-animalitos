@@ -633,6 +633,13 @@
   .rev .prr.rv.ok{border-color:#2fd39a;background:rgba(47,211,154,.07)} .rev .prr.rv.mal{border-color:#ff7a3c;background:rgba(255,90,60,.06)}
   .rev .rvn{border-color:var(--line);color:var(--muted)}
   .rev .patf{align-items:center}
+  .pbrain{margin-top:8px;border:1px solid rgba(177,140,255,.55);border-radius:12px;background:rgba(177,140,255,.08);padding:7px 10px}
+  .pbrain summary{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;list-style:none}
+  .pbrain summary::-webkit-details-marker{display:none}
+  .pbrain .pbi{font-size:18px} .pbrain .pbt{flex:1;min-width:0}
+  .pbrain .pbv{color:#d8c6ff;font-weight:700;white-space:nowrap} .pbrain .pbv::after{content:"Ver ▸"} .pbrain[open] .pbv::after{content:"Cerrar ▴"}
+  .pbrain .pbd{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;font-size:13.5px;line-height:1.55}
+  .pbrain .pbd>div>b:first-child{color:#d8c6ff} .pbrain .pbl{margin:3px 0 3px 4px} .pbrain .pbs{color:#2fd39a}
 </style>
 </head>
 <body class="locked">
@@ -913,7 +920,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611180142";
+const BUILD="202611180226";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2119,16 +2126,16 @@ function pronCalc(l,st,last,P){
   const acEsp=acT/l.order.length, top=[...topSalidores()], vf=vfInfo(last); let PH=new Map(); try{ PH=patHits(l,st,last); }catch(e){}
   const R=l.order.map(n=>{ let sc=0; const t=[];
     const c=P.now.get(n)||0, v=P.vadd&&P.vadd.has(n);
-    if(on("guia")&&c&&!v){ sc+=2*c; t.push(["g","📖 En tu guía"+(c>1?" ×"+c:"")]); }
-    if(on("vol")&&v){ sc+=2; t.push(["v","⇄ Volteo"]); }
-    (PH.get(n)||[]).slice(0,2).forEach(([tx])=>{ sc+=2; t.push(["q",tx]); });
-    if(on("vf")&&vf&&vf.nums.includes(n)){ sc+=2; t.push(["x",vf.cls==="vff"?"🐾 Felino (salió veneno)":"☠ Veneno (salió felino)"]); }
-    const r=top.indexOf(n); if(on("sal")&&r>=0){ sc+=r<3?3:2; t.push(["c","📈 Salidor"]); }
-    if(on("ac")&&acEsp>=2&&ac[n]){ const q=ac[n]/acEsp; if(q>=1.4){ sc+=q>=1.8?3:2; t.push(["p","🔁 Pareja fuerte del "+last]); } }
-    if(hT>=30&&hc[n]>=Math.max(3,hEsp*1.4)){ sc+=2; t.push(["h","⏰ Salidor a las "+hLab]); }
-    if(nd>=30&&(c7[n]||0)>=3&&c7[n]>=2*(cy[n]/nd*7)){ sc+=2; t.push(["c","🔥 Caliente esta semana"]); }
-    if(on("jaula")&&jLevel(st,n)) sc-=3;
-    return {n,sc,t};
+    if(on("guia")&&c&&!v){ sc+=2*c; t.push(["g","📖 En tu guía"+(c>1?" ×"+c:""),2*c]); }
+    if(on("vol")&&v){ sc+=2; t.push(["v","⇄ Volteo",2]); }
+    (PH.get(n)||[]).slice(0,2).forEach(([tx])=>{ sc+=2; t.push(["q",tx,2]); });
+    if(on("vf")&&vf&&vf.nums.includes(n)){ sc+=2; t.push(["x",vf.cls==="vff"?"🐾 Felino (salió veneno)":"☠ Veneno (salió felino)",2]); }
+    const r=top.indexOf(n); if(on("sal")&&r>=0){ sc+=r<3?3:2; t.push(["c","📈 Salidor",r<3?3:2]); }
+    if(on("ac")&&acEsp>=2&&ac[n]){ const q=ac[n]/acEsp; if(q>=1.4){ sc+=q>=1.8?3:2; t.push(["p","🔁 Pareja fuerte del "+last,q>=1.8?3:2]); } }
+    if(hT>=30&&hc[n]>=Math.max(3,hEsp*1.4)){ sc+=2; t.push(["h","⏰ Salidor a las "+hLab,2]); }
+    if(nd>=30&&(c7[n]||0)>=3&&c7[n]>=2*(cy[n]/nd*7)){ sc+=2; t.push(["c","🔥 Caliente esta semana",2]); }
+    let jd=0; if(on("jaula")&&jLevel(st,n)){ sc-=3; jd=daysSince(st.last[n]); }
+    return {n,sc,t,jd};
   }).filter(x=>x.sc>0&&x.t.length&&x.n!==last).sort((a,b)=>b.sc-a.sc||b.t.length-a.t.length||l.order.indexOf(a.n)-l.order.indexOf(b.n)).slice(0,3);
   R.forEach(x=>x.lv=x.sc>=9?5:x.sc>=7?4:x.sc>=5?3:x.sc>=3?2:1);
   return {R,hLab,man:!px.hoy};
@@ -2142,10 +2149,17 @@ function pronHtml(l,st,last,P){
     ${o.R.map((x,i)=>`<div class="prr${i===0?" top":""}"><div class="pre">${l.A[x.n][1]}</div><div style="flex:1;min-width:0">
       <div class="prn"><span><b>${x.n}</b> ${esc(l.A[x.n][0])}</span><span class="prb${x.lv>=5?" max":""}">${[1,2,3,4,5].map(k=>`<i class="${k<=x.lv?"on":""}" style="height:${4+k*3}px"></i>`).join("")}</span></div>
       <div>${x.t.map(([c,t])=>`<span class="prt t-${c}">${esc(t)}</span>`).join("")}</div></div></div>`).join("")}
-    <button class="prcp" type="button">⧉ Copiar pronóstico</button></div>`;
+    ${(()=>{ const x0=o.R[0], nm=t=>t.replace(/^📖 En tu guía.*/,"guía").replace(/^\S+\s/,""), lab=t=>t.replace(/^📖 En tu guía.*/,"📖 guía");
+      const linea=x=>`<div class="pbl">${l.A[x.n][1]} <b>${x.n}</b>: ${x.t.map(([c,t,p])=>esc(lab(t))+" +"+p).join(" · ")}${x.jd?` · 🔒 jaula ${x.jd} días −3`:""} = <b class="pbs">${x.sc}</b></div>`;
+      return `<details class="pbrain"${PRON_OPEN?" open":""}><summary><span class="pbi">🧠</span><span class="pbt">El <b>${x0.n}</b> ganó por: ${esc(x0.t.slice(0,3).map(([c,t])=>nm(t)).join(" + "))}</span><span class="pbv"></span></summary>
+        <div class="pbd"><div><b>1.</b> Salió el ${l.A[last][1]} <b>${last}</b> ${esc(l.A[last][0])}</div><div><b>2.</b> Buscó en tu guía, salidores, volteos, patrones y cruces</div><div><b>3.</b> Sumó puntos a cada animal:</div>${o.R.map(linea).join("")}
+        <div><b>4.</b> Ordenó de mayor a menor (las jaulas restan)</div><div><b>5.</b> Te muestra los 3 más fuertes</div></div></details>`; })()}
+    <button class="prcp pronCp" type="button">⧉ Copiar pronóstico</button></div>`;
 }
+var PRON_OPEN=false;
+document.addEventListener("toggle",e=>{ if(e.target.classList&&e.target.classList.contains("pbrain")) PRON_OPEN=e.target.open; },true);
 document.addEventListener("click",e=>{
-  const b=e.target.closest(".prcp"); if(!b) return;
+  const b=e.target.closest(".pronCp"); if(!b) return;
   const l=L(), st=S(), last=st.hist[st.hist.length-1]; if(!last) return;
   try{ const P=predict(GD(),last,st.hist[st.hist.length-2]), o=pronCalc(l,st,last,P);
     copyTxt("🎯 *Pronóstico · "+l.name+"*\n⏰ Sorteo de "+(o.man?"mañana a ":"")+"las "+o.hLab+"\n"+o.R.map(x=>l.A[x.n][1]+" "+x.n+" "+l.A[x.n][0]).join("\n")+FOOTER,b,"⧉ Copiar pronóstico"); }catch(err){}
