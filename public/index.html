@@ -678,8 +678,6 @@
         <div id="hoyRes"></div>
         <button class="hbtn" id="hoyResCp" type="button">⧉ Copiar resultados para WhatsApp</button>
         <div class="hsep"></div>
-        <div id="hoyFij"></div>
-        <div class="hsep"></div>
         <div class="hh"><h2 style="margin:0">🎯 Tripletas de hoy · <span id="hoyTriLot"></span></h2></div>
         <p class="note" style="margin:2px 0 6px">Las que dio el bot hoy. ✓ = ya salió en el día · ⏳ = falta.</p>
         <div class="hbtns"><button class="hbtn sm" id="hoyTriAll" type="button">⧉ Copiar todas</button><button class="hbtn sm gold" id="hoyTriWin" type="button">⧉ Copiar ganadoras</button></div>
@@ -745,6 +743,10 @@
     <div id="triBox"></div>
   </div>
 
+  <div class="card" style="margin-top:16px" id="fijCard" data-view="fijas">
+    <div id="hoyFij"></div>
+  </div>
+
   <div class="card" style="margin-top:16px" id="hcard" data-view="salidores">
     <h2>📊 Historial de 1 año · <span id="hLot"></span></h2>
     <div class="hsel"><label for="hSel">Animal:</label><select id="hSel"></select></div>
@@ -781,6 +783,7 @@
   <button data-v="panel" class="on"><span>▦</span>Panel</button>
   <button data-v="jugada"><span>➜</span>Jugada</button>
   <button data-v="salidores"><span>🔥</span>Salidores</button>
+  <button data-v="fijas"><span>🎯</span>Fijas</button>
   <button data-v="jaulas"><span>🔒</span>Jaulas</button>
   <button data-v="cuentas"><span>📋</span>Hoy</button>
   <button data-v="guia"><span>📖</span>Guía</button>
@@ -865,7 +868,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611172152";
+const BUILD="202611172205";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1505,7 +1508,7 @@ render();
     {sel:"#hcard",v:"salidores",t:"📊 Historial de 1 año",x:"Elige un animal y mira <b>cuándo sale</b>: a qué horas y qué días, con lo esperado al lado. Sale del historial del servidor."},
     {sel:"#jcard",v:"jaulas",t:"Jaulas",x:"Los animales que llevan días sin salir: <b>naranja</b> desde 5 días y <b>rojo</b> desde 12. Puedes cambiar esos límites."},
     {sel:"#hoyRes",v:"cuentas",t:"📋 Resultados de hoy",x:"Los resultados del día de las <b>4 loterías</b> con su hora. Toca una lotería para abrirla o cerrarla, y <b>Copiar resultados</b> los manda a WhatsApp con tu marca."},
-    {sel:"#hoyFij",v:"cuentas",t:"🎯 Tripletas más fijas",x:"Las <b>5 tripletas más fuertes</b> para hoy, o para mañana después de las 7 p. m. Revisa tu guía, tripletas fijas y grupos de fijos, y les da puntos por salidores, parejas que salen juntas, volteos y Señal; la jaula las baja. Cada una con su <b>Copiar</b>."},
+    {sel:"#hoyFij",v:"fijas",t:"🎯 Fijas",x:"Las <b>5 tripletas más fuertes</b> para hoy, o para mañana después de las 7 p. m. Revisa tu guía, tripletas fijas y grupos de fijos, y les da puntos por salidores, parejas que salen juntas, volteos y Señal; la jaula las baja. Cada una con su <b>Copiar</b>."},
     {sel:"#hoyTri",v:"cuentas",t:"🎯 Tripletas de hoy",x:"Las tripletas que dio el bot en el día, con <b>✓</b> los animales que ya salieron y <b>⏳</b> los que faltan. Las completas salen como <b>¡GANADORA! 🏆</b>. Puedes copiar una, todas o solo las ganadoras."},
     {sel:"#cAni",v:"cuentas",t:"🧮 Calculadora",x:"Pon el monto y lo que paga, toca los animales que jugó el cliente y te dice <b>cuánto cobra</b> por animal y por tripleta. Los montos se quedan guardados."},
     {sel:"#guiaCard",v:"guia",t:"Guía completa",x:"Toda la guía de esta lotería, con buscador por número o nombre. ¡Listo! Puedes repetir este recorrido cuando quieras con el botón <b>🤖 Bot guía</b>."}
