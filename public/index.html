@@ -954,7 +954,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611181955";
+const BUILD="202611182000";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1108,8 +1108,7 @@ function aciertoStrip(l,st){
   if(a.rk){ const t3=a.rk.rows.filter(r=>r.st3>=3); if(t3.length&&a.rk.rows[a.rk.i].st3>=3){ tit="Los de ⭐⭐⭐ que había:"; ch=t3.map(r=>[r.n,"⭐⭐⭐"]); } else { tit="Los primeros de las señales:"; ch=a.rk.rows.slice(0,Math.max(5,a.rk.i+1)).map(r=>[r.n,r.st3?"⭐".repeat(r.st3):""]); } }
   else if(a.pr){ tit="El pronóstico era:"; ch=a.pr.R.map(r=>[r.n,""]); }
   else { tit="La 📡 Señal era:"; ch=a.sg.R.map(r=>[r.n,""]); }
-  return `<div class="acstrip" role="button" tabindex="0"><span class="b">✅ ¡ACERTÓ!</span><div class="t"><b>${l.A[y][1]} ${y} ${esc(l.A[y][0])}</b> estaba de ${q.length>1?q.slice(0,-1).join(", ")+" y "+q[q.length-1]:q[0]}</div><span class="v">ver ▸</span></div>
-    <div class="acchk">${tit}</div><div class="acchips">${ch.map(([n,e])=>`<span class="${n===y?"hit":""}">${l.A[n][1]} ${n}${e?" "+e:""}</span>`).join("")}</div>`;
+  return `<div class="acstrip" role="button" tabindex="0"><span class="b">✅ ¡ACERTÓ!</span><div class="t"><b>${l.A[y][1]} ${y} ${esc(l.A[y][0])}</b> estaba de ${q.length>1?q.slice(0,-1).join(", ")+" y "+q[q.length-1]:q[0]}</div><span class="v">ver ▸</span></div>`;
 }
 function aciertoBadge(l,st){ const a=aciertoCalc(l,st); if(!a) return ""; const q=[a.pr&&"el pronóstico",a.rk&&"las señales",a.sg&&"la Señal"].filter(Boolean); return `<span class="hbS">✅ estaba en ${q.length>1?q.slice(0,-1).join(", ")+" y "+q[q.length-1]:q[0]}</span>`; }
 function salioHtml(l,st,last){ let h=""; try{ const w=ventana(st); if(w) h=fmtH(w.base); }catch(e){}
