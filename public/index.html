@@ -854,7 +854,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611172129";
+const BUILD="202611172141";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1479,18 +1479,24 @@ render();
 /* ===== bot guía: recorrido por cada parte ===== */
 (function(){
   const PASOS=[
-    {sel:"#tabs",t:"Loterías",x:"Aquí eliges la lotería: <b>Lotto Activo</b>, <b>La Granjita</b>, <b>Guácharo</b> o <b>Lotto Internacional</b>. Cada una tiene su propia guía, historial, jaulas y salidores."},
+    {sel:"#tabs",t:"Loterías",x:"Aquí eliges la lotería: <b>Lotto Activo</b>, <b>La Granjita</b>, <b>Guácharo</b> o <b>Lotto Internacional</b>. Cada una tiene su propia guía, jaulas y salidores. Todos los teléfonos usan el <b>mismo historial de 1 año</b> del servidor, así que todos ven lo mismo."},
     {sel:"#cdown",t:"Próximo sorteo",x:"Cuánto falta para el próximo sorteo de cada lotería. En <b>naranja</b> cuando faltan 5 minutos o menos. Tócala para cambiar a esa lotería."},
     {sel:"#avisosBtn",t:"🔔 Avisos",x:"Activa aquí los <b>avisos al teléfono</b>: te llega una notificación con el resultado y los animales para jugar, aunque el bot esté cerrado."},
     {sel:"#mbar",movil:true,t:"Barra de jugada",x:"El último animal que salió y lo que manda jugar la guía. Los <b>rosados ⇄</b> son volteos salidores. Si sale un felino o un veneno, aparece su recuadro aparte. <b>Copiar</b> lo manda a WhatsApp, <b>Deshacer</b> quita el último y <b>Limpiar</b> borra lo marcado."},
     {sel:"#autoSt",t:"Resultados automáticos",x:"Cuando esta línea está en <b>verde</b>, el bot carga solo los resultados del día y las jaulas. Con <b>Actualizar</b> revisa al momento."},
-    {sel:"#panelCard",v:"panel",t:"Panel",x:"Toca aquí el animal que <b>acaba de salir</b>. En <b>dorado ★</b> lo que manda jugar la guía, en cian el que salió, y con <b>barrotes</b> los que llevan días sin salir."},
-    {sel:"#pred .picks",v:"jugada",t:"Animales para jugar",x:"Las tarjetas de lo que toca jugar, con su botón <b>Copiar</b>. Las <b>rosadas ⇄</b> son volteos salidores, y las que tienen <b>rejas</b> son jaula: <b>no jugarlas</b>. Un <b>×2</b> indica que ese animal sale en varias combinaciones."},
-    {sel:"#pred .rank",v:"jugada",t:"Señales",x:"<b>Los que más señales tienen</b> y <b>📡 Señal</b> juntan todos los datos (guía, salidores, aciertos, volteos y jaulas). Toca un animal para ver por qué está ahí."},
-    {sel:"#pred .trih",v:"jugada",t:"🎯 Tripletas",x:"Todas las combinaciones de tu guía numeradas: <b>Tripleta 1, 2, 3…</b> Cada una tiene su <b>Copiar</b>, y <b>Copiar todas</b> las manda juntas a WhatsApp."},
+    {sel:"#panelCard",v:"panel",t:"Panel",x:"Todos los animales. En <b>dorado ★</b> lo que manda jugar la guía, en cian el que salió, y con <b>barrotes</b> los que llevan días sin salir."},
+    {sel:"#lockBtn",v:"panel",t:"🔒 Candado",x:"El panel está <b>bloqueado</b> para que nadie marque un animal sin querer: los resultados entran solos. Si necesitas marcar uno a mano, toca el candado 🔓; se vuelve a bloquear solo en 1 minuto."},
+    {sel:"#pred .picks",v:"jugada",t:"Animales para jugar",x:"Lo que toca jugar en el próximo sorteo, con su botón <b>Copiar</b>. Aquí entran tu guía, tus <b>grupos de fijos</b> (Perro, Caballo, Rana, Gato, Toro, Perico, Ratón…) y los <b>volteos ⇄</b> salidores. Las que tienen <b>rejas</b> son jaula: <b>no jugarlas</b>. Un <b>×2</b> indica que sale en varias combinaciones."},
+    {sel:"#pred .pron",v:"jugada",t:"🎯 Pronóstico",x:"El resumen más fácil: los <b>3 animales más fuertes</b> para el próximo sorteo, con el porqué en etiquetas: 📖 guía, ⇄ volteo, 📈 salidor, 🔁 pareja fuerte, ⏰ salidor a esa hora, 🔥 caliente esta semana y 🐾☠ felino o veneno. Las barras <b>rojas</b> marcan el más fuerte. <b>Copiar pronóstico</b> lo manda a WhatsApp."},
+    {sel:"#pred .rank",v:"jugada",t:"Señales",x:"<b>Los que más señales tienen ⭐</b> y <b>📡 Señal</b> juntan todos los datos: guía, salidores, aciertos, volteos, jaulas y venenos/felinos. Toca un animal de la Señal para ver sus puntos, y con <b>⚙ Qué datos usar</b> eliges qué contar."},
+    {sel:"#pred .trih",v:"jugada",t:"🎯 Tripletas",x:"Las tripletas del animal que salió: <b>Tripleta 1, 2, 3…</b> Primero salen las <b>tripletas fijas</b> (Mono, Delfín, Ballena, Pulpo) y la <b>Combinación del Pulpo</b> en Guácharo; luego las de tu guía. Cada una tiene su <b>Copiar</b>, y <b>Copiar todas</b> las manda juntas."},
     {sel:"#scard",v:"salidores",t:"Salidores",x:"El ranking de los animales que <b>más</b> y <b>menos</b> han salido, cada lista con su <b>Copiar</b>. Abajo están las <b>Tripletas de salidores</b>."},
+    {sel:"#hcard",v:"salidores",t:"📊 Historial de 1 año",x:"Elige un animal y mira <b>cuándo sale</b>: a qué horas y qué días, con lo esperado al lado. Sale del historial del servidor."},
     {sel:"#jcard",v:"jaulas",t:"Jaulas",x:"Los animales que llevan días sin salir: <b>naranja</b> desde 5 días y <b>rojo</b> desde 12. Puedes cambiar esos límites."},
-    {sel:"#statsCard",v:"cuentas",t:"Hoy",x:"Los <b>resultados de hoy</b> de las 4 loterías, las <b>tripletas del día</b> con ✓ las que ya salieron y una <b>calculadora de premios</b>. Todo se puede copiar para WhatsApp."},
+    {sel:"#hoyRes",v:"cuentas",t:"📋 Resultados de hoy",x:"Los resultados del día de las <b>4 loterías</b> con su hora. Toca una lotería para abrirla o cerrarla, y <b>Copiar resultados</b> los manda a WhatsApp con tu marca."},
+    {sel:"#hoyFij",v:"cuentas",t:"🎯 Tripletas más fijas",x:"Las <b>5 tripletas más fuertes</b> para hoy, o para mañana después de las 7 p. m. Revisa tu guía, tripletas fijas y grupos de fijos, y les da puntos por salidores, parejas que salen juntas, volteos y Señal; la jaula las baja. Cada una con su <b>Copiar</b>."},
+    {sel:"#hoyTri",v:"cuentas",t:"🎯 Tripletas de hoy",x:"Las tripletas que dio el bot en el día, con <b>✓</b> los animales que ya salieron y <b>⏳</b> los que faltan. Las completas salen como <b>¡GANADORA! 🏆</b>. Puedes copiar una, todas o solo las ganadoras."},
+    {sel:"#cAni",v:"cuentas",t:"🧮 Calculadora",x:"Pon el monto y lo que paga, toca los animales que jugó el cliente y te dice <b>cuánto cobra</b> por animal y por tripleta. Los montos se quedan guardados."},
     {sel:"#guiaCard",v:"guia",t:"Guía completa",x:"Toda la guía de esta lotería, con buscador por número o nombre. ¡Listo! Puedes repetir este recorrido cuando quieras con el botón <b>🤖 Bot guía</b>."}
   ];
   const movil=()=>document.body.classList.contains("inapp");
