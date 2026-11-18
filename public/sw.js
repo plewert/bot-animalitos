@@ -30,6 +30,7 @@ async function mostrarAvisos() {
     const titulo = x.lotNombre + " · " + h12(x.hora) + ": salió " + (x.emoji ? x.emoji + " " : "") + x.num + " " + (x.nombre || "");
     const cuerpo = x.picks && x.picks.length ? "🎯 Para jugar: " + x.picks.join(" · ") : "Toca para ver qué jugar";
     await self.registration.showNotification(titulo, { body: cuerpo, icon: "icon-192.png", badge: "icon-192.png", tag: "lot-" + x.lot, renotify: true, data: { lot: x.lot } });
+    if (x.pat && x.pat.length) await self.registration.showNotification("🔥 Patrón activo · " + x.lotNombre, { body: x.pat.join("\n"), icon: "icon-192.png", badge: "icon-192.png", tag: "pat-" + x.lot, renotify: true, data: { lot: x.lot } });
   }
   await guardarCache("vistos", vistos);
 }
