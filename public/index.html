@@ -625,6 +625,14 @@
   .patpill{font-style:normal;margin-left:6px;font-size:11px;padding:1px 8px;border-radius:99px;background:linear-gradient(90deg,#ff5a1f,#ffb020);color:#2a0d00;letter-spacing:0;white-space:nowrap;vertical-align:middle}
   .pron .t-f{background:linear-gradient(90deg,#ff5a1f,#ffb020);color:#2a0d00;border-color:#ffb020;box-shadow:0 0 10px rgba(255,120,30,.5)}
   .ht .patnote{margin-left:0}
+  .pron.rev{border-color:#b18cff}
+  .rev .rvn3{display:flex;gap:6px;margin-bottom:8px} .rev .rvn3 div{flex:1;text-align:center;padding:6px 4px;border-radius:12px;border:1px solid var(--line)}
+  .rev .rvn3 b{display:block;font-size:22px} .rev .rvn3 span{font-size:11.5px;color:var(--muted)}
+  .rev .rvn3 .ok{border-color:#2fd39a;background:rgba(47,211,154,.08)} .rev .rvn3 .ok b{color:#9ff0cf}
+  .rev .rvn3 .mal{border-color:#ff7a3c;background:rgba(255,90,60,.08)} .rev .rvn3 .mal b{color:#ffb08a}
+  .rev .prr.rv.ok{border-color:#2fd39a;background:rgba(47,211,154,.07)} .rev .prr.rv.mal{border-color:#ff7a3c;background:rgba(255,90,60,.06)}
+  .rev .rvn{border-color:var(--line);color:var(--muted)}
+  .rev .patf{align-items:center}
 </style>
 </head>
 <body class="locked">
@@ -799,6 +807,8 @@
     <div id="preview"></div>
   </div>
 
+  <div class="card" style="margin-top:16px" id="revCard" data-view="guia"><div id="revBox"></div></div>
+
   <div class="card" style="margin-top:16px;display:none" data-view="guia" id="volCard">
     <h2>Volteos · <span id="volLot">Guácharo</span></h2>
     <div class="row" style="margin-top:-4px"><input id="vsearch" placeholder="Buscar número o animal" style="flex:1;min-width:180px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(4,8,18,.75);color:var(--ink);font:inherit"></div>
@@ -903,7 +913,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611180116";
+const BUILD="202611180142";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1550,6 +1560,7 @@ render();
     {sel:"#fijWrap",v:"fijas",t:"🎯 Fijas",x:"Dos secciones de tripletas. Arriba, las <b>5 tripletas más fuertes</b> para hoy, o para mañana después de las 7 p. m. Revisa tu guía, tripletas fijas y grupos de fijos, y les da puntos por salidores, parejas que salen juntas, volteos y Señal; la jaula las baja. Cada una con su <b>Copiar</b>. Abajo, las <b>Tripletas de salidores</b>: se arman con los más salidores que <b>aún no han salido hoy</b> y cambian durante el día."},
     {sel:"#hoyTri",v:"cuentas",t:"🎯 Tripletas de hoy",x:"Las tripletas que dio el bot en el día, con <b>✓</b> los animales que ya salieron y <b>⏳</b> los que faltan. Las completas salen como <b>¡GANADORA! 🏆</b>. Puedes copiar una, todas o solo las ganadoras."},
     {sel:"#cAni",v:"cuentas",t:"🧮 Calculadora",x:"Pon el monto y lo que paga, toca los animales que jugó el cliente y te dice <b>cuánto cobra</b> por animal y por tripleta. Los montos se quedan guardados."},
+    {sel:"#revCard",v:"guia",t:"📊 Revisión de la guía",x:"Cada combinación de tu guía probada contra el año real: <b>✅ aciertan más</b>, <b>⚖️ normal</b> o <b>⚠️ casi nunca</b>, con sus números. No cambia la guía: te ayuda a decidir qué dejar y qué revisar."},
     {sel:"#guiaCard",v:"guia",t:"Guía completa",x:"Toda la guía de esta lotería, con buscador por número o nombre. ¡Listo! Puedes repetir este recorrido cuando quieras con el botón <b>🤖 Bot guía</b>."}
   ];
   const movil=()=>document.body.classList.contains("inapp");
@@ -1889,6 +1900,78 @@ function cruActivos(l){
   const aqui=new Set(dia(l.id).map(x=>x.num)), px=proxSorteo(l); if(!px.hoy) return [];
   return o.conf.filter(c=>c.y===l.id&&!aqui.has(c.a)&&dia(c.x).some(x=>x.num===c.a)).map(c=>Object.assign({hora:(dia(c.x).find(x=>x.num===c.a)||{}).hora},c));
 }
+
+/* ===== 📊 Revisión de la guía: cada combinación probada contra el año real ===== */
+var REV_CACHE={}, REVF="todas", REVQ="";
+function patLow(k,n,p){ if(p<=0) return 1; let s=0; const lf=[0]; for(let i=1;i<=n;i++) lf[i]=lf[i-1]+Math.log(i);
+  for(let i=0;i<=k;i++) s+=Math.exp(lf[n]-lf[i]-lf[n-i]+i*Math.log(p)+(n-i)*Math.log(1-p)); return Math.min(1,s); }
+function revCalc(l){
+  let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
+  const key=l.id+"|"+D.length+"|"+(D.length?D[D.length-1][0]:"")+"|"+BUILD;
+  if(REV_CACHE[key]) return REV_CACHE[key];
+  if(D.length<60) return {falta:true,items:[]};
+  const days=D.map(([f,it])=>it.filter(x=>l.A[x[1]]).slice().sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0).map(x=>x[1])).filter(d=>d.length);
+  const fq={}; let T=0; days.forEach(d=>d.forEach(n=>{ fq[n]=(fq[n]||0)+1; T++; }));
+  const f=n=>(fq[n]||0)/(T||1), W=2, g=GD(), items=[];
+  const occ={}; days.forEach((d,di)=>d.forEach((n,i)=>{ (occ[n]=occ[n]||[]).push([di,i]); }));
+  l.order.forEach(x=>{
+    let P; try{ P=predict(g,x,null); }catch(e){ return; }
+    const ys=[...P.now.keys()].filter(y=>!(P.vadd&&P.vadd.has(y))&&y!==x);
+    ys.forEach(y=>{ let n=0,k=0,p=0;
+      (occ[x]||[]).forEach(([di,i])=>{ const d=days[di], nx=d.slice(i+1,i+1+W); if(!nx.length) return; n++; if(nx.includes(y)) k++; p+=1-Math.pow(1-f(y),nx.length); });
+      if(n<10) return; p/=n;
+      const it={tipo:"par",x,y,n,k,p}; it.est=(k/n>=p*1.5&&patTail(k,n,p)<0.0002)?"ok":(k/n<=p*0.4&&patLow(k,n,p)<0.0015)?"mal":"";
+      items.push(it); });
+    (P.extra||[]).forEach(t=>{ const o=t.filter(z=>z!==x); if(o.length<2) return; let n=0,k=0,p=0;
+      (occ[x]||[]).forEach(([di,i])=>{ const rest=days[di].slice(i+1); if(!rest.length) return; n++; if(o.every(z=>rest.includes(z))) k++;
+        p+=o.reduce((a,z)=>a*(1-Math.pow(1-f(z),rest.length)),1); });
+      if(n<10) return; p/=n;
+      const it={tipo:"tri",x,t,n,k,p}; it.est=(k/n>=p*1.5&&patTail(k,n,p)<0.0002)?"ok":(k/n<=p*0.4&&patLow(k,n,p)<0.0015)?"mal":"";
+      items.push(it); });
+  });
+  const out={items,dias:D.length}; REV_CACHE[key]=out; return out;
+}
+function revNom(l,n){ return l.A[n][1]+" "+n+" "+l.A[n][0]; }
+function revTxt(l,it){
+  if(it.tipo==="tri") return "Tripleta fija "+it.t.join("-")+": "+(it.est==="ok"?"los 3 salieron el mismo día más de lo normal":it.est==="mal"?"casi nunca salieron los 3 el mismo día":"igual que el azar");
+  return "Después del "+it.x+", el "+it.y+" "+(it.est==="ok"?"salió en los 2 sorteos siguientes más de lo normal":it.est==="mal"?(it.k?"casi nunca":"nunca")+" salió en los 2 sorteos siguientes":"salió igual que el azar");
+}
+function renderRev(){
+  const box=$("revBox"); if(!box) return; const l=L(); let o;
+  try{ o=revCalc(l); }catch(e){ o={falta:true,items:[]}; }
+  const head=`<div class="prh" style="color:#d8c6ff">📊 Revisión de la guía · ${esc(l.name)}</div>`;
+  if(o.falta){ box.innerHTML=`<div class="pron pat rev">${head}<p class="note" style="margin:6px 0 0">Hace falta el historial del servidor para revisar la guía. Si acabas de abrir el bot, aparece en unos segundos.</p></div>`; return; }
+  const ok=o.items.filter(i=>i.est==="ok"), mal=o.items.filter(i=>i.est==="mal"), nor=o.items.filter(i=>!i.est);
+  const q=REVQ.trim(), match=i=>!q||i.x===q||i.y===q||(i.t&&i.t.includes(q));
+  const fila=it=>{ const a=Math.round(it.k/it.n*100), b=Math.max(1,Math.round(it.p*100)), mx=Math.max(a,b,1), col=it.est==="ok"?"#2fd39a":it.est==="mal"?"#ff7a3c":"#5b6b8f";
+    const tag=it.est==="ok"?'<span class="prt t-p" style="margin:0">✅ Acierta más</span>':it.est==="mal"?'<span class="prt t-x" style="margin:0">⚠️ Casi nunca</span>':'<span class="prt rvn" style="margin:0">⚖️ Normal</span>';
+    const tit=it.tipo==="tri"?it.t.map(n=>`${l.A[n][1]} <b>${n}</b>`).join(' <span style="color:var(--muted)">-</span> '):`${l.A[it.x][1]} <b>${it.x}</b> <span style="color:var(--muted)">➜</span> ${l.A[it.y][1]} <b>${it.y}</b> ${esc(l.A[it.y][0])}`;
+    return `<div class="prr rv ${it.est}" style="display:block"><div class="prn"><span style="font-size:15px">${tit}</span>${tag}</div>
+      <div class="pats">${esc(revTxt(l,it))}</div>
+      <div class="patb"><span>En el año</span><div><i style="width:${a/mx*100}%;background:${col}"></i></div><b>${a} de 100</b></div>
+      <div class="patb az"><span>Al azar</span><div><i style="width:${b/mx*100}%"></i></div><b>${b} de 100</b></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">Se probó ${it.n} veces</div></div>`; };
+  let lista="";
+  if(REVF==="ok") lista=ok.filter(match).map(fila).join("")||'<p class="note">Ninguna combinación acierta claramente más que el azar.</p>';
+  else if(REVF==="mal") lista=mal.filter(match).map(fila).join("")||'<p class="note">Ninguna combinación falla claramente más que el azar.</p>';
+  else lista=ok.concat(mal).filter(match).map(fila).join("")+(nor.filter(match).length?`<details class="hl" style="margin-top:8px"${q?" open":""}><summary>Ver las normales (${nor.filter(match).length})<small>igual que el azar</small></summary><div style="padding:0 8px 6px">${nor.filter(match).slice(0,80).map(fila).join("")}</div></details>`:"");
+  box.innerHTML=`<div class="pron pat rev">${head}
+    <div class="prs"><span>Cada combinación probada contra ${o.dias} días de resultados reales</span></div>
+    <div class="rvn3"><div class="ok"><b>${ok.length}</b><span>aciertan más</span></div><div><b>${nor.length}</b><span>normal</span></div><div class="mal"><b>${mal.length}</b><span>casi nunca</span></div></div>
+    <div class="patf">${[["todas","Todas"],["ok","✅ Aciertan"],["mal","⚠️ Casi nunca"]].map(([k,t])=>`<button type="button" data-rf="${k}" class="${REVF===k?"on":""}">${t}</button>`).join("")}
+      <input id="revQ" type="search" inputmode="numeric" placeholder="🔎 Animal (ej. 15)" value="${esc(REVQ)}" style="flex:1;min-width:110px;border-radius:99px;padding:4px 10px;font:600 13px Rajdhani,sans-serif;background:rgba(255,255,255,.04);color:inherit;border:1px solid var(--line)"></div>
+    ${lista}
+    <div class="note" style="margin:8px 0 0">Para cada animal de "para jugar" se revisa si salió en los 2 sorteos siguientes, y en las tripletas fijas si salieron los 3 el mismo día. "Acierta más" y "casi nunca" solo se marcan si pasó claramente distinto al azar. No borra nada de tu guía: solo te muestra los números para que tú decidas.</div>
+    ${ok.length||mal.length?'<button class="prcp revcp" type="button">⧉ Copiar revisión</button>':""}</div>`;
+  const qi=$("revQ"); if(qi) qi.oninput=()=>{ REVQ=qi.value.replace(/[^0-9]/g,"").slice(0,2); const pos=qi.selectionStart; renderRev(); const n=$("revQ"); if(n){ n.focus(); try{n.setSelectionRange(pos,pos);}catch(e){} } };
+}
+document.addEventListener("click",e=>{
+  const f=e.target.closest("#revBox .patf button"); if(f){ REVF=f.dataset.rf; renderRev(); return; }
+  const c=e.target.closest(".revcp"); if(!c) return;
+  const l=L(), o=revCalc(l), ok=o.items.filter(i=>i.est==="ok"), mal=o.items.filter(i=>i.est==="mal");
+  const ln=it=>(it.tipo==="tri"?it.t.join("-"):it.x+" ➜ "+it.y)+": "+Math.round(it.k/it.n*100)+" de 100 (azar "+Math.max(1,Math.round(it.p*100))+")";
+  copyTxt("📊 *Revisión de la guía · "+l.name+"*\n"+(ok.length?"\n✅ *Aciertan más:*\n"+ok.map(ln).join("\n"):"")+(mal.length?"\n\n⚠️ *Casi nunca:*\n"+mal.map(ln).join("\n"):"")+FOOTER,c,"⧉ Copiar revisión");
+});
 
 function patNom(l,n){ return l.A[n][1]+" "+n+" "+l.A[n][0]; }
 function patTxt(l,c){
@@ -2292,6 +2375,7 @@ function renderHoy(){
   const tm=$("triMas"); if(tm) tm.ontoggle=()=>{HOYOPEN.tri=tm.open;};
   try{ renderFij(); }catch(e){}
   try{ renderPat(); }catch(e){}
+  try{ renderRev(); }catch(e){}
   renderCalc();
 }
 var HOYOPEN={}, CALC={sel:[]};
