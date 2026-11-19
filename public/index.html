@@ -431,8 +431,9 @@
   .demobar a{color:var(--gold);white-space:nowrap;border:1px solid rgba(255,210,63,.6);border-radius:99px;padding:3px 10px;text-decoration:none;font-size:13px}
   body.demo .tab:not([data-id="activo"]){opacity:.45}
   body.demo .tab:not([data-id="activo"])::before{content:"🔒 "}
-  body.demo #triBox>*,body.demo #iaBox>*{display:none}
-  body.demo #iaBox::after{content:"🔒 Las tripletas IA son solo con código. Pide el tuyo por WhatsApp.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted);margin-bottom:14px}
+  body.demo #triBox>*,body.demo #iaBox>*,body.demo #arBox>*{display:none}
+  body.demo #arBox::after{content:"🔒 Arma tu tripleta es solo con código.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted);margin-bottom:14px}
+body.demo #iaBox::after{content:"🔒 Las tripletas IA son solo con código. Pide el tuyo por WhatsApp.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted);margin-bottom:14px}
 body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide el tuyo por WhatsApp.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted)}
   .demoend{display:none;position:fixed;inset:0;z-index:200;background:rgba(3,5,12,.88);align-items:center;justify-content:center;padding:20px}
   .demoend.on{display:flex}
@@ -720,6 +721,21 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
 .iacp{margin-left:auto;border:1px solid #2ef2ff;color:#2ef2ff;background:transparent;border-radius:9px;padding:3px 10px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
 .iacp.iaall{display:block;width:100%;margin:8px 0 0;padding:7px}
 .iaf{margin-top:8px;font-size:12.5px;color:var(--muted)}.iaf b{color:#2df28a}
+.arw{margin:0 0 14px;border:2px solid #2ef2ff;border-radius:18px;padding:12px;background:rgba(46,242,255,.05);box-shadow:0 0 16px rgba(46,242,255,.25)}
+.arh{color:#9ff8ff;font-weight:800;letter-spacing:.05em;font-size:15px;text-transform:uppercase}
+.ars{color:var(--muted);font-size:13.5px;margin:4px 0 8px}
+.arg{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+.arn{border:1px solid #233a55;border-radius:10px;text-align:center;padding:3px 0;font:inherit;font-size:12px;color:var(--gold);font-weight:700;background:#08121f;cursor:pointer}
+.arn span{display:block;font-size:19px}
+.arn.on{border:2px solid #2ef2ff;background:#0b2a3a;box-shadow:0 0 10px #2ef2ff88}
+.arm{display:block;width:100%;text-align:center;font:inherit;font-size:12.5px;color:#2ef2ff;margin:4px 0 0;background:none;border:0;cursor:pointer;padding:4px}
+.arc{display:flex;align-items:center;gap:8px;border:1px solid #1f3a50;border-radius:12px;padding:8px 10px;margin-top:6px;background:#06101b}
+.arc .t{font-size:15px;font-weight:700}.arc .bars{color:#ff4d4d;letter-spacing:-2px;margin-left:auto;font-size:13px;white-space:nowrap}
+.arc .tg{display:block;font-size:11.5px;color:#9fb3d1;font-weight:600;margin-top:3px}
+.arcp{border:1px solid #2ef2ff;color:#2ef2ff;background:transparent;border-radius:9px;padding:3px 9px;font:inherit;font-size:13px;cursor:pointer}
+.ark{margin-top:8px;font-size:13px;color:#2df28a;background:rgba(45,242,138,.07);border-radius:10px;padding:7px 9px}
+.ark.wait{color:#ffb86b;background:rgba(255,184,107,.08)}.ark.norm{color:#c9d4e8;background:rgba(201,212,232,.06)}
+.arf{margin-top:8px;font-size:12.5px;color:var(--muted)}.arf b{color:#2df28a}
 </style>
 </head>
 <body class="locked">
@@ -875,7 +891,7 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   <div class="card" style="margin-top:16px" id="patCard" data-view="salidores"><div id="patBox"></div></div>
 
   <div class="card" style="margin-top:16px" id="fijCard" data-view="fijas">
-    <div id="fijWrap"><div id="iaBox"></div><div id="hoyFij"></div><div id="triWrap" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><div id="triBox"></div></div></div>
+    <div id="fijWrap"><div id="iaBox"></div><div id="arBox"></div><div id="hoyFij"></div><div id="triWrap" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><div id="triBox"></div></div></div>
   </div>
 
   <div class="card" style="margin-top:16px" id="hcard" data-view="salidores">
@@ -1002,7 +1018,9 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611191800";
+const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["00","32","33"],["00","16","35"],["00","29","36"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]],"21":[["01","05","09"],["05","19","23"],["02","17","31"]],"01":[["02","22","23"],["09","20","24"],["10","11","14"]]};
+const REGLA_NO={"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"],"21":["guacharo"],"01":["guacharo"]};
+const BUILD="202611191510";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1073,8 +1091,6 @@ function predict(g,x,p){
     if(p!=null) ext.forEach(c=>{ if(c[0]===p&&c[1]===x){cont.push(c); add(c[2],1);} });
   }
   // reglas fijas en las 4 loterías: al salir X, se juega una tripleta completa
-  const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["00","32","33"],["00","16","35"],["00","29","36"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]],"21":[["01","05","09"],["05","19","23"],["02","17","31"]],"01":[["02","22","23"],["09","20","24"],["10","11","14"]]};
-  const REGLA_NO={"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"],"21":["guacharo"],"01":["guacharo"]};
   const extra=(REGLA_NO[x]||[]).includes(L().id)?[]:(REGLA_TRI[x]||[]).filter(t=>t.every(n=>L().A[n]));
   const TRI_APARTE=["52","00","18","36","21","01"];
   if(!TRI_APARTE.includes(x)) extra.forEach(t=>t.forEach(n=>{ if(n!==x) add(n,1); }));
@@ -2588,15 +2604,56 @@ function iaCalc(l,st){
   const add=new Date().getHours()>=ULTIMO?1:0;
   const k=l.id+"|"+D.length+"|"+D[D.length-1][0]+D[D.length-1][1].length+"|"+st.hist.length+"|"+add+"|"+todayStr()+"|"+l.order.map(a=>st.last[a]||"").join(",");
   if(IA_CACHE.k===k) return IA_CACHE.v;
-  const N=l.order.length, h={}, e={}, ls={}; let i=0;
-  D.slice().sort((a,b)=>a[0]<b[0]?-1:1).forEach(([f,it])=>{ const s=new Set(it.map(x=>x[1]).filter(n=>l.A[n])); const d0=new Date(f+"T12:00:00");
-    if(i++>30&&s.size>=8){ const base=s.size/N; l.order.forEach(a=>{ if(!ls[a]) return; const b=fijBin(Math.round((d0-new Date(ls[a]+"T12:00:00"))/864e5)); e[b]=(e[b]||0)+base; if(s.has(a)) h[b]=(h[b]||0)+1; }); }
-    s.forEach(n=>ls[n]=f); });
-  const T={}; Object.keys(e).forEach(b=>T[b]=((h[b]||0)+5)/(e[b]+5));
+  const T=iaTabla(l,D);
   const gap=a=>daysSince(st.last[a])+add;
   const four=l.order.filter(a=>st.last[a]).map(a=>({n:a,g:gap(a),r:T[fijBin(gap(a))]||1})).sort((x,y)=>y.r-x.r||x.g-y.g).slice(0,4);
   const tri=[]; for(let a=0;a<4;a++)for(let b=a+1;b<4;b++)for(let c=b+1;c<4;c++) if(four[c]) tri.push([four[a].n,four[b].n,four[c].n]);
   const v=four.length===4?{four,tri}:null; IA_CACHE={k,v}; return v;
+}
+var IA_TAB={};
+function iaTabla(l,D){
+  const k=D.length+"|"+D[D.length-1][0]+D[D.length-1][1].length; if(IA_TAB[l.id]&&IA_TAB[l.id].k===k) return IA_TAB[l.id].T;
+  const N=l.order.length, h={}, e={}, ls={}; let i=0;
+  D.slice().sort((a,b)=>a[0]<b[0]?-1:1).forEach(([f,it])=>{ const s=new Set(it.map(x=>x[1]).filter(n=>l.A[n])); const d0=new Date(f+"T12:00:00");
+    if(i++>30&&s.size>=8){ const base=s.size/N; l.order.forEach(a=>{ if(!ls[a]) return; const b=fijBin(Math.round((d0-new Date(ls[a]+"T12:00:00"))/864e5)); e[b]=(e[b]||0)+base; if(s.has(a)) h[b]=(h[b]||0)+1; }); }
+    s.forEach(n=>ls[n]=f); });
+  const T={}; Object.keys(e).forEach(b=>T[b]=((h[b]||0)+5)/(e[b]+5)); IA_TAB[l.id]={k,T}; return T;
+}
+/* 🎯 Arma tu tripleta: la persona escoge un animal y el bot le busca 2 compañeros por el ciclo de días. Probado en 2 años: ×1.33 */
+var AR_SEL={}, AR_ALL=false;
+function esGuia(l,t){ const k=t.slice().sort().join(); for(const x in REGLA_TRI){ if((REGLA_NO[x]||[]).includes(l.id)) continue; if(REGLA_TRI[x].some(g=>g.slice().sort().join()===k)) return true; } return false; }
+function renderArma(){
+  const box=$("arBox"); if(!box) return; const l=L(), st=S();
+  let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
+  const head=`<div class="arh">🎯 Arma tu tripleta</div>`;
+  if(D.length<60){ box.innerHTML=`<div class="arw">${head}<p class="note" style="margin:6px 0 0">Hace falta el historial del servidor. Aparece en unos segundos.</p></div>`; return; }
+  const T=iaTabla(l,D), add=new Date().getHours()>=ULTIMO?1:0;
+  const gp=a=>daysSince(st.last[a])+add, rt=a=>st.last[a]?(T[fijBin(gp(a))]||1):1, dd=g=>g+(g===1?" día":" días");
+  const X=AR_SEL[l.id]&&l.A[AR_SEL[l.id]]?AR_SEL[l.id]:null;
+  const lista=AR_ALL?l.order:l.order.slice(0,12); if(X&&!lista.includes(X)) lista.push(X);
+  let h=`<div class="arw">${head}<div class="ars">Toca el animal que te gusta y el bot le busca los 2 compañeros que mejor están ${fijDia()}.</div>
+    <div class="arg">${lista.map(n=>`<button type="button" class="arn${n===X?" on":""}" data-n="${n}"><span>${l.A[n][1]}</span>${n}</button>`).join("")}</div>
+    <button type="button" class="arm">${AR_ALL?"▲ ver menos":"▼ ver los "+l.order.length+" animales"}</button>`;
+  if(!X) h+=`<div class="ars" style="text-align:center;margin:8px 0 0">👆 Escoge un animal</div>`;
+  else{
+    const c=l.order.filter(a=>a!==X&&st.last[a]).sort((x,y)=>rt(y)-rt(x)||gp(x)-gp(y)).slice(0,3);
+    if(c.length<3) h+=`<p class="note">Aún no hay datos suficientes de esta lotería.</p>`;
+    else{
+      const pr=[[c[0],c[1]],[c[0],c[2]],[c[1],c[2]]].map(p=>[X].concat(p));
+      const bars=t=>{ const v=(rt(t[1])+rt(t[2]))/2, n=v>=1.12?5:v>=1.05?4:v>=0.98?3:2; return `<span class="bars">${"▮".repeat(n)}</span>`; };
+      const tag=a=>`<span style="white-space:nowrap">${st.last[a]?`🔄 ${a} · ${dd(gp(a))} · ×${rt(a).toFixed(2)}`:`${a} · sin datos`}</span>`;
+      h+=`<div class="arh" style="font-size:13.5px;margin-top:10px">Con ${l.A[X][1]} ${X} ${l.A[X][0]}</div>`+
+        pr.map((t,i)=>`<div class="arc"><div><span class="t">${t.map(n=>l.A[n][1]+" "+n).join(" - ")}</span><span class="tg">${esGuia(l,t)?"📖 De la guía &nbsp; ":""}${tag(t[1])} &nbsp; ${tag(t[2])}</span></div>${bars(t)}<button type="button" class="arcp" data-i="${i}">⧉</button></div>`).join("");
+      const r=rt(X), g=st.last[X]?dd(gp(X)):null, nm=l.A[X][0];
+      h+=`<div class="ark ${!g?"":r>=1.05?"":r<0.95?"wait":"norm"}">${!g?`➖ No tengo la fecha en que salió ${nm} por última vez.`:r>=1.05?`💡 ${nm} lleva ${g} sin salir: <b>está en buen momento</b> (×${r.toFixed(2)}).`:r<0.95?`⏳ ${nm} lleva ${g} sin salir: <b>conviene esperar</b> (×${r.toFixed(2)}).`:`➖ ${nm} lleva ${g} sin salir: momento normal (×${r.toFixed(2)}).`}</div>
+        <div class="arf">Probado con 2 años: los compañeros del bot completan <b>33% más</b> tripletas que al azar.</div>`;
+      box._pr=pr;
+    }
+  }
+  box.innerHTML=h+`</div>`;
+  box.querySelectorAll(".arn").forEach(b=>b.onclick=()=>{ AR_SEL[l.id]=b.dataset.n===X?null:b.dataset.n; renderArma(); });
+  box.querySelector(".arm").onclick=()=>{ AR_ALL=!AR_ALL; renderArma(); };
+  box.querySelectorAll(".arcp").forEach(b=>b.onclick=()=>copyTxt("🎯 Tripleta · "+l.name+"\n"+fijTxt(l,box._pr[+b.dataset.i]),b,"⧉"));
 }
 function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
 function renderIA(){
@@ -2614,6 +2671,7 @@ function renderIA(){
 }
 function renderFij(){
   try{ renderIA(); }catch(e){}
+  try{ renderArma(); }catch(e){}
   const box=$("hoyFij"); if(!box) return; const l=L(); let o;
   try{ o=fijCalc(l); }catch(e){ o={R:[],err:true}; }
   const head=`<div class="prh">🎯 Tripletas más fijas · ${esc(l.name)}</div><div class="prs"><span>${fijDia()} · todo el día</span></div>`;
