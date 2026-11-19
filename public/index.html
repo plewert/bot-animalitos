@@ -1020,7 +1020,7 @@ function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includ
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
 const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["00","32","33"],["00","16","35"],["00","29","36"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]],"21":[["01","05","09"],["05","19","23"],["02","17","31"]],"01":[["02","22","23"],["09","20","24"],["10","11","14"]],"33":[["0","11","22"],["00","19","24"],["05","10","11"]],"25":[["07","11","35"],["03","30","34"],["02","20","24"]],"16":[["0","00","22"],["23","32","21"],["02","05","27"]]};
 const REGLA_NO={"16":["guacharo"],"25":["guacharo"],"33":["guacharo"],"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"],"21":["guacharo"],"01":["guacharo"]};
-const BUILD="202611191920";
+const BUILD="202611191940";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2256,7 +2256,7 @@ function renderPat(){
     <div class="patf">${["todos","Secuencias","Franjas","Días","Pares","Cruces"].map(t=>`<button type="button" data-f="${t}" class="${PATF===t?"on":""}">${t==="todos"?"Todos":t==="Cruces"?"🔀 Cruces":t}</button>`).join("")}</div>
     ${(()=>{ const nc=o.conf.length+crC.length, nt=o.tot+CR.conf.length+CR.fail.length; return `<div class="patn"><div class="ok${nc?" fire":""}"><b>${nc}</b><span>confirmado${nc===1?"":"s"}</span>${nc?'<em class="patal">🔥 ¡Alerta activa!</em>':""}</div><div><b>${Math.max(0,o.tot-o.conf.length+CR.tot-CR.conf.length)}</b><span>sumados</span></div></div>`; })()}
     ${PATF==="todos"||PATF==="Franjas"?`<div class="patfr">${["m","t"].map(f=>`<button type="button" data-fr="${f}" class="${PATFR===f?"on":""}"><span>${PAT_FR[f][0]}</span><b>${PAT_FR[f][1]}</b><small>${f==="m"?(l.id==="inter"?"8:30 a. m. a 1:30 p. m.":"8 a. m. a 1 p. m."):(l.id==="inter"?"2:30 a 7:30 p. m.":"2 a 7 p. m.")}</small></button>`).join("")}</div>
-    <div class="pattop"><div class="note" style="margin:0 0 5px">${PAT_FR[PATFR][0]} Lo que más sale en la ${PAT_FR[PATFR][1].toLowerCase()} (todo el historial):</div>${T.lst.map(([n,c])=>`<span>${l.A[n][1]} ${n} <small>${c}</small></span>`).join("")}<div class="note" style="margin:5px 0 0">Lo normal serían ${Math.round(T.norm)} veces cada uno.</div></div>`:""}
+    <div class="pattop"><div class="note" style="margin:0 0 5px">${PAT_FR[PATFR][0]} Lo que más sale en la ${PAT_FR[PATFR][1].toLowerCase()} (todo el historial):</div>${T.lst.map(([n,c])=>`<span>${l.A[n][1]} ${n} <small>${c}</small></span>`).join("")}<div class="note" style="margin:5px 0 0">Lo normal serían ${Math.round(T.norm)} veces cada uno.</div><button class="prcp topcp" type="button" style="margin-top:8px">⧉ Copiar</button></div>`:""}
     ${PATF==="Cruces"?"":(o.conf.filter(filt).map(c=>fila(c,true)).join("")||(PATF==="todos"&&crC.length?"":'<p class="note" style="margin:8px 0">Ningún patrón de este tipo pasó la prueba: lo que parecía repetirse fue casualidad.</p>'))}
     ${PATF==="todos"||PATF==="Cruces"?(crC.map(c=>filaCru(c,true)).join("")+(PATF==="Cruces"&&!crC.length?'<p class="note" style="margin:8px 0">Ningún cruce con '+esc(l.name)+' pasó la prueba: lo que parecía cruzar fue casualidad.</p>':"")+(PATF==="Cruces"&&crF.length?`<details class="hl" style="margin-top:8px"><summary>Ver los cruces que fueron casualidad (${crF.length})</summary><div style="padding:0 8px 6px">${crF.map(c=>filaCru(c,false)).join("")}</div></details>`:"")+(PATF==="Cruces"?'<div class="note" style="margin:8px 0 0">"Lo normal" es la probabilidad de que ese animal salga por su cuenta en los sorteos que le quedan al día en la otra lotería. Guácharo cruza solo con los animales del 0 al 36.</div>':"")):""}
     ${o.fail.filter(filt).length?`<details class="hl" style="margin-top:8px"><summary>Ver los que fueron casualidad (${o.fail.filter(filt).length})</summary><div style="padding:0 8px 6px">${o.fail.filter(filt).map(c=>fila(c,false)).join("")}</div></details>`:""}
@@ -2266,6 +2266,8 @@ function renderPat(){
 document.addEventListener("click",e=>{
   const f=e.target.closest("#patBox .patf button"); if(f){ PATF=f.dataset.f; renderPat(); return; }
   const r=e.target.closest("#patBox .patfr button"); if(r){ PATFR=r.dataset.fr; renderPat(); return; }
+  const tc=e.target.closest(".topcp"); if(tc){ const l=L(), T=patCalc(l).top[PATFR];
+    copyTxt(PAT_FR[PATFR][0]+" *Lo que más sale en la "+PAT_FR[PATFR][1].toLowerCase()+" · "+l.name+"*\n"+T.lst.map(([n,c])=>((l.A[n][1]&&!/</.test(l.A[n][1]))?l.A[n][1]+" ":"")+n+" "+l.A[n][0]+" ("+c+" veces)").join("\n")+"\nLo normal: "+Math.round(T.norm)+" veces cada uno."+FOOTER,tc,"⧉ Copiar"); return; }
   const c=e.target.closest(".patcp"); if(!c) return;
   const l=L(), o=patCalc(l);
   let cr=[]; try{ cr=cruCalc().conf.filter(x=>x.x===l.id||x.y===l.id); }catch(e){}
