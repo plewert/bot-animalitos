@@ -965,7 +965,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611190040";
+const BUILD="202611190110";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2193,7 +2193,7 @@ function cycTabla(l){ let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }c
   if(CYC_CACHE[k]) return CYC_CACHE[k]; const t=cycLearn(l,cycSeq(l)); CYC_CACHE={}; CYC_CACHE[k]=t; return t; }
 function cycGap(st,n){ const H=st.hist; for(let i=H.length-1;i>=0;i--) if(H[i]===n) return H.length-i; return 99999; }
 function cycInfo(l,st,n){ const t=cycTabla(l); if(!t) return null; const g=cycGap(st,n), r=t[cycBin(g)]||1;
-  const p=Math.max(-6,Math.min(4,Math.round((r-1)*10))); if(!p) return null;
+  const CW=2; /* peso del ciclo: probado en 3 años, peso 2 fue el mejor */ const p=Math.max(-6*CW,Math.min(4*CW,Math.round((r-1)*10*CW))); if(!p) return null;
   const dd=(g/12).toFixed(1).replace(".0","");
   const lab=p>0?"🔄 En su punto · "+dd+(dd==="1"?" día":" días")+" sin salir":(g<=12?"⏸ Acaba de salir ("+g+(g===1?" sorteo":" sorteos")+")":"🔒 Jaula muy larga ("+dd+" días)");
   const corto=p>0?"🔄 en su punto":(g<=12?"⏸ acaba de salir":"🔒 jaula muy larga");
