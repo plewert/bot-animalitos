@@ -965,7 +965,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611182130";
+const BUILD="202611190040";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2440,6 +2440,23 @@ function fijDia(){
   const t=d.toLocaleDateString("es-VE",{weekday:"long",day:"2-digit",month:"2-digit"});
   return (man?"para mañana ":"para hoy ")+t;
 }
+/* 🔄 Ciclo por días para las tripletas: cuántos días lleva cada animal sin salir (aprendido del historial del servidor) */
+var FIJ_DT={};
+const fijBin=g=>g<=1?0:g<=2?1:g<=4?2:g<=8?3:g<=16?4:5;
+function fijCyc(l,st,t,D){
+  const k=l.id+"|"+D.length+"|"+(D.length?D[D.length-1][0]+D[D.length-1][1].length:""); let T=FIJ_DT[k];
+  if(!T){ const N=l.order.length, h={}, e={}, last={}; let i=0;
+    D.slice().sort((a,b)=>a[0]<b[0]?-1:1).forEach(([f,it])=>{ const s=new Set(it.map(x=>x[1]).filter(n=>l.A[n])); const d0=new Date(f+"T12:00:00");
+      if(i++>30&&s.size>=8){ const base=s.size/N; l.order.forEach(a=>{ if(!last[a]) return; const b=fijBin(Math.round((d0-new Date(last[a]+"T12:00:00"))/864e5)); e[b]=(e[b]||0)+base; if(s.has(a)) h[b]=(h[b]||0)+1; }); }
+      s.forEach(n=>last[n]=f); });
+    T={}; Object.keys(e).forEach(b=>T[b]=((h[b]||0)+5)/(e[b]+5)); FIJ_DT={}; FIJ_DT[k]=T; }
+  const add=new Date().getHours()>=ULTIMO?1:0; let p=0; const up=[], dn=[];
+  t.forEach(n=>{ if(!st.last[n]) return; const g=daysSince(st.last[n])+add, r=T[fijBin(g)]||1, q=Math.max(-4,Math.min(3,Math.round((r-1)*10)));
+    p+=q; if(q>0) up.push(n); else if(q<0) dn.push([n,g]); });
+  const tags=[]; if(up.length) tags.push(["y","🔄 "+(up.length>1?up.slice(0,-1).join(", ")+" y "+up[up.length-1]:up[0])+" en su punto"]);
+  dn.forEach(([n,g])=>tags.push(["z",g>=17?"🔒 "+n+" jaula muy larga ("+g+" días)":"⏸ "+n+" no está en su punto"]));
+  return {p,tags};
+}
 function fijCalc(l){
   let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
   const st=S(), H=st.hist, last=H[H.length-1];
@@ -2464,9 +2481,7 @@ function fijCalc(l){
       const k=[...t].sort().join("-"); const pri=c==="g"?2:1; const o=vist.get(k);
       if(!o||pri>o.pri) vist.set(k,{t,pri,lab,c}); }); });
   const R=[...vist.values()].map(o=>{ const t=o.t; let sc=o.pri; const tags=[[o.c,o.lab]];
-    const ss=t.filter(sal);
-    if(ss.length===3){ sc+=3; tags.push(["c","🔥 Los 3 salidores (30 días)"]); }
-    else if(ss.length===2){ sc+=2; tags.push(["c","📈 "+ss.join(" y ")+" salidores"]); }
+    // los salidores no cuentan en las tripletas (en la prueba de 2 años salieron mejor sin ellos)
     let best=null; for(let i=0;i<3;i++) for(let j=i+1;j<3;j++){ const a=t[i],b=t[j], c=par[[a,b].sort().join("|")]||0, e=(pd[a]||0)*(pd[b]||0)/nd;
       if(e>0&&c>=e*1.25&&c>=e+3){ const q=c/e; if(!best||q>best.q) best={a,b,q}; } }
     if(best){ sc+=2; tags.push(["p","👥 "+best.a+" y "+best.b+" salen juntos"]); }
@@ -2479,6 +2494,7 @@ function fijCalc(l){
     if(pz){ sc+=2; tags.push(["f","🔥 Patrón confirmado: "+pz.a+" y "+pz.b+(pz.tipo==="par"?" el mismo día":pz.tipo==="seq"?" seguidos":" mañana → tarde")]); }
     let jw=null; t.forEach(n=>{ if(jLevel(st,n)){ sc-=2; const d=daysSince(st.last[n]); if(!jw||d>jw.d) jw={n,d}; } });
     if(jw) tags.push(["x","🔒 "+jw.n+" lleva "+jw.d+" días sin salir"]);
+    { let cy=null; try{ cy=fijCyc(l,st,t,D); }catch(e){} if(cy){ sc+=cy.p; cy.tags.forEach(x=>tags.push(x)); } }
     return {t,sc,tags};
   }).sort((a,b)=>b.sc-a.sc||b.tags.length-a.tags.length||l.order.indexOf(a.t[0])-l.order.indexOf(b.t[0])).slice(0,5);
   R.forEach(x=>x.lv=x.sc>=9?5:x.sc>=7?4:x.sc>=5?3:x.sc>=3?2:1);
