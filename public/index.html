@@ -965,7 +965,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611190110";
+const BUILD="202611190220";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2487,8 +2487,8 @@ function fijCalc(l){
     if(best){ sc+=2; tags.push(["p","👥 "+best.a+" y "+best.b+" salen juntos"]); }
     let tc=0; sets.forEach(S=>{ if(S.has(t[0])&&S.has(t[1])&&S.has(t[2])) tc++; });
     if(tc>=2){ sc+=Math.min(3,tc-1); }
-    for(const n of t){ const v=par69(l.id,n).find(z=>topS.has(z)&&!t.includes(z)); if(v){ sc+=2; tags.push(["v","⇄ "+n+" tiene volteo salidor ("+v+")"]); break; } }
-    const enS=t.filter(n=>sen.has(n)); if(enS.length){ sc+=enS.length>1?3:2; tags.push(["h","📡 "+enS.join(" y ")+(enS.length>1?" están":" está")+" en la Señal"]); }
+    // el "volteo salidor" no cuenta en las tripletas (en la prueba de 2 años salieron mejor sin él)
+    const enS=t.filter(n=>sen.has(n)); if(enS.length){ sc+=enS.length>1?3:2; tags.push(["h","📡 "+(enS.length>2?enS.slice(0,-1).join(", ")+" y "+enS[enS.length-1]:enS.join(" y "))+(enS.length>1?" están":" está")+" en la Señal"]); }
     let PC=[]; try{ PC=patCalc(l).conf; }catch(e){}
     const pz=PC.find(c=>(c.tipo==="par"||c.tipo==="seq"||c.tipo==="mt")&&t.includes(c.a)&&t.includes(c.b));
     if(pz){ sc+=2; tags.push(["f","🔥 Patrón confirmado: "+pz.a+" y "+pz.b+(pz.tipo==="par"?" el mismo día":pz.tipo==="seq"?" seguidos":" mañana → tarde")]); }
