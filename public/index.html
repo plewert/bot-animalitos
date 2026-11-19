@@ -685,6 +685,27 @@
   .pbrain .pbd{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;font-size:13.5px;line-height:1.55}
   .pbrain .pbd>div>b:first-child{color:#d8c6ff} .pbrain .pbl{margin:3px 0 3px 4px} .pbrain .pbs{color:#2fd39a}
 </style>
+<style id="anim4">
+.cdr{display:flex;align-items:center;gap:14px;margin:4px 0 12px;padding:8px 14px;border:2px solid var(--cyan);border-radius:16px;background:rgba(10,16,34,.9);box-shadow:0 0 14px rgba(46,242,255,.35)}
+.cdr .cdk{color:var(--muted);font-weight:700;font-size:12px;letter-spacing:.08em}.cdr .cdh{font-size:22px;font-weight:800;color:#fff;line-height:1.1}.cdr .cds{font-size:14px;font-weight:700;color:var(--cyan)}
+.cdr.red{border-color:#ff3b5c;box-shadow:0 0 22px rgba(255,59,92,.6)}.cdr.red .cds{color:#ff8b8b}
+#grid .a.fire{border-color:#ff7a3c;box-shadow:0 0 16px rgba(255,122,60,.7)}
+#grid .a .fz{position:absolute;top:1px;left:50%;transform:translateX(-50%);font-size:15px;line-height:1;z-index:4;filter:drop-shadow(0 0 5px #ff7a00);pointer-events:none}
+#grid .a.rul{border-color:#ffd23f!important;background:rgba(255,210,63,.35)!important;box-shadow:0 0 0 3px #ffd23f,0 0 26px rgba(255,210,63,.95)!important;transform:scale(1.1);z-index:5}
+#grid .a.rulfin{border-color:var(--cyan)!important;box-shadow:0 0 0 4px rgba(46,242,255,.85),0 0 40px rgba(46,242,255,.95)!important;transform:scale(1.1)}
+.celeb{position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden}
+.celeb .cban{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);background:#2df28a;color:#04120a;font-weight:900;font-size:30px;padding:10px 22px;border-radius:18px;box-shadow:0 0 40px rgba(45,242,138,.9);white-space:nowrap;animation:cBan 3.2s ease forwards}
+.celeb .cconf,.celeb .ccoin{position:absolute;top:-30px;display:block;animation-name:cFall;animation-timing-function:linear;animation-fill-mode:both}
+.celeb .cconf{width:8px;height:14px;border-radius:2px}.celeb .ccoin{font-size:22px;font-style:normal}
+@keyframes cFall{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(110vh) rotate(var(--r))}}
+@keyframes cBan{0%{transform:translate(-50%,-50%) scale(0)}12%{transform:translate(-50%,-50%) scale(1.15)}20%,85%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(.9);opacity:0}}
+@media (prefers-reduced-motion:no-preference){
+  #grid .a .fz{animation:fz .45s ease-in-out infinite alternate}
+  @keyframes fz{from{transform:translateX(-50%) scale(.9) rotate(-6deg)}to{transform:translateX(-50%) scale(1.12) rotate(6deg)}}
+  .cdr.red{animation:cdP 1s ease-in-out infinite}
+  @keyframes cdP{50%{box-shadow:0 0 34px rgba(255,59,92,.95);transform:scale(1.02)}}
+}
+</style>
 </head>
 <body class="locked">
 <div class="demoend" id="demoEnd" role="dialog" aria-modal="true" aria-labelledby="deT">
@@ -757,7 +778,8 @@
       <h2 class="lkh"><span id="panelTitle">Panel de animalitos</span><button id="lockBtn" type="button" class="lk">🔒 Bloqueado</button></h2><div id="lockMsg" class="lkmsg"></div>
       <div class="row" id="guideRow" style="margin-top:-6px"></div>
       <div class="legend" id="legend"><span><i style="background:var(--grn);box-shadow:0 0 8px var(--grn)"></i>0 y 00</span><span><i style="background:var(--red);box-shadow:0 0 8px var(--red)"></i>Rojos</span><span><i style="background:var(--vio);box-shadow:0 0 8px var(--vio)"></i>Negros</span><span><i style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></i>Salió</span><span><i style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></i>Compañeros</span></div>
-      <div class="grid" id="grid"></div>
+      <div id="cdRing"></div>
+<div class="grid" id="grid"></div>
       <div id="fijSlotPc" style="margin-top:16px"></div>
     </div>
 
@@ -965,7 +987,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611190535";
+const BUILD="202611191400";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1240,7 +1262,9 @@ function render(){
   const last=hist[hist.length-1], prev=hist[hist.length-2];
   const P=last!=null?predict(g,last,prev):null;
   const hoySet=new Set(deHoy(st));
+  let fireSet=new Set(); try{ if(last!=null) cycTop(l,st,5).forEach(x=>fireSet.add(x.n)); }catch(e){}
   document.querySelectorAll("#grid .a").forEach(b=>{
+    { const on=fireSet.has(b.dataset.n); b.classList.toggle("fire",on); let fz=b.querySelector(".fz"); if(on&&!fz){ fz=document.createElement("span"); fz.className="fz"; fz.textContent="🔥"; b.appendChild(fz); } else if(!on&&fz) fz.remove(); }
     b.classList.toggle("hoy",hoySet.has(b.dataset.n)&&b.dataset.n!==last);
     const lv=jLevel(st,b.dataset.n); b.classList.toggle("j1",lv===1); b.classList.toggle("j2",lv===2);
     let cg=b.querySelector(".cage"), jd=b.querySelector(".jd");
@@ -1249,6 +1273,7 @@ function render(){
     b.classList.toggle("last",b.dataset.n===last);
     b.classList.toggle("pick",!!(P&&P.now.has(b.dataset.n)));
   });
+  try{ const k=hist.length, pk=ANIM_K[l.id]; ANIM_K[l.id]=k; if(pk!=null&&k===pk+1&&last!=null) animNuevo(l,st,last); }catch(e){}
   const pred=$("pred");
   if(last==null){
     pred.innerHTML='<h2>Jugada según la guía</h2><div class="empty">Todavía no has marcado ningún resultado en '+esc(l.name)+'.</div>';
@@ -1835,7 +1860,46 @@ function pintarCuenta(){
     return `<button type="button" data-id="${l.id}" class="${ST.cur===l.id?"on":""}${p.hoy&&m<=5?" pr":""}"><span class="n">${CD_NOM[l.id]||esc(l.name)}</span><span class="t">${t}</span><span class="h">${fmtH(p.d)}</span></button>`; }).join("");
   box.querySelectorAll("button").forEach(b=>b.onclick=()=>{ const t=document.querySelector('.tab[data-id="'+b.dataset.id+'"]'); if(t) t.click(); setTimeout(pintarCuenta,50); });
 }
-setInterval(pintarCuenta,30000);
+setInterval(pintarCuenta,30000)
+/* ===== Animaciones: ruleta al llegar un resultado, celebración si acertó, cuenta regresiva viva ===== */
+var ANIM_K={}, ANIM_BUSY=false;
+const sinMov=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
+function animNuevo(l,st,n){
+  if(ANIM_BUSY) return; ANIM_BUSY=true;
+  ruleta(n,()=>{ ANIM_BUSY=false; let a=null; try{ a=aciertoCalc(l,st); }catch(e){} if(a&&a.y===n) celebrar(l,n); });
+}
+function ruleta(n,done){
+  const cells=[...document.querySelectorAll("#grid .a")], ti=cells.findIndex(c=>c.dataset.n===n);
+  const g=$("grid"); const vis=g&&g.offsetParent&&g.getBoundingClientRect().bottom>0&&g.getBoundingClientRect().top<innerHeight;
+  if(sinMov()||ti<0||!vis){ done(); return; }
+  const N=cells.length, total=N+ti, T=2600; let i=0;
+  const paso=()=>{ cells.forEach(c=>c.classList.remove("rul")); if(i>total){ const c=cells[ti]; c.classList.add("rulfin"); setTimeout(()=>{ c.classList.remove("rulfin"); done(); },900); return; }
+    cells[i%N].classList.add("rul"); const p=i/total; i++; setTimeout(paso,Math.max(28,(T/total)*(0.3+2.7*p*p))); };
+  paso();
+}
+function celebrar(l,n){
+  if(sinMov()) return;
+  const ov=document.createElement("div"); ov.className="celeb";
+  const col=["#ffd23f","#2df28a","#2ef2ff","#ff5ad1","#ff7a3c"];
+  let h=`<div class="cban">✅ ¡ACERTÓ! ${l.A[n][1]} ${n}</div>`;
+  for(let i=0;i<90;i++){ const coin=i%4===0, x=Math.random()*100, d=Math.random()*0.9, du=1.6+Math.random()*1.3, r=(Math.random()-.5)*900;
+    h+=`<i class="${coin?"ccoin":"cconf"}" style="left:${x}vw;animation-delay:${d}s;animation-duration:${du}s;--r:${r}deg;${coin?"":"background:"+col[i%5]}">${coin?"🪙":""}</i>`; }
+  ov.innerHTML=h; document.body.appendChild(ov); setTimeout(()=>ov.remove(),3400);
+}
+function pintarRing(){
+  const box=$("cdRing"); if(!box) return; const l=L();
+  let p; try{ p=proxSorteo(l); }catch(e){ return; }
+  const rem=Math.max(0,p.d-new Date()), s=Math.floor(rem/1000), red=p.hoy&&rem<60000;
+  const tx=s>=3600?Math.floor(s/3600)+"h "+String(Math.floor(s%3600/60)).padStart(2,"0")+"m":String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+  const fill=rem<=3600000?1-rem/3600000:0, off=(264*(1-fill)).toFixed(1);
+  const hr=p.d.toLocaleTimeString("es-VE",{hour:"numeric",minute:"2-digit"}).replace(/\s?([ap])\.?\s?m\.?/i," $1. m.");
+  box.className="cdr"+(red?" red":"");
+  box.innerHTML=`<svg width="62" height="62" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" stroke="#1b2440" stroke-width="10" fill="none"/><circle cx="50" cy="50" r="42" stroke="${red?"#ff3b5c":"#2ef2ff"}" stroke-width="10" fill="none" stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="264" stroke-dashoffset="${off}"/><text x="50" y="57" text-anchor="middle" fill="#fff" font-size="${tx.length>5?17:21}" font-weight="800" font-family="Rajdhani,system-ui,sans-serif">${tx}</text></svg>
+    <div><div class="cdk">PRÓXIMO SORTEO${p.hoy?"":" · MAÑANA"}</div><div class="cdh">${hr}</div><div class="cds">${red?"¡Último minuto para jugar!":esc(l.name)}</div></div>`;
+}
+setInterval(pintarRing,1000);
+setTimeout(pintarRing,300);
+;
 document.addEventListener("click",e=>{ if(e.target.closest(".tab")) setTimeout(pintarCuenta,60); });
 
 /* ---- avisos al teléfono ---- */
