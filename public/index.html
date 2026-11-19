@@ -987,7 +987,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611191500";
+const BUILD="202611191550";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1058,10 +1058,10 @@ function predict(g,x,p){
     if(p!=null) ext.forEach(c=>{ if(c[0]===p&&c[1]===x){cont.push(c); add(c[2],1);} });
   }
   // reglas fijas en las 4 loterías: al salir X, se juega una tripleta completa
-  const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["00","32","33"],["00","16","35"],["00","29","36"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]],"21":[["01","05","09"],["05","19","23"],["02","17","31"]]};
-  const REGLA_NO={"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"],"21":["guacharo"]};
+  const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["00","32","33"],["00","16","35"],["00","29","36"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]],"21":[["01","05","09"],["05","19","23"],["02","17","31"]],"01":[["02","22","23"],["09","20","24"],["10","11","14"]]};
+  const REGLA_NO={"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"],"21":["guacharo"],"01":["guacharo"]};
   const extra=(REGLA_NO[x]||[]).includes(L().id)?[]:(REGLA_TRI[x]||[]).filter(t=>t.every(n=>L().A[n]));
-  const TRI_APARTE=["52","00","18","36","21"];
+  const TRI_APARTE=["52","00","18","36","21","01"];
   if(!TRI_APARTE.includes(x)) extra.forEach(t=>t.forEach(n=>{ if(n!==x) add(n,1); }));
     // regla 6⇄9: si uno de estos está para jugar, su compañero entra a su lado
   const vadd=new Map();
@@ -1069,8 +1069,8 @@ function predict(g,x,p){
   base.forEach(n=>par69(L().id,n).forEach(p=>{ if(!L().A[p]||subido.has(p)||!salT.has(p)||p===x) return; subido.add(p); if(!now.has(p)) vadd.set(p,n); add(p,1); }));
   // Ballena y Delfín: en tripletas solo salen sus tripletas fijas (menos en Guácharo)
   // fijos por hora: al salir X, solo se juegan estos (menos en Guácharo)
-  const FIJOS_X={"36":["01","05","10","11","35"]}; if(FIJOS_X[x]&&!(REGLA_NO[x]||[]).includes(L().id)){ now.clear(); vadd.clear(); FIJOS_X[x].forEach(n=>{ if(L().A[n]) add(n,1); }); }
-  if(["0","00","18","36","21"].includes(x)&&extra.length) return {now,combos:[],cont:[],vadd,extra};
+  const FIJOS_X={"36":["01","05","10","11","35"],"01":["05","12","21","0","28"]}; if(FIJOS_X[x]&&!(REGLA_NO[x]||[]).includes(L().id)){ now.clear(); vadd.clear(); FIJOS_X[x].forEach(n=>{ if(L().A[n]) add(n,1); }); }
+  if(["0","00","18","36","21","01"].includes(x)&&extra.length) return {now,combos:[],cont:[],vadd,extra};
   return {now,combos,cont,vadd,extra};
 }
 
@@ -1677,7 +1677,7 @@ render();
     {sel:"#pred .pkhead",v:"jugada",t:"Animales para jugar",x:"Lo que toca jugar en el próximo sorteo, con su botón <b>Copiar</b>. Aquí entran tu guía, tus <b>grupos de fijos</b> (Perro, Caballo, Rana, Gato, Toro, Perico, Ratón…) y los <b>volteos ⇄</b> salidores. Las que tienen <b>rejas</b> son jaula: <b>no jugarlas</b>. Un <b>×2</b> indica que sale en varias combinaciones."},
     {sel:"#pred .pron",v:"jugada",t:"🎯 Pronóstico",x:"El resumen más fácil: los <b>3 animales más fuertes</b> para el próximo sorteo, con el porqué en etiquetas: 📖 guía, ⇄ volteo, 📈 salidor, 🔁 pareja fuerte, ⏰ salidor a esa hora, 🔥 caliente esta semana y 🐾☠ felino o veneno. Las barras <b>rojas</b> marcan el más fuerte. <b>Copiar pronóstico</b> lo manda a WhatsApp."},
     {sel:"#pred .rank",v:"jugada",t:"Señales",x:"<b>Los que más señales tienen ⭐</b> y <b>📡 Señal</b> juntan todos los datos: guía, salidores, aciertos, volteos, jaulas y venenos/felinos. Toca un animal de la Señal para ver sus puntos, y con <b>⚙ Qué datos usar</b> eliges qué contar."},
-    {sel:"#pred .trih",v:"jugada",t:"🎯 Tripletas",x:"Las tripletas del animal que salió: <b>Tripleta 1, 2, 3…</b> Primero salen las <b>tripletas fijas</b> (Mono, Delfín, Ballena, Burro, Culebra, Gallo, Pulpo) y la <b>Combinación del Pulpo</b> en Guácharo; luego las de tu guía. Cada una tiene su <b>Copiar</b>, y <b>Copiar todas</b> las manda juntas."},
+    {sel:"#pred .trih",v:"jugada",t:"🎯 Tripletas",x:"Las tripletas del animal que salió: <b>Tripleta 1, 2, 3…</b> Primero salen las <b>tripletas fijas</b> (Mono, Delfín, Ballena, Burro, Culebra, Gallo, Carnero, Pulpo) y la <b>Combinación del Pulpo</b> en Guácharo; luego las de tu guía. Cada una tiene su <b>Copiar</b>, y <b>Copiar todas</b> las manda juntas."},
     {sel:"#scard",v:"salidores",t:"Salidores",x:"El ranking de los animales que <b>más</b> y <b>menos</b> han salido, cada lista con su <b>Copiar</b>. "},
     {sel:"#patCard",v:"salidores",t:"🔍 Patrones",x:"El bot busca patrones en 9 meses de resultados (secuencias, franjas de mañana y tarde, días, pares y 🔀 cruces entre loterías) y los <b>prueba en los últimos 3 meses</b>. Solo los que acertaron claramente más que el azar salen como <b>✅ Confirmado</b> y suman puntos en el Pronóstico, la Señal y las Tripletas más fijas."},
     {sel:"#hcard",v:"salidores",t:"📊 Historial de 1 año",x:"Elige un animal y mira <b>cuándo sale</b>: a qué horas y qué días, con lo esperado al lado. Sale del historial del servidor."},
