@@ -685,22 +685,6 @@
   .pbrain .pbd{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;font-size:13.5px;line-height:1.55}
   .pbrain .pbd>div>b:first-child{color:#d8c6ff} .pbrain .pbl{margin:3px 0 3px 4px} .pbrain .pbs{color:#2fd39a}
 </style>
-<style id="panelAnim">
-/* Panel con más calidad: vidrio, brillo del que salió, destello dorado y onda al tocar */
-#grid .a{border-radius:16px;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
-body.inapp #grid .a{border-radius:15px}
-#grid .a:active{transform:scale(.9)}
-#grid .a .rip{position:absolute;left:var(--rx);top:var(--ry);width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:rgba(46,242,255,.45);transform:scale(0);pointer-events:none;z-index:3}
-@media (prefers-reduced-motion:no-preference){
-  #grid .a .rip{animation:aRip .6s ease-out forwards}
-  @keyframes aRip{to{transform:scale(2.2);opacity:0}}
-  #grid .a.last,body.inapp #grid .a.last{animation:pulse 1.4s ease-in-out infinite}
-  #grid .a.last .e{animation:aBob 1.4s ease-in-out infinite}
-  @keyframes aBob{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.15)}}
-  #grid .a.pick:not(.last){background-image:linear-gradient(115deg,transparent 40%,rgba(255,215,90,.38) 50%,transparent 60%),linear-gradient(160deg,rgba(255,210,63,.22),rgba(255,210,63,.03));background-size:300% 100%,auto;background-repeat:no-repeat;animation:aShine 2.6s ease-in-out infinite}
-  @keyframes aShine{0%{background-position:100% 0,0 0}55%,100%{background-position:0% 0,0 0}}
-}
-</style>
 </head>
 <body class="locked">
 <div class="demoend" id="demoEnd" role="dialog" aria-modal="true" aria-labelledby="deT">
@@ -981,7 +965,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611190520";
+const BUILD="202611190535";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2601,11 +2585,6 @@ document.addEventListener("click",e=>{
     else armar(); },true);
   b.onclick=()=>poner(!lk);
 })();
-</script>
-<script>
-document.addEventListener("pointerdown",e=>{ const a=e.target.closest&&e.target.closest("#grid .a"); if(!a) return;
-  try{ if(matchMedia("(prefers-reduced-motion: reduce)").matches) return; const r=a.getBoundingClientRect(), sp=document.createElement("span");
-    sp.className="rip"; sp.style.setProperty("--rx",(e.clientX-r.left)+"px"); sp.style.setProperty("--ry",(e.clientY-r.top)+"px"); a.appendChild(sp); setTimeout(()=>sp.remove(),650); }catch(err){} });
 </script>
 </body>
 </html>
