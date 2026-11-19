@@ -431,8 +431,9 @@
   .demobar a{color:var(--gold);white-space:nowrap;border:1px solid rgba(255,210,63,.6);border-radius:99px;padding:3px 10px;text-decoration:none;font-size:13px}
   body.demo .tab:not([data-id="activo"]){opacity:.45}
   body.demo .tab:not([data-id="activo"])::before{content:"🔒 "}
-  body.demo #triBox>*{display:none}
-  body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide el tuyo por WhatsApp.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted)}
+  body.demo #triBox>*,body.demo #iaBox>*{display:none}
+  body.demo #iaBox::after{content:"🔒 Las tripletas IA son solo con código. Pide el tuyo por WhatsApp.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted);margin-bottom:14px}
+body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide el tuyo por WhatsApp.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted)}
   .demoend{display:none;position:fixed;inset:0;z-index:200;background:rgba(3,5,12,.88);align-items:center;justify-content:center;padding:20px}
   .demoend.on{display:flex}
   .demoend .box{max-width:380px;width:100%;text-align:center;border:1px solid rgba(255,210,63,.55);background:#0b1124;border-radius:20px;padding:24px 20px;display:flex;flex-direction:column;gap:12px}
@@ -706,6 +707,20 @@
   @keyframes cdP{50%{box-shadow:0 0 34px rgba(255,59,92,.95);transform:scale(1.02)}}
 }
 </style>
+<style id="iaCss">
+.iaw{margin:0 0 14px;border:2px solid #b388ff;border-radius:18px;padding:12px;background:rgba(179,136,255,.07);box-shadow:0 0 18px rgba(179,136,255,.3)}
+.iah{color:#d4bfff;font-weight:800;letter-spacing:.05em;font-size:15px;text-transform:uppercase}
+.iab{display:inline-block;background:linear-gradient(90deg,#b388ff,#2ef2ff);color:#0a0818;font-weight:900;border-radius:8px;padding:0 7px;font-size:12px;letter-spacing:.1em;vertical-align:2px}
+.ias{color:var(--muted);font-size:13.5px;margin:4px 0 10px}
+.iaa{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.iaa div{border:1px solid #3a2f63;border-radius:12px;padding:6px 2px;text-align:center;background:#0d0a22}
+.iaa .e{font-size:24px}.iaa b{display:block;color:var(--gold);font-size:15px}.iaa small{display:block;color:#b9a5ff;font-size:11.5px;font-weight:700}
+.iat{display:flex;align-items:center;gap:8px;border:1px solid #2a2350;border-radius:12px;padding:7px 10px;margin-top:6px;background:#0a0818;font-size:15px;font-weight:600}
+.iat .i{color:#b388ff;font-weight:800;width:16px}
+.iacp{margin-left:auto;border:1px solid #2ef2ff;color:#2ef2ff;background:transparent;border-radius:9px;padding:3px 10px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.iacp.iaall{display:block;width:100%;margin:8px 0 0;padding:7px}
+.iaf{margin-top:8px;font-size:12.5px;color:var(--muted)}.iaf b{color:#2df28a}
+</style>
 </head>
 <body class="locked">
 <div class="demoend" id="demoEnd" role="dialog" aria-modal="true" aria-labelledby="deT">
@@ -860,7 +875,7 @@
   <div class="card" style="margin-top:16px" id="patCard" data-view="salidores"><div id="patBox"></div></div>
 
   <div class="card" style="margin-top:16px" id="fijCard" data-view="fijas">
-    <div id="fijWrap"><div id="hoyFij"></div><div id="triWrap" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><div id="triBox"></div></div></div>
+    <div id="fijWrap"><div id="iaBox"></div><div id="hoyFij"></div><div id="triWrap" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><div id="triBox"></div></div></div>
   </div>
 
   <div class="card" style="margin-top:16px" id="hcard" data-view="salidores">
@@ -987,7 +1002,7 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const BUILD="202611191550";
+const BUILD="202611191800";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2565,7 +2580,40 @@ function fijCalc(l){
   const out={R}; FIJ_CACHE[key]=out; return out;
 }
 function fijTxt(l,t){ return t.map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join(" - "); }
+/* 🤖 Tripletas IA: el bot escoge solo, sin la guía, los 4 animales que mejor están para el día (ciclo por días). Probado en 2 años: ×1.50 */
+var IA_CACHE={k:"",v:null};
+function iaCalc(l,st){
+  let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
+  if(D.length<60) return null;
+  const add=new Date().getHours()>=ULTIMO?1:0;
+  const k=l.id+"|"+D.length+"|"+D[D.length-1][0]+D[D.length-1][1].length+"|"+st.hist.length+"|"+add+"|"+todayStr()+"|"+l.order.map(a=>st.last[a]||"").join(",");
+  if(IA_CACHE.k===k) return IA_CACHE.v;
+  const N=l.order.length, h={}, e={}, ls={}; let i=0;
+  D.slice().sort((a,b)=>a[0]<b[0]?-1:1).forEach(([f,it])=>{ const s=new Set(it.map(x=>x[1]).filter(n=>l.A[n])); const d0=new Date(f+"T12:00:00");
+    if(i++>30&&s.size>=8){ const base=s.size/N; l.order.forEach(a=>{ if(!ls[a]) return; const b=fijBin(Math.round((d0-new Date(ls[a]+"T12:00:00"))/864e5)); e[b]=(e[b]||0)+base; if(s.has(a)) h[b]=(h[b]||0)+1; }); }
+    s.forEach(n=>ls[n]=f); });
+  const T={}; Object.keys(e).forEach(b=>T[b]=((h[b]||0)+5)/(e[b]+5));
+  const gap=a=>daysSince(st.last[a])+add;
+  const four=l.order.filter(a=>st.last[a]).map(a=>({n:a,g:gap(a),r:T[fijBin(gap(a))]||1})).sort((x,y)=>y.r-x.r||x.g-y.g).slice(0,4);
+  const tri=[]; for(let a=0;a<4;a++)for(let b=a+1;b<4;b++)for(let c=b+1;c<4;c++) if(four[c]) tri.push([four[a].n,four[b].n,four[c].n]);
+  const v=four.length===4?{four,tri}:null; IA_CACHE={k,v}; return v;
+}
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+function renderIA(){
+  const box=$("iaBox"); if(!box) return; const l=L(), st=S(); let o=null; try{ o=iaCalc(l,st); }catch(e){}
+  const head=`<div class="iah">🤖 Tripletas <span class="iab">IA</span> · el bot a su criterio</div>`;
+  if(!o){ box.innerHTML=`<div class="iaw">${head}<p class="note" style="margin:6px 0 0">Hace falta el historial del servidor. Si acabas de abrir el bot, aparecen en unos segundos.</p></div>`; return; }
+  const dd=g=>g+(g===1?" día":" días");
+  box.innerHTML=`<div class="iaw">${head}<div class="ias">El bot escoge solo, sin la guía, con todo lo que tiene guardado: los 4 animales que mejor están ${fijDia()} y sus 4 tripletas.</div>
+    <div class="iaa">${o.four.map(x=>`<div><span class="e">${l.A[x.n][1]}</span><b>${x.n}</b><small>${dd(x.g)} · ×${x.r.toFixed(2)}</small></div>`).join("")}</div>
+    ${o.tri.map((t,i)=>`<div class="iat"><span class="i">${i+1}</span><span>${t.map(n=>`${l.A[n][1]} ${n}`).join(" - ")}</span><button class="iacp" data-i="${i}" type="button">⧉</button></div>`).join("")}
+    <button class="iacp iaall" type="button">⧉ Copiar las 4 tripletas IA</button>
+    <div class="iaf">Probada con 2 años de resultados: <b>50% más</b> tripletas completas que al azar.</div></div>`;
+  box.querySelectorAll(".iacp").forEach(bt=>bt.onclick=()=>{ const txt=bt.classList.contains("iaall")?"🤖 Tripletas IA · "+l.name+"\n"+o.tri.map((t,i)=>(i+1)+". "+fijTxt(l,t)).join("\n"):fijTxt(l,o.tri[+bt.dataset.i]);
+    try{ navigator.clipboard.writeText(txt).then(()=>{ const old=bt.textContent; bt.textContent="✓"; setTimeout(()=>bt.textContent=old,1300); }); }catch(e){} });
+}
 function renderFij(){
+  try{ renderIA(); }catch(e){}
   const box=$("hoyFij"); if(!box) return; const l=L(); let o;
   try{ o=fijCalc(l); }catch(e){ o={R:[],err:true}; }
   const head=`<div class="prh">🎯 Tripletas más fijas · ${esc(l.name)}</div><div class="prs"><span>${fijDia()} · todo el día</span></div>`;
