@@ -1028,9 +1028,9 @@ const GRUPOS=[
 ];
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
-const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["13","14","31"],["0","23","32"],["09","11","18"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]],"21":[["01","05","09"],["05","19","23"],["02","17","31"]],"01":[["02","22","23"],["09","20","24"],["10","11","14"]],"33":[["0","11","22"],["00","19","24"],["05","10","11"]],"25":[["07","11","35"],["03","30","34"],["02","20","24"]],"16":[["0","00","22"],["23","32","21"],["02","05","27"]],"15":[["02","18","20"],["02","18","26"],["02","18","29"]],"05":[["12","21","23"],["06","09","32"],["06","23","36"]],"22":[["02","09","24"],["05","23","28"],["09","25","34"]]};
-const REGLA_NO={"22":["guacharo"],"05":["guacharo"],"15":["guacharo"],"16":["guacharo"],"25":["guacharo"],"33":["guacharo"],"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"],"21":["guacharo"],"01":["guacharo"]};
-const BUILD="202611201245";
+const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["13","14","31"],["0","23","32"],["09","11","18"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]],"21":[["01","05","09"],["05","19","23"],["02","17","31"]],"01":[["02","22","23"],["09","20","24"],["10","11","14"]],"33":[["0","11","22"],["00","19","24"],["05","10","11"]],"25":[["07","11","35"],["03","30","34"],["02","20","24"]],"16":[["0","00","22"],["23","32","21"],["02","05","27"]],"15":[["02","18","20"],["02","18","26"],["02","18","29"]],"05":[["12","21","23"],["06","09","32"],["06","23","36"]],"22":[["02","09","24"],["05","23","28"],["09","25","34"]],"20":[["0","00","36"],["12","21","32"],["02","06","23"]]};
+const REGLA_NO={"20":["guacharo"],"22":["guacharo"],"05":["guacharo"],"15":["guacharo"],"16":["guacharo"],"25":["guacharo"],"33":["guacharo"],"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"],"21":["guacharo"],"01":["guacharo"]};
+const BUILD="202611201325";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1103,7 +1103,7 @@ function predict(g,x,p){
   }
   // reglas fijas en las 4 loterías: al salir X, se juega una tripleta completa
   const extra=(REGLA_NO[x]||[]).includes(L().id)?[]:(REGLA_TRI[x]||[]).filter(t=>t.every(n=>L().A[n]));
-  const TRI_APARTE=["52","00","18","36","21","01","33","25","16","15","05","22"];
+  const TRI_APARTE=["52","00","18","36","21","01","33","25","16","15","05","22","20"];
   if(!TRI_APARTE.includes(x)) extra.forEach(t=>t.forEach(n=>{ if(n!==x) add(n,1); }));
     // regla 6⇄9: si uno de estos está para jugar, su compañero entra a su lado
   const vadd=new Map();
@@ -1111,8 +1111,8 @@ function predict(g,x,p){
   base.forEach(n=>par69(L().id,n).forEach(p=>{ if(!L().A[p]||subido.has(p)||!salT.has(p)||p===x) return; subido.add(p); if(!now.has(p)) vadd.set(p,n); add(p,1); }));
   // Ballena y Delfín: en tripletas solo salen sus tripletas fijas (menos en Guácharo)
   // fijos por hora: al salir X, solo se juegan estos (menos en Guácharo)
-  const FIJOS_X={"36":["01","05","10","11","35"],"01":["05","12","21","0","28"],"33":["34","23","26","14","07"],"25":["01","10","26","29","33"],"16":["05","16","19","28","12"],"0":["03","30","18","28","11"],"00":["16","19","22","33","36"],"15":["07","12","20","26","30"],"05":["03","04","16","19","28"],"22":["0","00","16","28","33"]}; if(FIJOS_X[x]&&!(REGLA_NO[x]||[]).includes(L().id)){ now.clear(); vadd.clear(); FIJOS_X[x].forEach(n=>{ if(L().A[n]) add(n,1); }); }
-  if(["0","00","18","36","21","01","33","25","16","15","05","22"].includes(x)&&extra.length) return {now,combos:[],cont:[],vadd,extra};
+  const FIJOS_X={"36":["01","05","10","11","35"],"01":["05","12","21","0","28"],"33":["34","23","26","14","07"],"25":["01","10","26","29","33"],"16":["05","16","19","28","12"],"0":["03","30","18","28","11"],"00":["16","19","22","33","36"],"15":["07","12","20","26","30"],"05":["03","04","16","19","28"],"22":["0","00","16","28","33"],"20":["03","07","09","30","35"]}; if(FIJOS_X[x]&&!(REGLA_NO[x]||[]).includes(L().id)){ now.clear(); vadd.clear(); FIJOS_X[x].forEach(n=>{ if(L().A[n]) add(n,1); }); }
+  if(["0","00","18","36","21","01","33","25","16","15","05","22","20"].includes(x)&&extra.length) return {now,combos:[],cont:[],vadd,extra};
   return {now,combos,cont,vadd,extra};
 }
 
@@ -2816,6 +2816,51 @@ document.addEventListener("click",e=>{
     if(lk){ e.stopPropagation(); e.preventDefault(); msg("🔒 Bloqueado: el bot carga los resultados solo. Toca el candado para marcar a mano."); }
     else armar(); },true);
   b.onclick=()=>poner(!lk);
+})();
+</script>
+<script>
+/* 🎄 Decoración de Navidad: sale sola del 21 de noviembre al 7 de enero y se quita sola el 8 de enero */
+(function(){
+  const d=new Date(), m=d.getMonth()+1, dia=d.getDate();
+  if(!((m===11&&dia>=21)||m===12||(m===1&&dia<=7))) return;
+  const anio=m===12?d.getFullYear()+1:d.getFullYear();
+  const css=`body.nav{padding-top:20px}
+#nvSnow{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}#nvSnow i{position:absolute;top:-30px;color:#fff;font-style:normal;text-shadow:0 0 6px #fff;animation-name:nvfall,nvsway;animation-timing-function:linear,ease-in-out;animation-iteration-count:infinite,infinite;animation-direction:normal,alternate}
+@keyframes nvfall{to{transform:translateY(110vh)}}@keyframes nvsway{from{margin-left:-14px}to{margin-left:14px}}
+#nvLights{position:fixed;left:0;right:0;top:0;height:22px;z-index:60;display:flex;justify-content:space-around;pointer-events:none;background:linear-gradient(#000a,#0000)}
+#nvLights::before{content:"";position:absolute;left:0;right:0;top:5px;height:2px;background:#2d4a2d}
+#nvLights b{width:9px;height:13px;border-radius:50% 50% 50% 50%/40% 40% 60% 60%;margin-top:6px;background:currentColor;box-shadow:0 0 10px currentColor,0 0 18px currentColor;animation:nvblink 1.6s ease-in-out infinite alternate}
+@keyframes nvblink{from{opacity:1}to{opacity:.25;box-shadow:none}}
+.mark{position:relative;overflow:visible!important}.logo,.hdr{overflow:visible!important}
+.nvhat{position:absolute;top:-19px;right:-13px;width:26px;height:26px;transform:rotate(26deg);pointer-events:none;z-index:5}
+.nvhat i{position:absolute;display:block}
+.nvhat .c{left:3px;bottom:5px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:19px solid #e3192b;filter:drop-shadow(0 1px 1px #0008)}
+.nvhat .b{left:0;bottom:0;width:26px;height:7px;border-radius:4px;background:#fff}.nvhat .p{left:9px;top:-1px;width:8px;height:8px;border-radius:50%;background:#fff}
+.nvban{position:relative;margin:8px 0;border-radius:16px;padding:10px 12px;display:flex;align-items:center;gap:10px;border:2px solid #ffd76a;box-shadow:0 0 18px #ffd76a55;animation:nvglow 2s ease-in-out infinite alternate}
+@keyframes nvglow{to{box-shadow:0 0 28px #ffd76aaa}}
+.nvban .tr{font-size:34px;flex:none}.nvban b{display:block;color:#ffe9a8;font-size:17px;letter-spacing:.03em}.nvban small{color:#f3f3f3;font-size:12.5px;display:block}
+.nvban .bt{margin-top:6px;display:inline-block;background:#25d366;color:#04230f;font-weight:800;font-size:12.5px;border-radius:999px;padding:3px 10px;text-decoration:none}
+.nvban .x{position:absolute;top:4px;right:8px;background:none;border:0;color:#fff9;font-size:15px;cursor:pointer;padding:2px 4px}
+@media (prefers-reduced-motion:reduce){#nvSnow{display:none}#nvLights b,.nvban{animation:none}}`;
+  try{
+    const st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
+    document.body.classList.add("nav");
+    const fl=[...Array(45)].map(()=>`<i style="left:${(Math.random()*100).toFixed(1)}%;font-size:${(9+Math.random()*11)|0}px;opacity:${(.4+Math.random()*.55).toFixed(2)};animation-duration:${(6+Math.random()*6).toFixed(1)}s,${(2.5+Math.random()*2).toFixed(1)}s;animation-delay:-${(Math.random()*12).toFixed(1)}s,-${(Math.random()*4).toFixed(1)}s">${"❄❅•"[Math.random()*3|0]}</i>`).join("");
+    const sn=document.createElement("div"); sn.id="nvSnow"; sn.setAttribute("aria-hidden","true"); sn.innerHTML=fl; document.body.appendChild(sn);
+    const cols=["#ff3b3b","#ffd23b","#3bff7a","#3bc8ff","#ff5bd6"], li=document.createElement("div"); li.id="nvLights"; li.setAttribute("aria-hidden","true");
+    li.innerHTML=[...Array(16)].map((_,i)=>`<b style="color:${cols[i%5]};animation-delay:-${(i%3)*0.53}s"></b>`).join(""); document.body.appendChild(li);
+    const mk=document.querySelector(".mark"); if(mk) mk.insertAdjacentHTML("beforeend",'<span class="nvhat" aria-hidden="true"><i class="c"></i><i class="b"></i><i class="p"></i></span>');
+    let cerrado=false; try{ cerrado=sessionStorage.getItem("nvx")===String(m)+"-"+dia; }catch(e){}
+    const tabs=document.getElementById("tabs");
+    if(tabs&&!cerrado){
+      const wa="https://wa.me/584247467906?text="+encodeURIComponent("Hola, quiero un código de Navidad del Bot de Animalitos 🎁");
+      const B=(m===12&&dia===24)?["linear-gradient(90deg,#5a0b14,#8a1a24)","🎅","¡FELIZ NOCHEBUENA! ✨","Agencia Betcom les desea una noche llena de paz, unión y alegría en familia.","","🌟"]
+        :(m===12&&dia===31)?["linear-gradient(90deg,#1a1240,#3a2a00)","🎆","¡FELIZ AÑO NUEVO "+anio+"! 🥂","Gracias por jugar con nosotros este año. ¡Que el "+anio+" venga lleno de aciertos!","","🎇"]
+        :["linear-gradient(90deg,#7a0f1c,#0d4d2a)","🎄","¡FELIZ NAVIDAD! 🎁","Regala un código de Navidad a un amigo y empiecen juntos el "+anio+" con aciertos.",`<a class="bt" href="${wa}" target="_blank" rel="noopener">💬 Pedir por WhatsApp</a>`,"🎁"];
+      tabs.insertAdjacentHTML("beforebegin",`<div class="nvban" id="nvBan" style="background:${B[0]}"><span class="tr">${B[1]}</span><div><b>${B[2]}</b><small>${B[3]}</small>${B[4]}</div><span class="tr">${B[5]}</span><button class="x" type="button" aria-label="Cerrar">✕</button></div>`);
+      const x=document.querySelector("#nvBan .x"); if(x) x.onclick=()=>{ const b=document.getElementById("nvBan"); if(b) b.remove(); try{ sessionStorage.setItem("nvx",String(m)+"-"+dia); }catch(e){} };
+    }
+  }catch(e){}
 })();
 </script>
 </body>
