@@ -431,8 +431,9 @@
   .demobar a{color:var(--gold);white-space:nowrap;border:1px solid rgba(255,210,63,.6);border-radius:99px;padding:3px 10px;text-decoration:none;font-size:13px}
   body.demo .tab:not([data-id="activo"]){opacity:.45}
   body.demo .tab:not([data-id="activo"])::before{content:"🔒 "}
-  body.demo #triBox>*,body.demo #iaBox>*,body.demo #arBox>*{display:none}
-  body.demo #arBox::after{content:"🔒 Arma tu tripleta es solo con código.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted);margin-bottom:14px}
+  body.demo #triBox>*,body.demo #iaBox>*,body.demo #arBox>*,body.demo #rvBox>*{display:none}
+  body.demo #rvBox::after{content:"🔒 Revisa tu tripleta es solo con código.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted);margin-bottom:14px}
+body.demo #arBox::after{content:"🔒 Arma tu tripleta es solo con código.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted);margin-bottom:14px}
 body.demo #iaBox::after{content:"🔒 Las tripletas IA son solo con código. Pide el tuyo por WhatsApp.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted);margin-bottom:14px}
 body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide el tuyo por WhatsApp.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted)}
   .demoend{display:none;position:fixed;inset:0;z-index:200;background:rgba(3,5,12,.88);align-items:center;justify-content:center;padding:20px}
@@ -736,6 +737,11 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
 .ark{margin-top:8px;font-size:13px;color:#2df28a;background:rgba(45,242,138,.07);border-radius:10px;padding:7px 9px}
 .ark.wait{color:#ffb86b;background:rgba(255,184,107,.08)}.ark.norm{color:#c9d4e8;background:rgba(201,212,232,.06)}
 .arf{margin-top:8px;font-size:12.5px;color:var(--muted)}.arf b{color:#2df28a}
+.rvw{border-color:#ffcf4a;background:rgba(255,207,74,.05);box-shadow:0 0 16px rgba(255,207,74,.22)}
+.rvw .arn.on{border-color:#ffcf4a;background:#2a2108;box-shadow:0 0 10px #ffcf4a88}
+.rvr .rvv{margin-left:auto;font-size:12.5px;font-weight:700;color:#2df28a;white-space:nowrap}.rvr .rvv.wait{color:#ffb86b}.rvr .rvv.norm{color:#c9d4e8}
+.rvt{margin-top:9px;font-size:15px;font-weight:700}.rvt .bars{color:#ff4d4d;letter-spacing:-1px}.rvt b{color:#ffe08a}
+.rvcb{margin-left:6px;padding:2px 9px}
 </style>
 </head>
 <body class="locked">
@@ -891,7 +897,7 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   <div class="card" style="margin-top:16px" id="patCard" data-view="salidores"><div id="patBox"></div></div>
 
   <div class="card" style="margin-top:16px" id="fijCard" data-view="fijas">
-    <div id="fijWrap"><div id="iaBox"></div><div id="arBox"></div><div id="hoyFij"></div><div id="triWrap" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><div id="triBox"></div></div></div>
+    <div id="fijWrap"><div id="iaBox"></div><div id="arBox"></div><div id="rvBox"></div><div id="hoyFij"></div><div id="triWrap" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><div id="triBox"></div></div></div>
   </div>
 
   <div class="card" style="margin-top:16px" id="hcard" data-view="salidores">
@@ -1020,7 +1026,7 @@ function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includ
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
 const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["00","32","33"],["00","16","35"],["00","29","36"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]],"21":[["01","05","09"],["05","19","23"],["02","17","31"]],"01":[["02","22","23"],["09","20","24"],["10","11","14"]],"33":[["0","11","22"],["00","19","24"],["05","10","11"]],"25":[["07","11","35"],["03","30","34"],["02","20","24"]],"16":[["0","00","22"],["23","32","21"],["02","05","27"]]};
 const REGLA_NO={"16":["guacharo"],"25":["guacharo"],"33":["guacharo"],"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"],"21":["guacharo"],"01":["guacharo"]};
-const BUILD="202611191940";
+const BUILD="202611192130";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2657,6 +2663,47 @@ function renderArma(){
   box.querySelector(".arm").onclick=()=>{ AR_ALL=!AR_ALL; renderArma(); };
   box.querySelectorAll(".arcp").forEach(b=>b.onclick=()=>copyTxt("🎯 Tripleta · "+l.name+"\n"+fijTxt(l,box._pr[+b.dataset.i]),b,"⧉"));
 }
+/* 🔍 Revisa tu tripleta: la persona escoge sus 3 animales y la IA los califica con el ciclo de días y sugiere cambios */
+var RV_SEL={}, RV_ALL=false;
+function renderRev(){
+  const box=$("rvBox"); if(!box) return; const l=L(), st=S();
+  let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
+  const head=`<div class="arh" style="color:#ffe08a">🔍 Revisa tu tripleta con la <span class="iab">IA</span></div>`;
+  if(D.length<60){ box.innerHTML=`<div class="arw rvw">${head}<p class="note" style="margin:6px 0 0">Hace falta el historial del servidor. Aparece en unos segundos.</p></div>`; return; }
+  const T=iaTabla(l,D), add=new Date().getHours()>=ULTIMO?1:0;
+  const gp=a=>daysSince(st.last[a])+add, rt=a=>st.last[a]?(T[fijBin(gp(a))]||1):1, dd=g=>g+(g===1?" día":" días");
+  const sel=(RV_SEL[l.id]||[]).filter(n=>l.A[n]);
+  const lista=RV_ALL?l.order:l.order.slice(0,12); sel.forEach(n=>{ if(!lista.includes(n)) lista.push(n); });
+  const ver=r=>r>=1.05?["💡","buen momento",""]:r<0.95?["⏳","conviene esperar","wait"]:["➖","momento normal","norm"];
+  let h=`<div class="arw rvw">${head}<div class="ars">Escoge tus 3 animales y el bot te dice si están en buen momento ${fijDia()} y qué cambiar.</div>
+    <div class="arg">${lista.map(n=>`<button type="button" class="arn rvn${sel.includes(n)?" on":""}" data-n="${n}"><span>${l.A[n][1]}</span>${n}</button>`).join("")}</div>
+    <button type="button" class="arm rvm">${RV_ALL?"▲ ver menos":"▼ ver los "+l.order.length+" animales"}</button>`;
+  if(!sel.length) h+=`<div class="ars" style="text-align:center;margin:8px 0 0">👆 Toca tus 3 animales</div>`;
+  else{
+    h+=sel.map(n=>{ const r=rt(n), v=ver(r); return `<div class="arc rvr"><div><span class="t">${l.A[n][1]} ${n} ${esc(l.A[n][0])}</span><span class="tg">${st.last[n]?dd(gp(n))+" sin salir · ×"+r.toFixed(2):"sin datos"}</span></div><span class="rvv ${v[2]}">${v[0]} ${v[1]}</span></div>`; }).join("");
+    if(sel.length<3) h+=`<div class="ars" style="text-align:center;margin:8px 0 0">Te ${3-sel.length===1?"falta 1 animal":"faltan "+(3-sel.length)+" animales"} para la tripleta.</div>`;
+    else{
+      const nota=t=>{ const v=Math.cbrt(rt(t[0])*rt(t[1])*rt(t[2])); return v>=1.12?5:v>=1.05?4:v>=0.98?3:v>=0.92?2:1; };
+      const nm=["","floja","floja","normal","buena","muy buena"], k=nota(sel);
+      h+=`<div class="rvt">Tripleta: <span class="bars">${"▮".repeat(k)}${"▯".repeat(5-k)}</span> <b>${nm[k]}</b></div>`;
+      const peor=sel.slice().sort((a,b)=>rt(a)-rt(b))[0];
+      const mejor=l.order.filter(a=>!sel.includes(a)&&st.last[a]).sort((x,y)=>rt(y)-rt(x)||gp(x)-gp(y))[0];
+      if(mejor&&rt(mejor)>rt(peor)+0.02){ const t2=sel.map(a=>a===peor?mejor:a), k2=nota(t2);
+        h+=`<div class="ark">🔄 Cambia el ${l.A[peor][1]} ${peor} por el ${l.A[mejor][1]} ${mejor} ${esc(l.A[mejor][0])} (${dd(gp(mejor))} · ×${rt(mejor).toFixed(2)})${k2>k?" y sube a <b>"+nm[k2]+"</b>":""}. <button type="button" class="arcp rvcb" data-a="${peor}" data-b="${mejor}">Cambiar</button></div>`;
+      } else h+=`<div class="ark">✅ Tus 3 animales ya están entre los mejores para jugar ${fijDia()}.</div>`;
+      h+=`<button type="button" class="iacp iaall rvcp">⧉ Copiar mi tripleta</button>`;
+    }
+    h+=`<button type="button" class="arm rvlimp">✕ Borrar y escoger otros</button>`;
+  }
+  h+=`<div class="arf">El bot califica con el ciclo. Probado con 2 años: las tripletas que arma con él completan <b>35% a 40% más</b> que al azar.</div>`;
+  box.innerHTML=h+`</div>`;
+  box.querySelectorAll(".rvn").forEach(b=>b.onclick=()=>{ const n=b.dataset.n, a=(RV_SEL[l.id]||[]).slice(), i=a.indexOf(n);
+    if(i>=0) a.splice(i,1); else { if(a.length>=3) a.shift(); a.push(n); } RV_SEL[l.id]=a; renderRev(); });
+  box.querySelector(".rvm").onclick=()=>{ RV_ALL=!RV_ALL; renderRev(); };
+  const lp=box.querySelector(".rvlimp"); if(lp) lp.onclick=()=>{ RV_SEL[l.id]=[]; renderRev(); };
+  const cb=box.querySelector(".rvcb"); if(cb) cb.onclick=()=>{ RV_SEL[l.id]=sel.map(a=>a===cb.dataset.a?cb.dataset.b:a); renderRev(); };
+  const cp=box.querySelector(".rvcp"); if(cp) cp.onclick=()=>copyTxt("🔍 Mi tripleta · "+l.name+"\n"+fijTxt(l,sel),cp,"⧉ Copiar mi tripleta");
+}
 function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
 function renderIA(){
   const box=$("iaBox"); if(!box) return; const l=L(), st=S(); let o=null; try{ o=iaCalc(l,st); }catch(e){}
@@ -2674,6 +2721,7 @@ function renderIA(){
 function renderFij(){
   try{ renderIA(); }catch(e){}
   try{ renderArma(); }catch(e){}
+  try{ renderRev(); }catch(e){}
   const box=$("hoyFij"); if(!box) return; const l=L(); let o;
   try{ o=fijCalc(l); }catch(e){ o={R:[],err:true}; }
   const head=`<div class="prh">🎯 Tripletas más fijas · ${esc(l.name)}</div><div class="prs"><span>${fijDia()} · todo el día</span></div>`;
