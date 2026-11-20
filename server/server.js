@@ -200,9 +200,14 @@ async function leerCuerpo(req) {
   try { return JSON.parse(d || "{}"); } catch (e) { return {}; }
 }
 const finDe = (ini) => ini + DIAS * 86400000;
+// 🚫 Códigos eliminados desde el panel de admin: dejan de funcionar
+const cyrb53S = (str, seed = 7) => { let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed; for (let i = 0, ch; i < str.length; i++) { ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36); };
+const normCodeS = (c) => { const t = String(c || "").normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g, ""); return t.length === 11 && t.startsWith("BOT") ? "BOT-" + t.slice(3, 7) + "-" + t.slice(7) : String(c || "").trim().toUpperCase(); };
+const anulado = async (hash) => !!(await redis(["GET", "anu:" + hash]));
 async function usarCodigo(b) {
   const hash = String(b.hash || ""), dev = String(b.dev || "").slice(0, 64);
   if (!CODIGOS.has(hash)) return { ok: false, motivo: "no_existe" };
+  if (await anulado(hash)) return { ok: false, motivo: "anulado" };
   if (!dev) return { ok: false, motivo: "sin_dispositivo" };
   const key = "cod:" + hash;
   let rec = await redis(["GET", key]); rec = rec ? JSON.parse(rec) : null;
@@ -271,6 +276,7 @@ async function suscribir(b) {
   const hash = String(b.hash || ""), dev = String(b.dev || "").slice(0, 64);
   let rec = await redis(["GET", "cod:" + hash]); rec = rec ? JSON.parse(rec) : null;
   if (!CODIGOS.has(hash) || !rec) return { ok: false, motivo: "sin_codigo" };
+  if (await anulado(hash)) { await redis(["DEL", subKey(endpoint)]); return { ok: false, motivo: "anulado" }; }
   if (rec.dev !== dev) return { ok: false, motivo: "en_uso" };
   const fin = finDe(rec.ini); if (Date.now() > fin) return { ok: false, motivo: "vencido" };
   await redis(["SET", subKey(endpoint), JSON.stringify({ sub, lots, hash, fin, t: Date.now() })]);
@@ -405,11 +411,12 @@ async function enviarAvisos(lot) {
   const keys = (await redis(["KEYS", "sub:*"])) || [];
   if (!keys.length) return 0;
   const vals = await redis(["MGET", ...keys]);
+  const anu = new Set((((await redis(["KEYS", "anu:*"])) || [])).map((k) => k.slice(4)));
   let n = 0;
   for (let i = 0; i < keys.length; i++) {
     if (!vals[i]) continue;
     const s = JSON.parse(vals[i]);
-    if (Date.now() > s.fin) { await redis(["DEL", keys[i]]); continue; }
+    if (Date.now() > s.fin || (s.hash && anu.has(s.hash))) { await redis(["DEL", keys[i]]); continue; }
     if (!s.lots.includes(lot)) continue;
     try { const st = await empujar(s.sub.endpoint); if (st === 404 || st === 410) await redis(["DEL", keys[i]]); else n++; } catch (e) {}
   }
@@ -499,11 +506,14 @@ async function listaCodigos() {
   const vals = keys.length ? await redis(["MGET", ...keys]) : [];
   const ahora = Date.now();
   const demos = ((await redis(["KEYS", "demo:*"])) || []).length;
+  const ak = (await redis(["KEYS", "anu:*"])) || [], av = ak.length ? await redis(["MGET", ...ak]) : [];
+  const anu = {}; ak.forEach((k, i) => { try { anu[k.slice(4)] = JSON.parse(av[i] || "{}"); } catch (e) { anu[k.slice(4)] = {}; } });
   return {
+    anulados: Object.keys(anu).filter((h) => !keys.includes("cod:" + h)).map((h) => ({ hash: h, codigo: anu[h].codigo || "(código sin activar)", t: anu[h].t })),
     demos,
     total: CODIGOS.size,
     usados: keys.map((k, i) => { const r = JSON.parse(vals[i] || "{}"); const fin = finDe(r.ini || 0);
-      return { hash: k.slice(4), codigo: r.codigo || "(sin nombre)", ua: r.ua || "", ini: r.ini, fin, uso: r.uso, libre: !r.dev, estado: ahora > fin ? "vencido" : "activo" }; })
+      return { hash: k.slice(4), codigo: r.codigo || "(sin nombre)", ua: r.ua || "", ini: r.ini, fin, uso: r.uso, libre: !r.dev, estado: anu[k.slice(4)] ? "anulado" : ahora > fin ? "vencido" : "activo" }; })
       .sort((a, b) => (b.ini || 0) - (a.ini || 0)),
   };
 }
@@ -513,10 +523,13 @@ input,button{font:inherit;border-radius:10px;border:1px solid #2b3550;background
 .b1{background:linear-gradient(90deg,#2ef2ff,#ff3df2);color:#05060c;border:0;font-weight:700}
 .it{display:flex;gap:10px;align-items:center;border:1px solid #24304f;border-radius:12px;padding:10px;margin:8px 0;background:#0b1124;flex-wrap:wrap}
 .it b{font-family:monospace;font-size:15px}.s{color:#8a9bbd;font-size:13px}.ok{color:#2dff8a}.ve{color:#ff8ea0}.li{color:#ffd23f}
-.lb{margin-left:auto;border-color:rgba(255,59,92,.6);color:#ff8ea0}#msg{color:#ff8ea0;margin:8px 0}</style></head><body>
+.lb{margin-left:auto;border-color:rgba(255,59,92,.6);color:#ff8ea0}#msg{color:#ff8ea0;margin:8px 0}
+.el{border-color:#ff3b5c;background:#2a0710;color:#ff8ea0}.rs{margin-left:auto;border-color:#2dff8a;color:#2dff8a}.an{color:#ff3b5c;font-weight:700}
+.ebox{border:1px dashed #ff3b5c88;border-radius:12px;padding:10px;margin:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ebox input{flex:1;min-width:150px}</style></head><body>
 <h1>◆ Códigos · Bot de animalitos</h1>
 <div id="login"><input id="cl" type="password" placeholder="Clave de administrador"> <button class="b1" id="en">Entrar</button><div id="msg"></div></div>
-<div id="pan" style="display:none"><div class="s" id="res"></div><input id="bus" placeholder="Buscar código" style="width:100%;margin:10px 0;box-sizing:border-box"><div id="lis"></div></div>
+<div id="pan" style="display:none"><div class="s" id="res"></div>
+<div class="ebox"><span>🚫 Eliminar un código (aunque no esté activado):</span><input id="ecod" placeholder="BOT-XXXX-XXXX"><button class="el" id="ebtn">Eliminar</button><span class="s" id="emsg"></span></div><input id="bus" placeholder="Buscar código" style="width:100%;margin:10px 0;box-sizing:border-box"><div id="lis"></div></div>
 <script>
 let C=sessionStorage.getItem("cl")||"";const f=d=>new Date(d).toLocaleString("es-VE",{day:"2-digit",month:"2-digit",hour:"numeric",minute:"2-digit"});
 async function api(p,b){const r=await fetch(p,{method:b?"POST":"GET",headers:{"X-Clave":C,"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined});if(r.status===401)throw new Error("Clave incorrecta");const j=await r.json();if(j.error)throw new Error(j.error);return j;}
@@ -524,10 +537,15 @@ let D=null;
 async function cargar(){try{D=await api("/admin/api/lista");sessionStorage.setItem("cl",C);document.getElementById("login").style.display="none";document.getElementById("pan").style.display="";pintar();}catch(e){document.getElementById("msg").textContent=e.message;}}
 function pintar(){const q=document.getElementById("bus").value.trim().toUpperCase();const a=D.usados.filter(x=>!q||x.codigo.includes(q));
 const act=D.usados.filter(x=>x.estado==="activo").length;
-document.getElementById("res").textContent=D.total+" códigos · "+D.usados.length+" usados ("+act+" activos) · "+(D.total-D.usados.length)+" sin usar · "+(D.demos||0)+" pruebas gratis";
-document.getElementById("lis").innerHTML=a.map(x=>'<div class="it"><div><b>'+x.codigo+'</b><div class="s">'+(x.libre?"liberado, esperando otro dispositivo":(x.ua||"dispositivo"))+' · desde '+f(x.ini)+'</div></div><div class="'+(x.estado==="vencido"?"ve":(x.libre?"li":"ok"))+'">'+(x.estado==="vencido"?"Vencido "+f(x.fin):"Activo · vence "+f(x.fin))+'</div>'+(x.libre||x.estado==="vencido"?"":'<button class="lb" data-h="'+x.hash+'">Liberar</button>')+'</div>').join("")||'<div class="s">Ningún código usado todavía.</div>';
+document.getElementById("res").textContent=D.total+" códigos · "+D.usados.length+" usados ("+act+" activos) · "+(D.total-D.usados.length)+" sin usar · "+(D.demos||0)+" pruebas gratis"+((D.anulados||[]).length+D.usados.filter(x=>x.estado==="anulado").length?" · "+((D.anulados||[]).length+D.usados.filter(x=>x.estado==="anulado").length)+" eliminados":"");
+const an=(D.anulados||[]).filter(x=>!q||x.codigo.includes(q));
+document.getElementById("lis").innerHTML=a.map(x=>'<div class="it"><div><b>'+x.codigo+'</b><div class="s">'+(x.libre?"liberado, esperando otro dispositivo":(x.ua||"dispositivo"))+' · desde '+f(x.ini)+'</div></div>'+(x.estado==="anulado"?'<div class="an">🚫 Eliminado</div><button class="rs" data-h="'+x.hash+'">Restaurar</button>':'<div class="'+(x.estado==="vencido"?"ve":(x.libre?"li":"ok"))+'">'+(x.estado==="vencido"?"Vencido "+f(x.fin):"Activo · vence "+f(x.fin))+'</div>'+(x.libre||x.estado==="vencido"?"":'<button class="lb" data-h="'+x.hash+'">Liberar</button>')+'<button class="el" data-h="'+x.hash+'">Eliminar</button>')+'</div>').join("")
++an.map(x=>'<div class="it"><div><b>'+x.codigo+'</b><div class="s">sin activar · eliminado '+(x.t?f(x.t):"")+'</div></div><div class="an">🚫 Eliminado</div><button class="rs" data-h="'+x.hash+'">Restaurar</button></div>').join("")||'<div class="s">Ningún código usado todavía.</div>';
+document.querySelectorAll(".it .el").forEach(b=>b.onclick=async()=>{if(!confirmar(b,"Eliminar"))return;await api("/admin/api/eliminar",{hash:b.dataset.h});cargar();});
+document.querySelectorAll(".rs").forEach(b=>b.onclick=async()=>{if(!confirmar(b,"Restaurar"))return;await api("/admin/api/restaurar",{hash:b.dataset.h});cargar();});
 document.querySelectorAll(".lb").forEach(b=>b.onclick=async()=>{if(!confirmar(b))return;await api("/admin/api/liberar",{hash:b.dataset.h});cargar();});}
-function confirmar(b){if(b.dataset.c)return true;b.dataset.c=1;b.textContent="¿Seguro? Toca otra vez";setTimeout(()=>{b.dataset.c="";b.textContent="Liberar"},4000);return false;}
+function confirmar(b,t){t=t||"Liberar";if(b.dataset.c)return true;b.dataset.c=1;b.textContent="¿Seguro? Toca otra vez";setTimeout(()=>{b.dataset.c="";b.textContent=t},4000);return false;}
+document.getElementById("ebtn").onclick=async()=>{const b=document.getElementById("ebtn"),m=document.getElementById("emsg"),c=document.getElementById("ecod").value.trim();if(!c){m.textContent="Escribe el código";return;}if(!confirmar(b,"Eliminar"))return;try{await api("/admin/api/eliminar",{codigo:c});m.textContent="✅ "+c.toUpperCase()+" eliminado";document.getElementById("ecod").value="";cargar();}catch(e){m.textContent=e.message;}};
 document.getElementById("en").onclick=()=>{C=document.getElementById("cl").value;cargar();};
 document.getElementById("bus").oninput=pintar; if(C)cargar();
 </script></body></html>`;
@@ -570,6 +588,18 @@ const server = http.createServer(async (req, res) => {
         const b = await leerCuerpo(req), key = "cod:" + String(b.hash || "");
         const v = await redis(["GET", key]); if (!v) return enviar(res, 404, { error: "No existe" });
         const rec = JSON.parse(v); rec.dev = null; await redis(["SET", key, JSON.stringify(rec)]);
+        return enviar(res, 200, { ok: true });
+      }
+      if (u.pathname === "/admin/api/eliminar" && req.method === "POST") {
+        const b = await leerCuerpo(req); let hash = String(b.hash || ""), codigo = "";
+        if (!hash && b.codigo) { codigo = normCodeS(b.codigo); hash = cyrb53S(codigo); }
+        if (!CODIGOS.has(hash)) return enviar(res, 404, { error: "Ese código no existe" });
+        if (!codigo) { const v = await redis(["GET", "cod:" + hash]); if (v) codigo = JSON.parse(v).codigo || ""; }
+        await redis(["SET", "anu:" + hash, JSON.stringify({ t: Date.now(), codigo })]);
+        return enviar(res, 200, { ok: true });
+      }
+      if (u.pathname === "/admin/api/restaurar" && req.method === "POST") {
+        const b = await leerCuerpo(req); await redis(["DEL", "anu:" + String(b.hash || "")]);
         return enviar(res, 200, { ok: true });
       }
     }
