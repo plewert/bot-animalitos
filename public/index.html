@@ -742,9 +742,6 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
 .rvr .rvv{margin-left:auto;font-size:12.5px;font-weight:700;color:#2df28a;white-space:nowrap}.rvr .rvv.wait{color:#ffb86b}.rvr .rvv.norm{color:#c9d4e8}
 .rvt{margin-top:9px;font-size:15px;font-weight:700}.rvt .bars{color:#ff4d4d;letter-spacing:-1px}.rvt b{color:#ffe08a}
 .rvcb{margin-left:6px;padding:2px 9px}
-.cz3{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:800;color:#1a1300;background:linear-gradient(90deg,#ffe08a,#ff9de2);border-radius:8px;padding:1px 7px;vertical-align:2px;box-shadow:0 0 8px #ffcf4a88;white-space:nowrap}
-.cz2{display:inline-block;margin-left:6px;font-size:11px;font-weight:700;color:#ffe08a;border:1px solid #ffe08a66;border-radius:8px;padding:0 6px;vertical-align:2px;white-space:nowrap}
-.czl{font-size:12px;color:var(--muted);margin:4px 0 6px}
 </style>
 </head>
 <body class="locked">
@@ -1029,7 +1026,7 @@ function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includ
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
 const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["00","32","33"],["00","16","35"],["00","29","36"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]],"21":[["01","05","09"],["05","19","23"],["02","17","31"]],"01":[["02","22","23"],["09","20","24"],["10","11","14"]],"33":[["0","11","22"],["00","19","24"],["05","10","11"]],"25":[["07","11","35"],["03","30","34"],["02","20","24"]],"16":[["0","00","22"],["23","32","21"],["02","05","27"]]};
 const REGLA_NO={"16":["guacharo"],"25":["guacharo"],"33":["guacharo"],"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"],"21":["guacharo"],"01":["guacharo"]};
-const BUILD="202611200010";
+const BUILD="202611200050";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2405,14 +2402,11 @@ document.addEventListener("click",e=>{
 });
 function senalHtml(l,st,last,P){
   const R=senalCalc(l,st,last,P), off=sgOff();
-  let czP=[], czR=[]; try{ czP=pronCalc(l,st,last,P).R.slice(0,3).map(r=>r.n); }catch(e){}
-  try{ const arr=orden69([...P.now.entries()].sort((a,b)=>l.order.indexOf(a[0])-l.order.indexOf(b[0])),P); if(arr.length) czR=rankRows(l,st,last,arr,P).filter(r=>!r.lv).slice(0,5).map(r=>r.n); }catch(e){}
-  const czB=n=>{ const c=(czP.includes(n)?1:0)+(czR.includes(n)?1:0); return c===2?'<span class="cz3">✨ Coinciden los 3</span>':c===1?'<span class="cz2">2 de 3</span>':""; };
   const cfg=`<div class="sgcfg" hidden>${SG_DATOS().map(([k,t])=>`<label><input type="checkbox" data-k="${k}" ${off.includes(k)?"":"checked"}> ${t}</label>`).join("")}</div>`;
   if(!R.length) return `<div class="senal"><div class="sgh"><span>📡 Señal</span><button class="sgset" type="button">⚙ Qué datos usar</button></div>${cfg}<p class="note" style="margin:6px 0 0">No hay datos suficientes para dar una señal todavía.</p></div>`;
   return `<div class="senal"><div class="sgh"><span>📡 Señal</span><small>tras ${l.A[last][1]} ${last}${horaSalio(st)}</small></div>
-    <div class="sgsub">Los 5 con más puntos juntando todos los datos. Toca uno para ver por qué.</div>${czP.length||czR.length?'<div class="czl">✨ = también está en el 🎯 Pronóstico y en las ⭐ Señales</div>':""}
-    ${R.map((x,i)=>`<div class="sgr${i===0?" top":""}"><div class="sgl"><span class="ri">${i+1}</span><span class="re">${l.A[x.n][1]}</span><div class="rn"><b>${x.n}</b> ${esc(l.A[x.n][0])}${czB(x.n)}</div><div><div class="sgb">${[1,2,3,4,5].map(k=>`<i class="${k<=x.lv?"on":""}" style="height:${4+k*3}px"></i>`).join("")}</div><div class="sgt">${SG_TXT()[x.lv]}</div></div></div>
+    <div class="sgsub">Los 5 con más puntos juntando todos los datos. Toca uno para ver por qué.</div>
+    ${R.map((x,i)=>`<div class="sgr${i===0?" top":""}"><div class="sgl"><span class="ri">${i+1}</span><span class="re">${l.A[x.n][1]}</span><div class="rn"><b>${x.n}</b> ${esc(l.A[x.n][0])}</div><div><div class="sgb">${[1,2,3,4,5].map(k=>`<i class="${k<=x.lv?"on":""}" style="height:${4+k*3}px"></i>`).join("")}</div><div class="sgt">${SG_TXT()[x.lv]}</div></div></div>
       <div class="sgd">${x.f.map(([t,p])=>`<div class="sgf"><span>${t}</span><span class="b"><i style="width:${Math.min(100,Math.abs(p)*25)}%${p<0?";background:#ff3b5c":""}"></i></span><span class="v">${p>0?"+"+p:p}</span></div>`).join("")}</div></div>`).join("")}
     <div class="sgbtns"><button class="sgcp" type="button">⧉ Copiar señal</button><button class="sgset" type="button">⚙ Qué datos usar</button></div>${cfg}</div>`;
 }

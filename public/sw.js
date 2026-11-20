@@ -31,6 +31,7 @@ async function mostrarAvisos() {
     const cuerpo = x.picks && x.picks.length ? "🎯 Para jugar: " + x.picks.join(" · ") : "Toca para ver qué jugar";
     const cuerpoF = cuerpo + (x.ciclo && x.ciclo.length ? "\n🔄 En su punto: " + x.ciclo.join(" · ") : "");
     await self.registration.showNotification(titulo, { body: cuerpoF, icon: "icon-192.png", badge: "icon-192.png", tag: "lot-" + x.lot, renotify: true, data: { lot: x.lot } });
+    if (x.ia && x.ia.tri && x.ia.tri.length) await self.registration.showNotification("🤖 Tripletas IA para mañana · " + x.lotNombre, { body: "Para el " + x.ia.para + ":\n" + x.ia.tri.map((t, i) => (i + 1) + ") " + t).join("\n"), icon: "icon-192.png", badge: "icon-192.png", tag: "ia-" + x.lot, renotify: true, data: { lot: x.lot } });
     if (x.pat && x.pat.length) await self.registration.showNotification("🔥 Patrón activo · " + x.lotNombre, { body: x.pat.join("\n"), icon: "icon-192.png", badge: "icon-192.png", tag: "pat-" + x.lot, renotify: true, data: { lot: x.lot } });
   }
   await guardarCache("vistos", vistos);
