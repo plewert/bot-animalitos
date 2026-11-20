@@ -768,6 +768,10 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
 #pred .mbar.mini{width:auto;max-width:100%;flex-wrap:wrap;row-gap:4px}
 #pred .mbar.mini .pks{flex-wrap:wrap;overflow:visible}
 }
+.ofcl{margin:8px 0;border-radius:12px;padding:8px 11px;font-size:13.5px;line-height:1.35}
+.ofw{color:#9ff8ff;background:rgba(46,242,255,.08);border:1px solid rgba(46,242,255,.45)}
+.ofp{color:#ffd9a0;background:rgba(255,184,107,.08);border:1px solid rgba(255,184,107,.5)}
+.ofb{display:block;margin-top:6px;border:1px solid #2df28a;background:rgba(45,242,138,.12);color:#2df28a;border-radius:9px;padding:5px 10px;font:inherit;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body class="locked">
@@ -1052,7 +1056,11 @@ function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includ
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
 const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["13","14","31"],["0","23","32"],["09","11","18"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]],"21":[["01","05","09"],["05","19","23"],["02","17","31"]],"01":[["02","22","23"],["09","20","24"],["10","11","14"]],"33":[["0","11","22"],["00","19","24"],["05","10","11"]],"25":[["07","11","35"],["03","30","34"],["02","20","24"]],"16":[["0","00","22"],["23","32","21"],["02","05","27"]],"15":[["02","18","20"],["02","18","26"],["02","18","29"]],"05":[["12","21","23"],["06","09","32"],["06","23","36"]],"22":[["02","09","24"],["05","23","28"],["09","25","34"]],"20":[["0","00","36"],["12","21","32"],["02","06","23"]]};
 const REGLA_NO={"20":["guacharo"],"22":["guacharo"],"05":["guacharo"],"15":["guacharo"],"16":["guacharo"],"25":["guacharo"],"33":["guacharo"],"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"],"21":["guacharo"],"01":["guacharo"]};
-const BUILD="202611201735";
+/* 🇻🇪 Todo el bot usa la hora de Venezuela, aunque el teléfono tenga otra zona horaria */
+(function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
+  class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
+  VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
+const BUILD="202611201900";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2738,6 +2746,13 @@ function renderRev(){
   const cb=box.querySelector(".rvcb"); if(cb) cb.onclick=()=>{ RV_SEL[l.id]=sel.map(a=>a===cb.dataset.a?cb.dataset.b:a); renderRev(); };
   const cp=box.querySelector(".rvcp"); if(cp) cp.onclick=()=>copyTxt("🔍 Mi tripleta · "+l.name+"\n"+fijTxt(l,sel),cp,"⧉ Copiar mi tripleta");
 }
+function cfgPropio(l,st){ try{ const c=st.cfg||{}; return (c.sal!=null&&c.sal!==100)||c.jmin!==5||c.jmax!==12||(l.guides&&c.guide!==l.guides[0].id)||sgOff().length>0; }catch(e){ return false; } }
+function avisosJugada(){ try{ const l=L(), st=S(), pr=$("pred"); if(!pr) return; pr.querySelectorAll(".ofcl").forEach(e=>e.remove());
+  const h2=pr.querySelector("h2"); if(!h2) return; let h="";
+  const c=HCACHE[l.id]; if(API_URL&&!(c&&c.dias&&c.dias.length)) h+='<div class="ofcl ofw">⏳ <b>Cargando el historial del servidor…</b> La jugada se completa en unos segundos. Espera a que termine para jugar.</div>';
+  if(cfgPropio(l,st)) h+='<div class="ofcl ofp">⚙️ <b>Estás usando ajustes propios</b> en "Qué datos usar", por eso tu jugada puede ser distinta a la de otros. <button type="button" class="ofb">Volver a la jugada oficial</button></div>';
+  if(h){ h2.insertAdjacentHTML("afterend",h); const b=pr.querySelector(".ofb"); if(b) b.onclick=()=>{ const s2=S(); s2.cfg=Object.assign(s2.cfg||{},{sal:null,jmin:5,jmax:12,guide:l.guides[0].id}); try{ localStorage.removeItem("bot-senal-off"); }catch(e){} save(); render(); }; }
+}catch(e){} }
 function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
 function renderIA(){
   const box=$("iaBox"); if(!box) return; const l=L(), st=S(); let o=null; try{ o=iaCalc(l,st); }catch(e){}
@@ -2754,6 +2769,7 @@ function renderIA(){
 }
 function renderFij(){
   try{ renderIA(); }catch(e){}
+  try{ avisosJugada(); }catch(e){}
   try{ renderArma(); }catch(e){}
   try{ renderRev(); }catch(e){}
   const box=$("hoyFij"); if(!box) return; const l=L(); let o;
