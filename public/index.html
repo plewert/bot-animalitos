@@ -742,6 +742,10 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
 .rvr .rvv{margin-left:auto;font-size:12.5px;font-weight:700;color:#2df28a;white-space:nowrap}.rvr .rvv.wait{color:#ffb86b}.rvr .rvv.norm{color:#c9d4e8}
 .rvt{margin-top:9px;font-size:15px;font-weight:700}.rvt .bars{color:#ff4d4d;letter-spacing:-1px}.rvt b{color:#ffe08a}
 .rvcb{margin-left:6px;padding:2px 9px}
+.yh{opacity:.6;text-decoration:line-through;text-decoration-color:#ff6b6b;text-decoration-thickness:2px}
+.yhb{display:inline-block;margin-left:5px;font-size:10.5px;font-weight:800;color:#1a0a00;background:#ffb86b;border-radius:6px;padding:0 5px;vertical-align:1px;white-space:nowrap}
+.yh .yhb{text-decoration:none}
+.yhn{margin:6px 0 4px;font-size:12.5px;color:#ffb86b;background:rgba(255,184,107,.08);border:1px solid #ffb86b55;border-radius:10px;padding:6px 9px}
 </style>
 </head>
 <body class="locked">
@@ -1026,7 +1030,7 @@ function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includ
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
 const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["00","32","33"],["00","16","35"],["00","29","36"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]],"21":[["01","05","09"],["05","19","23"],["02","17","31"]],"01":[["02","22","23"],["09","20","24"],["10","11","14"]],"33":[["0","11","22"],["00","19","24"],["05","10","11"]],"25":[["07","11","35"],["03","30","34"],["02","20","24"]],"16":[["0","00","22"],["23","32","21"],["02","05","27"]]};
 const REGLA_NO={"16":["guacharo"],"25":["guacharo"],"33":["guacharo"],"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"],"21":["guacharo"],"01":["guacharo"]};
-const BUILD="202611200100";
+const BUILD="202611201000";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1061,9 +1065,10 @@ function rankRows(l,st,last,arr,P){
   return rows;
 }
 function rankHtml(l,st,last,arr,P){
+  const YH=yaHoy(st);
   if(!arr||!arr.length) return "";
   const rows=rankRows(l,st,last,arr,P);
-  return `<div class="rank"><div class="rh">◆ Ordenados por señales: el 1 es el más fuerte</div>${rows.map((r,i)=>`<div class="rr${i===0&&!r.lv&&r.st3?" top":""}${r.lv?" jl"+r.lv:""}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}${r.lv?'<i class="rcage"></i>':""}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${r.tags.length?`<div class="rt">${r.tags.map(t=>`<span>${t}</span>`).join("")}</div>`:""}${r.lv?`<div class="rjl">🔒 ${r.lv===2?"Jaula fuerte":"Jaula"} · ${daysSince(st.last[r.n])} días · no jugarlo</div>`:""}</div><span class="rs">${r.lv?"—":"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`;
+  return `<div class="rank"><div class="rh">◆ Ordenados por señales: el 1 es el más fuerte</div>${rows.some(r=>YH.has(r.n))?'<div class="yhn">⚠️ Los marcados ya salieron hoy: casi nunca repiten el mismo día.</div>':""}${rows.map((r,i)=>`<div class="rr${i===0&&!r.lv&&r.st3?" top":""}${r.lv?" jl"+r.lv:""}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}${r.lv?'<i class="rcage"></i>':""}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${YH.has(r.n)?'<span class="yhb">⚠️ ya salió hoy</span>':""}${r.tags.length?`<div class="rt">${r.tags.map(t=>`<span>${t}</span>`).join("")}</div>`:""}${r.lv?`<div class="rjl">🔒 ${r.lv===2?"Jaula fuerte":"Jaula"} · ${daysSince(st.last[r.n])} días · no jugarlo</div>`:""}</div><span class="rs">${r.lv?"—":"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`;
 }
 /* los 10 que más han salido (igual que la sección Salidores) */
 function topSalidores(){
@@ -1276,7 +1281,11 @@ $("clear").onclick=()=>$("confirm").classList.add("on");
 $("no").onclick=()=>$("confirm").classList.remove("on");
 $("yes").onclick=()=>{S().hist=[];S().hoy=null;save();$("confirm").classList.remove("on");render();};
 
-const tag=(l,n,hot)=>`<span class="x${hot?" hot":""}">${l.A[n][1]} ${n} ${esc(l.A[n][0])}</span>`;
+/* ⚠️ Ya salió hoy: casi nunca repite el mismo día (probado 2 años) */
+var YA_TAG=new Set();
+function yaHoy(st){ try{ return new Set(deHoy(st)); }catch(e){ return new Set(); } }
+const YA_B='<span class="yhb">ya salió</span>';
+const tag=(l,n,hot)=>`<span class="x${hot?" hot":""}${YA_TAG.has(n)?" yh":""}">${l.A[n][1]} ${n} ${esc(l.A[n][0])}</span>`;
 let TRI_N=null;
 function chainHtml(l,c,g,hotSet,isCont,cp){
   const tipo=c.grp?"group":g.type;
@@ -1319,6 +1328,7 @@ function render(){
     pred.innerHTML=`<h2>Jugada según la guía</h2>${vv0?`<div class="volbox"><span><span class="ar">⇄</span> <b>Volteo:</b> ${l.A[vv0][1]} ${vv0} ${esc(l.A[vv0][0])}</span><button class="ccp ccpv" data-n="${last}" data-v="${vv0}">⧉ Copiar</button></div>`:""}${salioHtml(l,st,last)}${aciertoHtml(l,st)}<div class="empty">Tu guía de ${esc(l.name)} no tiene combinaciones para este animal.</div>`;
   }else{
     const contSet=new Set(P.cont.map(c=>c[2]));
+    YA_TAG=yaHoy(st); YA_TAG.delete(last);
     const arr=orden69([...P.now.entries()].sort((a,b)=>l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
     const vv=volteo(l,last);
     pred.innerHTML=`<h2>Jugada según la guía</h2>
@@ -1332,6 +1342,7 @@ function render(){
         const h=`${hay?'<div class="trih"><span>🎯 Tripletas</span><button class="tricpall" type="button">⧉ Copiar todas</button></div>':""}<div class="chains">${P.combos.filter(c=>c.length>=5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}${(P.extra||[]).map(t=>`<div class="ch chc tri3"><div class="cad"><span class="tnum">${TRI_N.n++}</span>${t.map(n=>tag(l,n,n!==last)).join('<span class="ar">-</span>')}</div><button class="ccp" data-c="${t.join(",")}" data-k="tri" aria-label="Copiar tripleta">⧉</button></div>`).join("")}${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.filter(c=>c.length<5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>`;
         TRI_N=null; return h; })()}`;
     try{ patMarcarTri(l); }catch(e){}
+    try{ const th=pred.querySelector(".trih"); if(th&&pred.querySelector(".chains .yh")) th.insertAdjacentHTML("afterend",'<div class="yhn">⚠️ Los tachados ya salieron hoy: casi nunca repiten el mismo día.</div>'); }catch(e){}
   }
   const W=st.cfg.win||1;
   let ev=0,ac=0,inv=0,ganado=0,exp=0; const rows=[];
@@ -1652,11 +1663,12 @@ function renderMbar(){
     const arr=orden69([...P.now.entries()].sort((a,b)=>l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
     const mv=volteo(l,last);
     const acB=aciertoBadge(l,st);
+    const YHm=yaHoy(st);
     mb.innerHTML=`<div class="top"><span${acB?' class="hitS"':""}>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>${acB}</span>${mv?`<span class="mvol">⇄ Volteo: <b>${l.A[mv][1]} ${mv}</b></span>`:""}</div>${acB?aciertoStrip(l,st):""}
       <div class="acts" id="macts"><button class="undo cp" id="mcopy">⧉ Copiar</button><button class="undo" id="mundo">↶ Deshacer</button><button class="undo lp" id="mclear">🧹 Limpiar</button></div>
       <div class="acts conf" id="mconf" style="display:none"><span>¿Borrar todo lo marcado en ${esc(l.name)}?</span><button class="undo" id="mno">Cancelar</button><button class="undo yes" id="myes">Sí, limpiar</button></div>
       ${arr.length?'<div class="pdesc">🎯 Animales para jugar en el próximo sorteo:</div>':""}
-      <div class="pks" data-w="1">${arr.length?arr.map(([n,c])=>`<span class="${cs.has(n)?"c":""}${P.vadd.has(n)?" v69":""}">${P.vadd.has(n)?"⇄ ":""}${l.A[n][1]} ${n}${P.vadd.has(n)?" 🔥":""}${c>1?" ×"+c:""}</span>`).join(""):'<span style="color:var(--muted);background:none;border:0;font-weight:500">Sin combinaciones para este animal</span>'}</div>${arr.length?ventanaHtml(st):""}`;
+      <div class="pks" data-w="1">${arr.length?arr.map(([n,c])=>`<span class="${cs.has(n)?"c":""}${P.vadd.has(n)?" v69":""}${YHm.has(n)?" yh":""}">${P.vadd.has(n)?"⇄ ":""}${l.A[n][1]} ${n}${P.vadd.has(n)?" 🔥":""}${c>1?" ×"+c:""}${YHm.has(n)?YA_B:""}</span>`).join(""):'<span style="color:var(--muted);background:none;border:0;font-weight:500">Sin combinaciones para este animal</span>'}</div>${arr.some(([n])=>YHm.has(n))?'<div class="yhn">⚠️ Los tachados ya salieron hoy: casi nunca repiten el mismo día.</div>':""}${arr.length?ventanaHtml(st):""}`;
     mb.insertAdjacentHTML("beforeend",vfHtml(l,last,true));
     const acs=mb.querySelector(".acstrip"); if(acs) acs.onclick=()=>{ try{ setView("jugada"); }catch(e){} setTimeout(()=>{ const w=document.querySelector("#pred .acw"); if(w) w.scrollIntoView({behavior:"smooth",block:"center"}); },80); };
     $("mundo").onclick=()=>$("undo").click();
