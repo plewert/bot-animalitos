@@ -380,6 +380,27 @@ async function cicloAviso(lot, x) {
   const tasa = (k) => { const b = cycBinS(k in li ? seq.length - li[k] : 99999); return ((hit[b] || 0) + 5) / ((esp[b] || 0) + 5); };
   return cand.map((k) => [k, tasa(k)]).filter(([, r]) => r >= 1.2).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k]) => ((g.A[k] || [])[1] || "") + " " + k);
 }
+// ---- 🤖 Tripletas IA para mañana (mismo cálculo que el bot: ciclo por días, probado ×1.50) ----
+const fijBinS = (g) => (g <= 1 ? 0 : g <= 2 ? 1 : g <= 4 ? 2 : g <= 8 ? 3 : g <= 16 ? 4 : 5);
+async function iaManana(lot) {
+  const g = AVISO_GUIA[lot]; if (!g) return null;
+  const A = g.A, rk = (k) => (k === "0" ? -2 : k === "00" ? -1 : +k), order = Object.keys(A).sort((a, b) => rk(a) - rk(b)), N = order.length;
+  const h = await historial(lot); const D = (h.dias || []).slice().sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  if (D.length < 60) return null;
+  const hh = {}, e = {}, ls = {}; let i = 0;
+  D.forEach(([f, it]) => { const s = new Set((it || []).map((x) => x[1]).filter((n) => A[n])); const d0 = new Date(f + "T12:00:00Z");
+    if (i++ > 30 && s.size >= 8) { const base = s.size / N; order.forEach((a) => { if (!ls[a]) return; const b = fijBinS(Math.round((d0 - new Date(ls[a] + "T12:00:00Z")) / 864e5)); e[b] = (e[b] || 0) + base; if (s.has(a)) hh[b] = (hh[b] || 0) + 1; }); }
+    s.forEach((n) => (ls[n] = f)); });
+  const T = {}; Object.keys(e).forEach((b) => (T[b] = ((hh[b] || 0) + 5) / (e[b] + 5)));
+  const man = new Date(hoyVE() + "T12:00:00Z"); man.setUTCDate(man.getUTCDate() + 1);
+  const gap = (a) => Math.round((man - new Date(ls[a] + "T12:00:00Z")) / 864e5);
+  const four = order.filter((a) => ls[a]).map((a) => ({ n: a, g: gap(a), r: T[fijBinS(gap(a))] || 1 })).sort((x, y) => y.r - x.r || x.g - y.g || order.indexOf(x.n) - order.indexOf(y.n)).slice(0, 4);
+  if (four.length < 4) return null;
+  const nm = (n) => ((A[n] || [])[1] ? A[n][1] + " " : "") + n;
+  const tri = []; for (let a = 0; a < 4; a++) for (let b = a + 1; b < 4; b++) for (let c = b + 1; c < 4; c++) tri.push([four[a].n, four[b].n, four[c].n].map(nm).join(" - "));
+  const dias = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  return { para: dias[man.getUTCDay()] + " " + man.getUTCDate() + "/" + (man.getUTCMonth() + 1), tri };
+}
 async function enviarAvisos(lot) {
   const keys = (await redis(["KEYS", "sub:*"])) || [];
   if (!keys.length) return 0;
@@ -412,7 +433,9 @@ async function vigilar() {
         const g = AVISO_GUIA[lot] || { A: {}, sig: {} }, a = g.A[u.num] || [u.nombre || "", ""];
         const pat = (await alertasPatron(lot, u.num, r.datos.slice(0, -1).map((x) => x.num))).concat(await alertasCruce(lot, u.num));
         let ciclo = []; try { ciclo = await cicloAviso(lot, u.num); } catch (e) {}
-        await redis(["SET", "ult:" + lot, JSON.stringify({ lot, clave, hora: u.hora, num: u.num, nombre: a[0], emoji: a[1], picks: (g.sig[u.num] || []).map((k) => ((g.A[k] || [])[1] || "") + " " + k), ciclo, pat, ts: Date.now() })]);
+        let ia = null;
+        if (+String(u.hora).split(":")[0] >= 19) { try { const ya = await redis(["GET", "ia:" + lot]); if (ya !== hoyVE()) { ia = await iaManana(lot); if (ia) await redis(["SET", "ia:" + lot, hoyVE()]); } } catch (e) {} }
+        await redis(["SET", "ult:" + lot, JSON.stringify({ lot, clave, hora: u.hora, num: u.num, nombre: a[0], emoji: a[1], picks: (g.sig[u.num] || []).map((k) => ((g.A[k] || [])[1] || "") + " " + k), ciclo, pat, ia, ts: Date.now() })]);
         if (prev) await enviarAvisos(lot); // la primera vez solo se guarda, para no avisar algo viejo
       } catch (e) {}
     }
