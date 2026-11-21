@@ -601,6 +601,8 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   .cres .r{display:flex;justify-content:space-between;gap:8px}
   .cres .g{color:var(--grn)} .cres .o{color:#ffd27a}
   .tnum.cmb{background:#3d2a05;color:#ffd27a;border-color:#f5b83d}
+  #offBan{margin:8px 0;padding:10px 12px;border-radius:14px;border:2px solid #ffb84d;background:rgba(255,184,77,.12);color:#ffe2b0;font-size:14px;line-height:1.35;display:flex;gap:10px;align-items:center}
+  #offBan .oi{font-size:26px;flex:none}#offBan .ot{color:#ffd27a}#offBan small{opacity:.85}
   .hwait{display:flex;align-items:center;gap:12px;padding:16px 6px;font-size:15px;line-height:1.35}
   .hwait small{opacity:.75}
   .hspin{flex:none;width:20px;height:20px;border:3px solid rgba(47,211,154,.3);border-top-color:#2fd39a;border-radius:50%;animation:hspin 1s linear infinite}
@@ -1065,7 +1067,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611211315";
+const BUILD="202611211600";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1104,7 +1106,8 @@ function rankRows0(l,st,last,arr,P){
 var HWAIT_T0=performance.now(), HWAIT_TIMER=null;
 function esperaHist(l){
   let api=""; try{ api=API_URL; }catch(e){ return ""; } if(!api) return "";
-  let c=null; try{ c=HCACHE[l.id]; }catch(e){ return ""; } if(c&&c.dias&&c.dias.length) return "";
+  let c=null; try{ c=HCACHE[l.id]; }catch(e){ return ""; }
+  try{ if(NETFAIL&&!(c&&c.dias&&c.dias.length)) return "slow"; }catch(e){} if(c&&c.dias&&c.dias.length) return "";
   if(performance.now()-HWAIT_T0<20000){ if(!HWAIT_TIMER) HWAIT_TIMER=setTimeout(()=>{ try{ render(); }catch(e){} },20500-(performance.now()-HWAIT_T0)); return "wait"; }
   return "slow";
 }
@@ -1663,10 +1666,25 @@ async function autoCargar(id,manual){
     else AUTO.estado[id]={c:"err",t:"Sin resultados automáticos para "+lot.name+" todavía. Puedes marcar los animales a mano."};
     save(); if(L().id===id){render();} else { try{renderHoy();}catch(e){} }
     histServidor(id,d.hoy);
+    if(NETFAIL){ NETFAIL=false; netBanner(); }
   }catch(e){
     AUTO.estado[id]={c:"err",t:"No se pudo conectar con los resultados de hoy. Puedes marcar los animales a mano."};
+    if(e&&(e.name==="TypeError"||e.name==="AbortError")&&!NETFAIL){ NETFAIL=true; netBanner(); }
   }finally{AUTO.cargando[id]=false; if(L().id===id) autoMsg();}
 }
+/* 📴 Aviso de "Sin conexión": se muestra cuando no se puede llegar al servidor y se quita solo al volver */
+var NETFAIL=false;
+function netBanner(){ try{
+  let b=document.getElementById("offBan");
+  if(!NETFAIL){ if(b) b.remove(); try{ render(); }catch(e){} return; }
+  const l=L(), st=ST.lots[l.id], td=today(), it=st&&st.dia&&st.dia.fecha===td?st.dia.items:[];
+  const hasta=it.length?"resultados de hoy hasta las <b>"+fmtH12(it[it.length-1].hora)+"</b>":"todavía sin resultados de hoy";
+  const html=`<span class="oi">📴</span><span><b class="ot">Sin conexión</b> · Mostrando lo último guardado en este teléfono (${hasta}).<br><small>Se actualiza solo cuando vuelva la conexión.</small></span>`;
+  if(!b){ const t=document.getElementById("tabs"); if(!t) return; t.insertAdjacentHTML("beforebegin",'<div id="offBan"></div>'); b=document.getElementById("offBan"); }
+  b.innerHTML=html; try{ render(); }catch(e){}
+}catch(e){} }
+window.addEventListener("offline",()=>{ NETFAIL=true; netBanner(); });
+window.addEventListener("online",()=>{ try{ if(!document.body.classList.contains("locked")) autoTodas(false); }catch(e){} });
 /* ---- todos los teléfonos usan el mismo historial: el del servidor (1 año) ---- */
 var HREINT={};
 async function histServidor(id,hoy){
