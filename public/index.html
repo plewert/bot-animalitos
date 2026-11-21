@@ -772,21 +772,6 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
 .ofw{color:#9ff8ff;background:rgba(46,242,255,.08);border:1px solid rgba(46,242,255,.45)}
 .ofp{color:#ffd9a0;background:rgba(255,184,107,.08);border:1px solid rgba(255,184,107,.5)}
 .ofb{display:block;margin-top:6px;border:1px solid #2df28a;background:rgba(45,242,138,.12);color:#2df28a;border-radius:9px;padding:5px 10px;font:inherit;font-weight:700;cursor:pointer}
-.piw{margin:0 0 14px;border:2px solid #b388ff;border-radius:18px;padding:12px;background:linear-gradient(160deg,rgba(179,136,255,.10),rgba(46,242,255,.05));box-shadow:0 0 20px rgba(179,136,255,.3)}
-.pih{color:#d4bfff;font-weight:800;letter-spacing:.05em;font-size:15px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
-.pih .pit{margin-left:auto;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:600}
-.pis{color:var(--muted);font-size:13px;margin:4px 0 10px}
-.pi3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
-.pi3 div{border:2px solid #b388ff66;border-radius:14px;text-align:center;padding:8px 2px;background:#0d0a22}
-.pi3 div.t{border-color:#b388ff;box-shadow:0 0 12px #b388ff77}
-.pi3 .r{font-size:11px;color:#b9a5ff;font-weight:800;display:block}.pi3 .e{font-size:30px;display:block}.pi3 b{display:block;color:var(--gold);font-size:18px}.pi3 small{display:block;color:#cfe;font-size:11.5px;font-weight:700}
-.pi3 .pc{display:inline-block;margin-top:3px;font-size:11px;color:#2df28a;font-weight:800}
-.pi5{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
-.pi5 span{border:1px solid #3a2f63;border-radius:10px;padding:3px 9px;color:#e8e0ff;font-weight:700;background:#0d0a22}
-.pib{display:flex;gap:6px;margin-top:9px}.pib button{flex:1;border:1px solid #2ef2ff;color:#2ef2ff;background:transparent;border-radius:10px;padding:7px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}
-.pif{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.35}.pif b{color:#2df28a}
-body.demo .piw .pi3,body.demo .piw .pi5,body.demo .piw .pib{display:none}
-body.demo .piw .pis::after{content:" 🔒 Solo con código.";color:#ffb86b;font-weight:700}
 </style>
 </head>
 <body class="locked">
@@ -1075,7 +1060,7 @@ const REGLA_NO={"20":["guacharo"],"22":["guacharo"],"05":["guacharo"],"15":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611202130";
+const BUILD="202611202355";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1208,9 +1193,7 @@ function aciertoCalc(l,st){
     let rk=null; try{ const arr=orden69([...P.now.entries()].sort((a,b)=>l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
       if(arr.length){ const rows=rankRows(l,st,x,arr,P).filter(r=>!r.lv); const i=rows.findIndex(r=>r.n===y); if(i>=0&&(i<5||rows[i].st3>=3)) rk={rows,i}; } }catch(e){}
     let sg=null; try{ const R=senalCalc(l,st,x,P); const i=R.findIndex(r=>r.n===y); if(i>=0) sg={R,i}; }catch(e){}
-    let ia=null; try{ const td=today(), dia=st.dia&&st.dia.fecha===td&&st.dia.items?st.dia.items:[], u=dia.length?dia[dia.length-1]:null;
-      if(u&&u.num===y&&u.hora){ const hn=deHoy({hist:H,hoy:st.hoy}); const set=new Set(hn.slice(0,-1)); const R=mlRank(l,st,x,P,td,parseInt(u.hora,10),set); if(R){ const i=R.findIndex(r=>r.n===y); if(i>=0&&i<5) ia={R:R.slice(0,5),i}; } } }catch(e){}
-    if(pr||rk||sg||ia) v={x,y,pr,rk,sg,ia};
+    if(pr||rk||sg) v={x,y,pr,rk,sg};
   }catch(e){} finally{ st.hist=H; }
   AC_CACHE={k,v}; return v;
 }
@@ -1219,23 +1202,22 @@ function aciertoHtml(l,st){
   let h=""; try{ const w=ventana(st); if(w) h=fmtH(w.base); }catch(e){}
   const y=a.y, nm=`${l.A[y][1]} <b class="acn">${y}</b> ${esc(l.A[y][0])}`;
   const sal=`<span class="hb">✅ ¡SALIÓ!${h?" "+h:""}</span>`;
-  let o=`<div class="acw"><div class="ah"><b>✅ ¡ACERTÓ!</b><span>${(()=>{ const q=[a.ia&&"el 🧠 Pronóstico IA",a.pr&&"el pronóstico",a.rk&&"las señales",a.sg&&"la 📡 Señal"].filter(Boolean); const t=q.length>1?q.slice(0,-1).join(", ")+" y "+q[q.length-1]:q[0]; return t.charAt(0).toUpperCase()+t.slice(1)+(q.length>1||a.rk?" dieron":" dio")+" en el blanco"; })()}</span></div>
-    <div class="as">Salió ${nm}${h?" a las "+h:""}${(()=>{ const q=[a.ia&&`<b class="acp">#${a.ia.i+1}</b> en el 🧠 Pronóstico IA`,a.pr&&`<b class="acp">#${a.pr.i+1}</b> en el pronóstico`,a.rk&&`<b class="acp">#${a.rk.i+1}</b> en las señales${a.rk.rows[a.rk.i].st3?" con "+"⭐".repeat(a.rk.rows[a.rk.i].st3):""}`,a.sg&&`<b class="acp">#${a.sg.i+1}</b> en la 📡 Señal`].filter(Boolean); return " y estaba de "+(q.length>1?q.slice(0,-1).join(", de ")+" y de "+q[q.length-1]:q[0]); })()}</div>`;
-  { const src=a.rk||a.pr||a.sg||a.ia, st3=a.rk?a.rk.rows[a.rk.i].st3:0;
+  let o=`<div class="acw"><div class="ah"><b>✅ ¡ACERTÓ!</b><span>${(()=>{ const q=[a.pr&&"el pronóstico",a.rk&&"las señales",a.sg&&"la 📡 Señal"].filter(Boolean); const t=q.length>1?q.slice(0,-1).join(", ")+" y "+q[q.length-1]:q[0]; return t.charAt(0).toUpperCase()+t.slice(1)+(q.length>1||a.rk?" dieron":" dio")+" en el blanco"; })()}</span></div>
+    <div class="as">Salió ${nm}${h?" a las "+h:""}${(()=>{ const q=[a.pr&&`<b class="acp">#${a.pr.i+1}</b> en el pronóstico`,a.rk&&`<b class="acp">#${a.rk.i+1}</b> en las señales${a.rk.rows[a.rk.i].st3?" con "+"⭐".repeat(a.rk.rows[a.rk.i].st3):""}`,a.sg&&`<b class="acp">#${a.sg.i+1}</b> en la 📡 Señal`].filter(Boolean); return " y estaba de "+(q.length>1?q.slice(0,-1).join(", de ")+" y de "+q[q.length-1]:q[0]); })()}</div>`;
+  { const src=a.rk||a.pr||a.sg, st3=a.rk?a.rk.rows[a.rk.i].st3:0;
     o+=`<div class="rr hit acone"><span class="ri">${src.i+1}</span><span class="re">${l.A[y][1]}</span><div class="rn"><b>${y}</b> ${esc(l.A[y][0])}<div>${sal}</div></div>${a.rk?`<span class="rs">${"★".repeat(st3)+'<i>'+"★".repeat(3-st3)+'</i>'}</span>`:""}</div>`; }
   return o+`</div>`;
 }
 function aciertoStrip(l,st){
   const a=aciertoCalc(l,st); if(!a) return "";
-  const y=a.y, q=[a.ia&&`<i>#${a.ia.i+1}</i> en el 🧠 Pronóstico IA`,a.pr&&`<i>#${a.pr.i+1}</i> en el pronóstico`,a.rk&&`<i>#${a.rk.i+1}</i> en las señales${a.rk.rows[a.rk.i].st3?" con "+"⭐".repeat(a.rk.rows[a.rk.i].st3):""}`,a.sg&&`<i>#${a.sg.i+1}</i> en la 📡 Señal`].filter(Boolean);
+  const y=a.y, q=[a.pr&&`<i>#${a.pr.i+1}</i> en el pronóstico`,a.rk&&`<i>#${a.rk.i+1}</i> en las señales${a.rk.rows[a.rk.i].st3?" con "+"⭐".repeat(a.rk.rows[a.rk.i].st3):""}`,a.sg&&`<i>#${a.sg.i+1}</i> en la 📡 Señal`].filter(Boolean);
   let tit="", ch=[];
   if(a.rk){ const t3=a.rk.rows.filter(r=>r.st3>=3); if(t3.length&&a.rk.rows[a.rk.i].st3>=3){ tit="Los de ⭐⭐⭐ que había:"; ch=t3.map(r=>[r.n,"⭐⭐⭐"]); } else { tit="Los primeros de las señales:"; ch=a.rk.rows.slice(0,Math.max(5,a.rk.i+1)).map(r=>[r.n,r.st3?"⭐".repeat(r.st3):""]); } }
   else if(a.pr){ tit="El pronóstico era:"; ch=a.pr.R.map(r=>[r.n,""]); }
-  else if(a.sg){ tit="La 📡 Señal era:"; ch=a.sg.R.map(r=>[r.n,""]); }
-  else { tit="El 🧠 Pronóstico IA era:"; ch=a.ia.R.map(r=>[r.n,""]); }
+  else { tit="La 📡 Señal era:"; ch=a.sg.R.map(r=>[r.n,""]); }
   return `<div class="acstrip" role="button" tabindex="0"><span class="b">✅ ¡ACERTÓ!</span><div class="t"><b>${l.A[y][1]} ${y} ${esc(l.A[y][0])}</b> estaba de ${q.length>1?q.slice(0,-1).join(", ")+" y "+q[q.length-1]:q[0]}</div><span class="v">ver ▸</span></div>`;
 }
-function aciertoBadge(l,st){ const a=aciertoCalc(l,st); if(!a) return ""; const q=[a.ia&&"la IA",a.pr&&"el pronóstico",a.rk&&"las señales",a.sg&&"la Señal"].filter(Boolean); return `<span class="hbS">✅ estaba en ${q.length>1?q.slice(0,-1).join(", ")+" y "+q[q.length-1]:q[0]}</span>`; }
+function aciertoBadge(l,st){ const a=aciertoCalc(l,st); if(!a) return ""; const q=[a.pr&&"el pronóstico",a.rk&&"las señales",a.sg&&"la Señal"].filter(Boolean); return `<span class="hbS">✅ estaba en ${q.length>1?q.slice(0,-1).join(", ")+" y "+q[q.length-1]:q[0]}</span>`; }
 function salioHtml(l,st,last){ let h=""; try{ const w=ventana(st); if(w) h=fmtH(w.base); }catch(e){}
   return `<div class="salio"><span class="stg">SALIÓ</span><span class="se">${l.A[last][1]}</span><span class="sn">${last}</span><span class="snm">${esc(l.A[last][0])}</span>${h?`<span class="shr">${h}</span>`:""}</div>`; }
 function horaSalio(st){ try{ const w=ventana(st); return w?" ("+fmtH(w.base)+")":""; }catch(e){ return ""; } }
@@ -1385,13 +1367,11 @@ function render(){
       ${ventanaHtml(st)}
       ${patAlerta(l,st,last)}<div class="pkhead"><span>🎯 Animales para jugar</span><button class="pkcp" type="button">⧉ Copiar</button></div>
       ${rankHtml(l,st,last,arr,P)}
-      ${pronIAHtml(l,st,last,P)}${pronHtml(l,st,last,P)}${senalHtml(l,st,last,P)}
+      ${pronHtml(l,st,last,P)}${senalHtml(l,st,last,P)}
       ${(()=>{ const hay=[...P.cont,...P.combos,...(P.extra||[])].length>0; TRI_N={n:1};
         const h=`${hay?'<div class="trih"><span>🎯 Tripletas</span><button class="tricpall" type="button">⧉ Copiar todas</button></div>':""}<div class="chains">${P.combos.filter(c=>c.length>=5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}${(P.extra||[]).map(t=>`<div class="ch chc tri3"><div class="cad"><span class="tnum">${TRI_N.n++}</span>${t.map(n=>tag(l,n,n!==last)).join('<span class="ar">-</span>')}</div><button class="ccp" data-c="${t.join(",")}" data-k="tri" aria-label="Copiar tripleta">⧉</button></div>`).join("")}${P.cont.map(c=>chainHtml(l,c,g,P.now,true,true)).join("")}${P.combos.filter(c=>c.length<5).map(c=>chainHtml(l,c,g,P.now,false,true)).join("")}</div>`;
         TRI_N=null; return h; })()}`;
     try{ patMarcarTri(l); }catch(e){}
-    try{ pred.querySelectorAll(".picp").forEach(b=>b.onclick=()=>{ const o=mlObjetivo(l,st), R=mlRank(l,st,last,P,o.dt,o.hh,o.set); if(!R) return; const k=+b.dataset.k;
-      copyTxt("🧠 Pronóstico IA · "+l.name+" (tras "+last+")\n"+R.slice(0,k).map((r,i)=>(i+1)+". "+(l.A[r.n][1]?l.A[r.n][1]+" ":"")+r.n+" "+l.A[r.n][0]).join("\n")+FOOTER,b,"⧉ Copiar "+k); }); }catch(e){}
     try{ const th=pred.querySelector(".trih"); if(th&&pred.querySelector(".chains .yh")) th.insertAdjacentHTML("afterend",'<div class="yhn">⚠️ Los tachados ya salieron hoy: casi nunca repiten el mismo día.</div>'); }catch(e){}
   }
   const W=st.cfg.win||1;
@@ -2773,80 +2753,6 @@ function avisosJugada(){ try{ const l=L(), st=S(), pr=$("pred"); if(!pr) return;
   if(cfgPropio(l,st)) h+='<div class="ofcl ofp">⚙️ <b>Estás usando ajustes propios</b> en "Qué datos usar", por eso tu jugada puede ser distinta a la de otros. <button type="button" class="ofb">Volver a la jugada oficial</button></div>';
   if(h){ h2.insertAdjacentHTML("afterend",h); const b=pr.querySelector(".ofb"); if(b) b.onclick=()=>{ const s2=S(); s2.cfg=Object.assign(s2.cfg||{},{sal:null,jmin:5,jmax:12,guide:l.guides[0].id}); try{ localStorage.removeItem("bot-senal-off"); }catch(e){} save(); render(); }; }
 }catch(e){} }
-/* 🧠 Pronóstico IA: modelo aprendido con 2 años de resultados (regresión logística por lotería) */
-var ML_DC={};
-function mlDayCtx(l,DD,dt){
-  // DD: días anteriores a dt, ordenados: [[fecha,[[hora,num],...]],...]
-  const k=l.id+"|"+dt+"|"+DD.length+"|"+(DD.length?DD[DD.length-1][0]:"");
-  if(ML_DC.k===k) return ML_DC.v;
-  const N=l.order.length, d0=new Date(dt+"T12:00:00"), dayN=f=>Math.round((d0-new Date(f+"T12:00:00"))/864e5);
-  const lo=DD.filter(([f])=>dayN(f)<=365), hc={}, c7={}, cyc={}, ls={}, hh={}, e={}; let i=0;
-  lo.forEach(([f,it])=>{ const dd=dayN(f); it.forEach(([h,n])=>{ const H=parseInt(h,10); (hc[H]=hc[H]||{})[n]=(hc[H][n]||0)+1; cyc[n]=(cyc[n]||0)+1; if(dd<=7) c7[n]=(c7[n]||0)+1; }); });
-  lo.forEach(([f,it])=>{ const s=new Set(it.map(x=>x[1]).filter(n=>l.A[n])), dd=new Date(f+"T12:00:00");
-    if(i++>30&&s.size>=8){ const base=s.size/N; l.order.forEach(a=>{ if(!ls[a]) return; const b=fijBin(Math.round((dd-new Date(ls[a]+"T12:00:00"))/864e5)); e[b]=(e[b]||0)+base; if(s.has(a)) hh[b]=(hh[b]||0)+1; }); }
-    s.forEach(n=>ls[n]=f); });
-  const T={}; for(let b=0;b<6;b++) T[b]=((hh[b]||0)+5)/((e[b]||0)+5);
-  const ayerF=(()=>{ const y=new Date(d0); y.setDate(y.getDate()-1); return y.getFullYear()+"-"+pad2(y.getMonth()+1)+"-"+pad2(y.getDate()); })();
-  const ayer=(DD.find(([f])=>f===ayerF)||[null,[]])[1];
-  const v={hc,c7,cyc,nd:lo.length,T,ls,ayer,dayN}; ML_DC={k,v}; return v;
-}
-function mlFeats(l,st,x,P,dt,hh,DD,hoySet){
-  const N=l.order.length, C=mlDayCtx(l,DD,dt), Hh=st.hist, Hp=Hh.slice(-4000);
-  const ac={}; let acT=0; for(let i=0;i<Hp.length-1;i++) if(Hp[i]===x){ ac[Hp[i+1]]=(ac[Hp[i+1]]||0)+1; acT++; }
-  const acEsp=acT/N, top=[...topSalidores()], vf=vfInfo(x); let PH=new Map(); try{ PH=patHits(l,st,x); }catch(e){}
-  const hcn=C.hc[hh]||{}; let hT=0; for(const n in hcn) hT+=hcn[n]; const hE=hT/N;
-  const li={}; for(let i=0;i<Hh.length;i++) li[Hh[i]]=i; const c100={}; Hh.slice(-100).forEach(n=>c100[n]=(c100[n]||0)+1);
-  const ay=new Set(C.ayer.filter(([h])=>parseInt(h,10)===hh).map(x=>x[1]));
-  return l.order.map(n=>{ const F=[0,0,0,0,0,0,0,0];
-    const c=P.now.get(n)||0, v=P.vadd&&P.vadd.has(n);
-    if(c&&!v) F[0]=2*c; if(v) F[1]=2; F[2]=(PH.get(n)||[]).slice(0,2).length*2; if(vf&&vf.nums.includes(n)) F[3]=2;
-    const r=top.indexOf(n); if(r>=0) F[4]=r<3?3:2;
-    if(acEsp>=2&&ac[n]){ const q=ac[n]/acEsp; if(q>=1.4) F[5]=q>=1.8?3:2; }
-    let cy=null; try{ cy=cycInfo(l,st,n); }catch(e){} if(cy) F[6]=cy.p;
-    if(jLevel(st,n)) F[7]=-3;
-    const hora=(hT>=30&&(hcn[n]||0)>=Math.max(3,hE*1.4))?2:0;
-    const cal=(C.nd>=30&&(C.c7[n]||0)>=3&&(C.c7[n]||0)>=2*((C.cyc[n]||0)/C.nd*7))?2:0;
-    const dia=C.ls[n]?C.T[fijBin(C.dayN(C.ls[n]))]-1:0;
-    const g=n in li?Hh.length-li[n]:999;
-    return F.concat([hora,cal,dia,hoySet.has(n)?1:0,ay.has(n)?1:0,Math.log1p(g),g<=2?1:0,c100[n]||0,hh,n===x?1:0]);
-  });
-}
-
-function mlProb(M,f){ let z=M.b; for(const t of M.t){ let i=0; while(t[i].length>1){ const n=t[i], v=f[n[0]]; i=(v!==v?n[4]:v<=n[1])?n[2]:n[3]; } z+=t[i][0]; } return 1/(1+Math.exp(-z)); }
-var ML_M=null, ML_CARGA=false, ML_PC={k:"",v:null};
-function mlCargar(){ if(ML_M||ML_CARGA) return; ML_CARGA=true;
-  fetch("ia_modelo.json?v="+BUILD).then(r=>r.json()).then(j=>{ ML_M=j; try{ render(); }catch(e){} }).catch(()=>{ ML_CARGA=false; }); }
-function mlFecha(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
-/* qué sorteo viene: el siguiente al último resultado de hoy */
-function mlObjetivo(l,st){
-  const td=today(), hoyN=deHoy(st); let hh=PRIMER, dt=td, set=new Set(hoyN);
-  const it=st.dia&&st.dia.fecha===td&&st.dia.items&&st.dia.items.length?st.dia.items[st.dia.items.length-1]:null;
-  if(it&&it.hora) hh=parseInt(it.hora,10)+1; else if(hoyN.length) hh=PRIMER+hoyN.length;
-  else if(new Date().getHours()>ULTIMO) hh=ULTIMO+1;
-  if(hh>ULTIMO){ const m=new Date(); m.setDate(m.getDate()+1); dt=mlFecha(m); hh=PRIMER; set=new Set(); }
-  return {dt,hh,set};
-}
-function mlRank(l,st,x,P,dt,hh,set){
-  const M=ML_M&&ML_M[l.id]; let D=null; try{ D=HCACHE[l.id]&&HCACHE[l.id].dias; }catch(e){}
-  if(!M||!D||D.length<60||!st.hist||st.hist.length<3) return null;
-  const k=l.id+"|"+st.hist.length+"|"+x+"|"+dt+"|"+hh+"|"+[...set].join()+"|"+D.length+"|"+(st.last[x]||"");
-  if(ML_PC.k===k) return ML_PC.v;
-  const DD=D.filter(d=>d[0]<dt).map(([f,it])=>[f,it.slice().sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0).filter(z=>l.A[z[1]])]).sort((a,b)=>a[0]<b[0]?-1:1);
-  const X=mlFeats(l,st,x,P,dt,hh,DD,set);
-  const R=l.order.map((n,i)=>({n,p:mlProb(M,X[i])})).filter(r=>r.n!==x).sort((a,b)=>b.p-a.p);
-  ML_PC={k,v:R}; return R;
-}
-function pronIAHtml(l,st,last,P){
-  mlCargar(); let R=null; try{ const o=mlObjetivo(l,st); R=mlRank(l,st,last,P,o.dt,o.hh,o.set); }catch(e){}
-  const head=`<div class="pih">🧠 Pronóstico <span class="iab">IA</span><span class="pit">tras ${l.A[last][1]} ${last}</span></div>`;
-  if(!R) return `<div class="piw">${head}<p class="note" style="margin:6px 0 0">Cargando el modelo y el historial… aparece en unos segundos.</p></div>`;
-  const nor=100/l.order.length, pc=p=>(p*100).toFixed(1).replace(/\.0$/,"")+"%";
-  return `<div class="piw">${head}<div class="pis">El bot aprendió solo con 2 años de resultados cuánto pesa cada dato. Estos son los que más probabilidad tienen en el próximo sorteo.</div>
-    <div class="pi3">${R.slice(0,3).map((r,i)=>`<div class="${i?"":"t"}"><span class="r">#${i+1}</span><span class="e">${l.A[r.n][1]}</span><b>${r.n}</b><small>${esc(l.A[r.n][0])}</small><span class="pc">${pc(r.p)}</span></div>`).join("")}</div>
-    <div class="pi5">Si juegas 5, suma: ${R.slice(3,5).map(r=>`<span>${l.A[r.n][1]} ${r.n} · ${pc(r.p)}</span>`).join("")}</div>
-    <div class="pib"><button type="button" class="picp" data-k="3">⧉ Copiar 3</button><button type="button" class="picp" data-k="5">⧉ Copiar 5</button></div>
-    <div class="pif">Lo normal es ${nor.toFixed(1)}% por animal. Probado con 2 años: <b>13% más</b> aciertos que el 🎯 Pronóstico con 3 animales y <b>9% más</b> que la 📡 Señal con 5.</div></div>`;
-}
 function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
 function renderIA(){
   const box=$("iaBox"); if(!box) return; const l=L(), st=S(); let o=null; try{ o=iaCalc(l,st); }catch(e){}
