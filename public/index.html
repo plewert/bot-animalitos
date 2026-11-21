@@ -1067,7 +1067,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611211600";
+const BUILD="202611211640";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1870,13 +1870,16 @@ function normCode(c){
   const t=String(c||"").normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g,"");
   return (t.length===11&&t.startsWith("BOT"))?"BOT-"+t.slice(3,7)+"-"+t.slice(7):String(c||"").trim().toUpperCase();
 }
+/* ➕ códigos generados en el panel: el servidor los confirma y este teléfono los recuerda */
+function genHas(h){ try{ return (JSON.parse(localStorage.getItem("bot-gen")||"[]")).includes(h); }catch(e){ return false; } }
+function genAdd(h){ try{ const a=JSON.parse(localStorage.getItem("bot-gen")||"[]"); if(!a.includes(h)){ a.push(h); localStorage.setItem("bot-gen",JSON.stringify(a.slice(-20))); } }catch(e){} }
 function check(code,activar){
   const h=cyrb53(normCode(code));
-  if(!CODES.has(h)) return {ok:false,msg:"Ese código no existe."};
+  if(!CODES.has(h)&&!genHas(h)) return {ok:false,msg:"Ese código no existe."};
   let t=getAct(h);
   if(!t){
     if(!activar) return {ok:false,msg:""};
-    if(Date.now()>Date.parse(ACTIVAR_ANTES+"T23:59:59-04:00")) return {ok:false,msg:"Ese código ya no se puede activar."};
+    if(CODES.has(h)&&Date.now()>Date.parse(ACTIVAR_ANTES+"T23:59:59-04:00")) return {ok:false,msg:"Ese código ya no se puede activar."};
     t=Date.now(); setAct(h,t);
   }
   const fin=t+DIAS*86400000;
@@ -2605,16 +2608,18 @@ document.getElementById("gform").addEventListener("submit",async e=>{
   e.preventDefault();
   const c=document.getElementById("gcode").value, err=document.getElementById("gerr"), btn=e.target.querySelector("button[type=submit]");
   if(!c.trim()){err.textContent="Escribe un código.";return;}
-  if(!CODES.has(cyrb53(normCode(c)))){err.textContent=MSG_COD.no_existe;return;}
+  const hc=cyrb53(normCode(c)), fijo=CODES.has(hc)||genHas(hc);
+  if(!fijo&&(typeof API_URL==="undefined"||!API_URL)){err.textContent=MSG_COD.no_existe;return;}
   err.style.color="var(--muted)"; err.textContent="Verificando código… la primera vez puede tardar hasta 1 minuto."; btn.disabled=true;
   const r=await servidorCodigo(c,true);
   btn.disabled=false; err.style.color="";
   if(r){
-    if(r.ok){ setAct(cyrb53(normCode(c)),r.fin-DIAS*86400000); err.textContent=""; unlock(normCode(c),r.fin); }
+    if(r.ok){ if(!CODES.has(hc)) genAdd(hc); setAct(hc,r.fin-DIAS*86400000); err.textContent=""; unlock(normCode(c),r.fin); }
     else err.textContent=MSG_COD[r.motivo]||"No se pudo verificar el código. Intenta otra vez.";
     return;
   }
   // Sin servidor disponible: se revisa en este dispositivo como antes
+  if(!fijo){err.textContent="No se pudo conectar para verificar el código. Revisa tu internet e intenta otra vez.";return;}
   const l=check(c,true); if(l.ok){err.textContent="";unlock(normCode(c),l.fin);} else err.textContent=l.msg;
 });
 document.getElementById("gcode").addEventListener("input",()=>{document.getElementById("gerr").textContent="";});
