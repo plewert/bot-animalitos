@@ -1060,7 +1060,7 @@ const REGLA_NO={"19":["guacharo"],"20":["guacharo"],"22":["guacharo"],"05":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611210950";
+const BUILD="202611211015";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1651,9 +1651,12 @@ async function autoCargar(id,manual){
   }finally{AUTO.cargando[id]=false; if(L().id===id) autoMsg();}
 }
 /* ---- todos los teléfonos usan el mismo historial: el del servidor (1 año) ---- */
+var HREINT={};
 async function histServidor(id,hoy){
   try{
-    const D=await cargarHist(id); if(!D||D.err||!D.dias||!D.dias.length) return;
+    const D=await cargarHist(id);
+    if(!D||D.err||!D.dias||!D.dias.length){ if(D&&D.err&&D.err!=="sinapi"&&!(HREINT[id]>=3)){ HREINT[id]=(HREINT[id]||0)+1; setTimeout(()=>histServidor(id,hoy),30000*HREINT[id]); } return; }
+    HREINT[id]=0;
     const lot=LOTS.find(x=>x.id===id), st=ST.lots[id]; if(!st) return;
     const pasado=[], ult={};
     D.dias.forEach(([f,it])=>{ if(f>=hoy) return;
@@ -1670,6 +1673,16 @@ async function histServidor(id,hoy){
 }
 function autoTodas(manual){ LOTS.forEach(l=>autoCargar(l.id,manual)); }
 setInterval(()=>{ if(!document.body.classList.contains("locked")) autoTodas(false); },5*60000);
+/* ⚡ los 15 minutos después de cada sorteo: revisa cada minuto hasta que llegue el resultado */
+setInterval(()=>{ try{
+  if(document.body.classList.contains("locked")||!API_URL) return;
+  const now=new Date(), td=today();
+  LOTS.forEach(l=>{ const mm=minLot(l.id), dif=(now.getMinutes()-mm+60)%60; if(dif>15) return;
+    const s=new Date(now.getTime()-dif*60000), h=s.getHours(); if(h<PRIMER||h>ULTIMO) return;
+    const st=ST.lots[l.id], it=st&&st.dia&&st.dia.fecha===td?st.dia.items:[], hk=String(h).padStart(2,"0")+":";
+    if(it.some(x=>String(x.hora).padStart(5,"0").startsWith(hk))) return;
+    autoCargar(l.id,false); });
+}catch(e){} },60000);
 
 /* ===== versión móvil tipo app ===== */
 const MQ=window.matchMedia("(max-width:700px)");
@@ -2391,12 +2404,24 @@ function senalCalc(l,st,last,P){
 }
 function SG_TXT(){ return ["","Débil","Baja","Media","Alta","Muy alta"]; }
 /* ===== 🎯 Pronóstico del próximo sorteo: 3 animales con el porqué ===== */
+/* 🧊 Pronóstico congelado: se calcula una vez por resultado de ESTA lotería y queda fijo hasta el próximo */
 function pronCalc(l,st,last,P){
+  let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
+  const td=today(), H=st.hist||[], nHoy=st.hoy&&st.hoy.fecha===td?Math.max(0,H.length-st.hoy.ini):0;
+  let gs=""; try{ gs=[...P.now.entries()].map(x=>x.join(":")).sort().join(",")+"|"+(P.vadd?[...P.vadd.keys()].sort().join(","):""); }catch(e){}
+  const k=[l.id,td,nHoy,last,BUILD,sgOff().join(),gs].join("|");
+  const F=st.pronFix||(st.pronFix={});
+  if(F[k]) return F[k];
+  const o=pronCalc0(l,st,last,P);
+  if(D.length>=60){ F[k]=o; const ks=Object.keys(F); if(ks.length>4) ks.slice(0,ks.length-4).forEach(x=>delete F[x]); }
+  return o;
+}
+function pronCalc0(l,st,last,P){
   const off=sgOff(), on=k=>!off.includes(k), dos=x=>String(x).padStart(2,"0");
   const px=proxSorteo(l), hk=dos(px.d.getHours())+":"+dos(px.d.getMinutes());
   const hh=px.d.getHours(), hLab=((hh%12)||12)+(px.d.getMinutes()?":"+dos(px.d.getMinutes()):"")+(hh<12?" a. m.":" p. m.");
   let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
-  const hc={}; let hT=0; const cy={}, c7={}; const lim=new Date(); lim.setDate(lim.getDate()-7); const fl=lim.toISOString().slice(0,10);
+  const hc={}; let hT=0; const cy={}, c7={}; const lim=new Date(); lim.setDate(lim.getDate()-7); const fl=lim.getFullYear()+"-"+String(lim.getMonth()+1).padStart(2,"0")+"-"+String(lim.getDate()).padStart(2,"0");
   D.forEach(([f,it])=>it.forEach(([h,n])=>{ if(!l.A[n]) return; cy[n]=(cy[n]||0)+1; if(f>=fl) c7[n]=(c7[n]||0)+1; if(h===hk){ hc[n]=(hc[n]||0)+1; hT++; } }));
   const nd=D.length, hEsp=hT/l.order.length;
   const H=st.hist, ac={}; let acT=0; for(let i=0;i<H.length-1;i++) if(H[i]===last){ ac[H[i+1]]=(ac[H[i+1]]||0)+1; acT++; }
@@ -2609,7 +2634,7 @@ function fijCalc(l){
   if(FIJ_CACHE[key]) return FIJ_CACHE[key];
   if(D.length<30) return {R:[],falta:true};
   const nd=D.length, pd={}, par={}, trio={}, f30={}; let t30=0;
-  const lim=new Date(); lim.setDate(lim.getDate()-30); const fl=lim.toISOString().slice(0,10);
+  const lim=new Date(); lim.setDate(lim.getDate()-30); const fl=lim.getFullYear()+"-"+String(lim.getMonth()+1).padStart(2,"0")+"-"+String(lim.getDate()).padStart(2,"0");
   D.forEach(([f,it])=>{ const u=[...new Set(it.map(x=>x[1]).filter(n=>l.A[n]))];
     u.forEach(n=>pd[n]=(pd[n]||0)+1);
     for(let i=0;i<u.length;i++) for(let j=i+1;j<u.length;j++){ const k=[u[i],u[j]].sort().join("|"); par[k]=(par[k]||0)+1; }
