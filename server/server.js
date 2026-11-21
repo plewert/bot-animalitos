@@ -204,9 +204,33 @@ const finDe = (ini) => ini + DIAS * 86400000;
 const cyrb53S = (str, seed = 7) => { let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed; for (let i = 0, ch; i < str.length; i++) { ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36); };
 const normCodeS = (c) => { const t = String(c || "").normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g, ""); return t.length === 11 && t.startsWith("BOT") ? "BOT-" + t.slice(3, 7) + "-" + t.slice(7) : String(c || "").trim().toUpperCase(); };
 const anulado = async (hash) => !!(await redis(["GET", "anu:" + hash]));
+// ➕ Códigos generados desde el panel (y los que agregas a tu lista): se guardan en Upstash como "gen:<huella>"
+const existeCodigo = async (hash) => CODIGOS.has(hash) || !!(await redis(["GET", "gen:" + hash]));
+const ABC = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+async function generarCodigos(n) {
+  n = Math.max(1, Math.min(50, parseInt(n, 10) || 0)); const out = [];
+  for (let k = 0; out.length < n && k < n * 20; k++) {
+    const r = () => Array.from(crypto.randomBytes(4), (b) => ABC[b % ABC.length]).join("");
+    const c = "BOT-" + r() + "-" + r(), h = cyrb53S(c);
+    if (CODIGOS.has(h) || out.some((x) => x.h === h) || (await redis(["GET", "gen:" + h]))) continue;
+    out.push({ c, h });
+  }
+  const t = Date.now();
+  for (const x of out) await redis(["SET", "gen:" + x.h, JSON.stringify({ codigo: x.c, t, gen: true })]);
+  return out.map((x) => x.c);
+}
+async function agregarALista(texto) {
+  const cods = [...new Set((String(texto || "").toUpperCase().match(/BOT[-\s]?[A-Z0-9]{4}[-\s]?[A-Z0-9]{4}/g) || []).map(normCodeS))];
+  let ok = 0, ya = 0; const malos = [];
+  for (const c of cods) { const h = cyrb53S(c);
+    if (!CODIGOS.has(h)) { if (await redis(["GET", "gen:" + h])) ya++; else malos.push(c); continue; }
+    if (await redis(["GET", "gen:" + h])) { ya++; continue; }
+    await redis(["SET", "gen:" + h, JSON.stringify({ codigo: c, t: Date.now(), lista: true })]); ok++; }
+  return { ok: true, agregados: ok, ya, malos };
+}
 async function usarCodigo(b) {
   const hash = String(b.hash || ""), dev = String(b.dev || "").slice(0, 64);
-  if (!CODIGOS.has(hash)) return { ok: false, motivo: "no_existe" };
+  if (!(await existeCodigo(hash))) return { ok: false, motivo: "no_existe" };
   if (await anulado(hash)) return { ok: false, motivo: "anulado" };
   if (!dev) return { ok: false, motivo: "sin_dispositivo" };
   const key = "cod:" + hash;
@@ -214,7 +238,7 @@ async function usarCodigo(b) {
   const ahora = Date.now();
   if (!rec) {
     if (!b.activar) return { ok: false, motivo: "no_activado" };
-    if (ahora > Date.parse(ACTIVAR_ANTES + "T23:59:59-04:00")) return { ok: false, motivo: "no_activable" };
+    if (CODIGOS.has(hash) && ahora > Date.parse(ACTIVAR_ANTES + "T23:59:59-04:00")) return { ok: false, motivo: "no_activable" };
     rec = { codigo: String(b.codigo || "").slice(0, 20), dev, ua: String(b.ua || "").slice(0, 20), ini: ahora, uso: ahora };
     await redis(["SET", key, JSON.stringify(rec)]);
     return { ok: true, fin: finDe(rec.ini) };
@@ -275,7 +299,7 @@ async function suscribir(b) {
   if (!lots.length) { await redis(["DEL", subKey(endpoint)]); return { ok: true, lots: [] }; }
   const hash = String(b.hash || ""), dev = String(b.dev || "").slice(0, 64);
   let rec = await redis(["GET", "cod:" + hash]); rec = rec ? JSON.parse(rec) : null;
-  if (!CODIGOS.has(hash) || !rec) return { ok: false, motivo: "sin_codigo" };
+  if (!rec || !(await existeCodigo(hash))) return { ok: false, motivo: "sin_codigo" };
   if (await anulado(hash)) { await redis(["DEL", subKey(endpoint)]); return { ok: false, motivo: "anulado" }; }
   if (rec.dev !== dev) return { ok: false, motivo: "en_uso" };
   const fin = finDe(rec.ini); if (Date.now() > fin) return { ok: false, motivo: "vencido" };
@@ -508,10 +532,14 @@ async function listaCodigos() {
   const demos = ((await redis(["KEYS", "demo:*"])) || []).length;
   const ak = (await redis(["KEYS", "anu:*"])) || [], av = ak.length ? await redis(["MGET", ...ak]) : [];
   const anu = {}; ak.forEach((k, i) => { try { anu[k.slice(4)] = JSON.parse(av[i] || "{}"); } catch (e) { anu[k.slice(4)] = {}; } });
+  const gk = (await redis(["KEYS", "gen:*"])) || [], gv = gk.length ? await redis(["MGET", ...gk]) : [];
+  const gen = {}; gk.forEach((k, i) => { try { gen[k.slice(4)] = JSON.parse(gv[i] || "{}"); } catch (e) { gen[k.slice(4)] = {}; } });
+  const usadoH = new Set(keys.map((k) => k.slice(4)));
   return {
-    anulados: Object.keys(anu).filter((h) => !keys.includes("cod:" + h)).map((h) => ({ hash: h, codigo: anu[h].codigo || "(código sin activar)", t: anu[h].t })),
+    anulados: Object.keys(anu).filter((h) => !usadoH.has(h)).map((h) => ({ hash: h, codigo: anu[h].codigo || (gen[h] && gen[h].codigo) || "(código sin activar)", t: anu[h].t })),
+    sinUsar: Object.keys(gen).filter((h) => !usadoH.has(h) && !anu[h]).map((h) => ({ hash: h, codigo: gen[h].codigo, t: gen[h].t, gen: !!gen[h].gen })).sort((a, b) => (b.t || 0) - (a.t || 0)),
     demos,
-    total: CODIGOS.size,
+    total: CODIGOS.size + Object.keys(gen).filter((h) => !CODIGOS.has(h)).length,
     usados: keys.map((k, i) => { const r = JSON.parse(vals[i] || "{}"); const fin = finDe(r.ini || 0);
       return { hash: k.slice(4), codigo: r.codigo || "(sin nombre)", ua: r.ua || "", ini: r.ini, fin, uso: r.uso, libre: !r.dev, estado: anu[k.slice(4)] ? "anulado" : ahora > fin ? "vencido" : "activo" }; })
       .sort((a, b) => (b.ini || 0) - (a.ini || 0)),
@@ -525,25 +553,51 @@ input,button{font:inherit;border-radius:10px;border:1px solid #2b3550;background
 .it b{font-family:monospace;font-size:15px}.s{color:#8a9bbd;font-size:13px}.ok{color:#2dff8a}.ve{color:#ff8ea0}.li{color:#ffd23f}
 .lb{margin-left:auto;border-color:rgba(255,59,92,.6);color:#ff8ea0}#msg{color:#ff8ea0;margin:8px 0}
 .el{border-color:#ff3b5c;background:#2a0710;color:#ff8ea0}.rs{margin-left:auto;border-color:#2dff8a;color:#2dff8a}.an{color:#ff3b5c;font-weight:700}
+.fil{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.fil button{border-radius:999px;padding:6px 12px;font-size:13.5px}.fil .on{background:#2dff8a22;border-color:#2dff8a;color:#2dff8a;font-weight:700}
+.cp{margin-left:auto;border-color:#2ef2ff;color:#2ef2ff}.gbox{border-color:#2dff8a88!important}.gres{margin-top:6px;padding:8px;border-radius:10px;background:#0f2a1a;border:1px solid #2dff8a55}.gl{font-family:monospace;font-size:15px;line-height:1.7}.gres .cp{margin:6px 0 0}
+.abox{display:block}.abox summary{cursor:pointer;color:#8a9bbd}.abox textarea{width:100%;box-sizing:border-box;min-height:80px;margin:8px 0;border-radius:10px;background:#0b1124;color:#e8f1ff;border:1px solid #2b3550;font:inherit}
 .ebox{border:1px dashed #ff3b5c88;border-radius:12px;padding:10px;margin:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ebox input{flex:1;min-width:150px}</style></head><body>
 <h1>◆ Códigos · Bot de animalitos</h1>
 <div id="login"><input id="cl" type="password" placeholder="Clave de administrador"> <button class="b1" id="en">Entrar</button><div id="msg"></div></div>
 <div id="pan" style="display:none"><div class="s" id="res"></div>
-<div class="ebox"><span>🚫 Eliminar un código (aunque no esté activado):</span><input id="ecod" placeholder="BOT-XXXX-XXXX"><button class="el" id="ebtn">Eliminar</button><span class="s" id="emsg"></span></div><input id="bus" placeholder="Buscar código" style="width:100%;margin:10px 0;box-sizing:border-box"><div id="lis"></div></div>
+<div class="ebox gbox"><span>➕ Generar códigos nuevos:</span><input id="gn" type="number" min="1" max="50" value="5" style="max-width:80px;flex:none"><button class="b1" id="gbtn">Generar</button><div id="gout" style="width:100%"></div></div>
+<div class="ebox"><span>🚫 Eliminar un código (aunque no esté activado):</span><input id="ecod" placeholder="BOT-XXXX-XXXX"><button class="el" id="ebtn">Eliminar</button><span class="s" id="emsg"></span></div>
+<div class="fil" id="fil"></div>
+<input id="bus" placeholder="Buscar código" style="width:100%;margin:6px 0;box-sizing:border-box"><div id="lis"></div>
+<details class="ebox abox"><summary>📋 Agregar a "Sin usar" los códigos que ya tenías (pega la lista)</summary><textarea id="atx" placeholder="BOT-XXXX-XXXX&#10;BOT-XXXX-XXXX"></textarea><button class="b1" id="abtn">Guardar en mi lista</button><span class="s" id="amsg"></span></details></div>
 <script>
 let C=sessionStorage.getItem("cl")||"";const f=d=>new Date(d).toLocaleString("es-VE",{day:"2-digit",month:"2-digit",hour:"numeric",minute:"2-digit"});
 async function api(p,b){const r=await fetch(p,{method:b?"POST":"GET",headers:{"X-Clave":C,"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined});if(r.status===401)throw new Error("Clave incorrecta");const j=await r.json();if(j.error)throw new Error(j.error);return j;}
-let D=null;
+let D=null, FIL="uso";
 async function cargar(){try{D=await api("/admin/api/lista");sessionStorage.setItem("cl",C);document.getElementById("login").style.display="none";document.getElementById("pan").style.display="";pintar();}catch(e){document.getElementById("msg").textContent=e.message;}}
-function pintar(){const q=document.getElementById("bus").value.trim().toUpperCase();const a=D.usados.filter(x=>!q||x.codigo.includes(q));
-const act=D.usados.filter(x=>x.estado==="activo").length;
-document.getElementById("res").textContent=D.total+" códigos · "+D.usados.length+" usados ("+act+" activos) · "+(D.total-D.usados.length)+" sin usar · "+(D.demos||0)+" pruebas gratis"+((D.anulados||[]).length+D.usados.filter(x=>x.estado==="anulado").length?" · "+((D.anulados||[]).length+D.usados.filter(x=>x.estado==="anulado").length)+" eliminados":"");
-const an=(D.anulados||[]).filter(x=>!q||x.codigo.includes(q));
-document.getElementById("lis").innerHTML=a.map(x=>'<div class="it"><div><b>'+x.codigo+'</b><div class="s">'+(x.libre?"liberado, esperando otro dispositivo":(x.ua||"dispositivo"))+' · desde '+f(x.ini)+'</div></div>'+(x.estado==="anulado"?'<div class="an">🚫 Eliminado</div><button class="rs" data-h="'+x.hash+'">Restaurar</button>':'<div class="'+(x.estado==="vencido"?"ve":(x.libre?"li":"ok"))+'">'+(x.estado==="vencido"?"Vencido "+f(x.fin):"Activo · vence "+f(x.fin))+'</div>'+(x.libre||x.estado==="vencido"?"":'<button class="lb" data-h="'+x.hash+'">Liberar</button>')+'<button class="el" data-h="'+x.hash+'">Eliminar</button>')+'</div>').join("")
-+an.map(x=>'<div class="it"><div><b>'+x.codigo+'</b><div class="s">sin activar · eliminado '+(x.t?f(x.t):"")+'</div></div><div class="an">🚫 Eliminado</div><button class="rs" data-h="'+x.hash+'">Restaurar</button></div>').join("")||'<div class="s">Ningún código usado todavía.</div>';
+function copiar(t,b){const ok=()=>{const o=b.textContent;b.textContent="✅ Copiado";setTimeout(()=>b.textContent=o,1500);};try{navigator.clipboard.writeText(t).then(ok,()=>{prompt("Copia:",t);});}catch(e){prompt("Copia:",t);}}
+function pintar(){const q=document.getElementById("bus").value.trim().toUpperCase();
+const U=D.usados, SU=D.sinUsar||[], AN=D.anulados||[];
+const uso=U.filter(x=>x.estado==="activo"), ven=U.filter(x=>x.estado==="vencido"), elim=U.filter(x=>x.estado==="anulado");
+const nEl=elim.length+AN.length, nSin=Math.max(0,D.total-U.length-AN.length);
+document.getElementById("res").textContent=D.total+" códigos · "+uso.length+" en uso ahora · "+ven.length+" vencidos · "+nEl+" eliminados · "+nSin+" sin usar · "+(D.demos||0)+" pruebas gratis";
+const T=[["uso","🟢 En uso",uso.length],["sin","🆕 Sin usar",SU.length],["ven","⏰ Vencidos",ven.length],["eli","🚫 Eliminados",nEl],["tod","Todos",""]];
+document.getElementById("fil").innerHTML=T.map(t=>'<button data-f="'+t[0]+'" class="'+(FIL===t[0]?"on":"")+'">'+t[1]+(t[2]!==""?" ("+t[2]+")":"")+'</button>').join("");
+document.querySelectorAll("#fil button").forEach(b=>b.onclick=()=>{FIL=b.dataset.f;pintar();});
+const m=x=>!q||String(x.codigo).includes(q);
+const fU=x=>'<div class="it"><div><b>'+x.codigo+'</b><div class="s">'+(x.libre?"liberado, esperando otro dispositivo":(x.ua||"dispositivo"))+' · desde '+f(x.ini)+'</div></div>'+(x.estado==="anulado"?'<div class="an">🚫 Eliminado</div><button class="rs" data-h="'+x.hash+'">Restaurar</button>':'<div class="'+(x.estado==="vencido"?"ve":(x.libre?"li":"ok"))+'">'+(x.estado==="vencido"?"Vencido "+f(x.fin):"Activo · vence "+f(x.fin))+'</div>'+(x.libre||x.estado==="vencido"?"":'<button class="lb" data-h="'+x.hash+'">Liberar</button>')+'<button class="el" data-h="'+x.hash+'">Eliminar</button>')+'</div>';
+const fS=x=>'<div class="it"><div><b>'+x.codigo+'</b><div class="s">Nunca activado · '+(x.gen?"creado ":"agregado ")+(x.t?f(x.t):"")+'</div></div><button class="cp" data-c="'+x.codigo+'">⧉ Copiar</button><button class="el" data-h="'+x.hash+'">Eliminar</button></div>';
+const fA=x=>'<div class="it"><div><b>'+x.codigo+'</b><div class="s">sin activar · eliminado '+(x.t?f(x.t):"")+'</div></div><div class="an">🚫 Eliminado</div><button class="rs" data-h="'+x.hash+'">Restaurar</button></div>';
+let h="";
+if(FIL==="uso") h=uso.filter(m).map(fU).join("")||'<div class="s">Nadie está usando un código ahora mismo.</div>';
+else if(FIL==="sin") h=(SU.filter(m).map(fS).join("")||'<div class="s">No hay códigos sin usar en tu lista. Genera nuevos arriba o pega los que ya tenías abajo.</div>')+(nSin>SU.length?'<div class="s" style="margin:6px 0">Hay '+(nSin-SU.length)+' códigos más sin usar que no están en tu lista (de los que te mandaron antes). Pégalos abajo para verlos aquí.</div>':"");
+else if(FIL==="ven") h=ven.filter(m).map(fU).join("")||'<div class="s">No hay códigos vencidos.</div>';
+else if(FIL==="eli") h=(elim.filter(m).map(fU).join("")+AN.filter(m).map(fA).join(""))||'<div class="s">No hay códigos eliminados.</div>';
+else h=(U.filter(m).map(fU).join("")+SU.filter(m).map(fS).join("")+AN.filter(m).map(fA).join(""))||'<div class="s">Sin códigos.</div>';
+document.getElementById("lis").innerHTML=h;
+document.querySelectorAll(".it .cp").forEach(b=>b.onclick=()=>copiar(b.dataset.c,b));
 document.querySelectorAll(".it .el").forEach(b=>b.onclick=async()=>{if(!confirmar(b,"Eliminar"))return;await api("/admin/api/eliminar",{hash:b.dataset.h});cargar();});
 document.querySelectorAll(".rs").forEach(b=>b.onclick=async()=>{if(!confirmar(b,"Restaurar"))return;await api("/admin/api/restaurar",{hash:b.dataset.h});cargar();});
 document.querySelectorAll(".lb").forEach(b=>b.onclick=async()=>{if(!confirmar(b))return;await api("/admin/api/liberar",{hash:b.dataset.h});cargar();});}
+document.getElementById("gbtn").onclick=async()=>{const b=document.getElementById("gbtn"),o=document.getElementById("gout"),n=+document.getElementById("gn").value||0;if(n<1||n>50){o.innerHTML='<div class="ve">Escribe un número del 1 al 50.</div>';return;}b.disabled=true;o.innerHTML='<div class="s">Generando…</div>';
+try{const r=await api("/admin/api/generar",{n});const L=r.codigos||[];o.innerHTML='<div class="gres"><div class="ok"><b>✅ '+L.length+' código'+(L.length>1?"s":"")+' nuevo'+(L.length>1?"s":"")+' listo'+(L.length>1?"s":"")+' (funcionan ya):</b></div><div class="gl">'+L.join("<br>")+'</div><button class="cp" id="gcp">⧉ Copiar '+(L.length>1?"los "+L.length:"")+'</button></div>';document.getElementById("gcp").onclick=e=>copiar(L.join("\\n"),e.target);FIL="sin";cargar();}catch(e){o.innerHTML='<div class="ve">'+e.message+'</div>';}b.disabled=false;};
+document.getElementById("abtn").onclick=async()=>{const m=document.getElementById("amsg"),t=document.getElementById("atx").value;if(!t.trim()){m.textContent="Pega los códigos primero";return;}
+try{const r=await api("/admin/api/agregar",{texto:t});m.textContent="✅ "+r.agregados+" agregados"+(r.ya?" · "+r.ya+" ya estaban":"")+(r.malos.length?" · ❌ no existen: "+r.malos.join(", "):"");document.getElementById("atx").value="";FIL="sin";cargar();}catch(e){m.textContent=e.message;}};
 function confirmar(b,t){t=t||"Liberar";if(b.dataset.c)return true;b.dataset.c=1;b.textContent="¿Seguro? Toca otra vez";setTimeout(()=>{b.dataset.c="";b.textContent=t},4000);return false;}
 document.getElementById("ebtn").onclick=async()=>{const b=document.getElementById("ebtn"),m=document.getElementById("emsg"),c=document.getElementById("ecod").value.trim();if(!c){m.textContent="Escribe el código";return;}if(!confirmar(b,"Eliminar"))return;try{await api("/admin/api/eliminar",{codigo:c});m.textContent="✅ "+c.toUpperCase()+" eliminado";document.getElementById("ecod").value="";cargar();}catch(e){m.textContent=e.message;}};
 document.getElementById("en").onclick=()=>{C=document.getElementById("cl").value;cargar();};
@@ -584,6 +638,8 @@ const server = http.createServer(async (req, res) => {
     if (u.pathname.startsWith("/admin/api/")) {
       if (!CLAVE || req.headers["x-clave"] !== CLAVE) return enviar(res, 401, { error: "Clave incorrecta" });
       if (u.pathname === "/admin/api/lista") return enviar(res, 200, await listaCodigos());
+      if (u.pathname === "/admin/api/generar" && req.method === "POST") { const b = await leerCuerpo(req); return enviar(res, 200, { ok: true, codigos: await generarCodigos(b.n) }); }
+      if (u.pathname === "/admin/api/agregar" && req.method === "POST") { const b = await leerCuerpo(req); return enviar(res, 200, await agregarALista(b.texto)); }
       if (u.pathname === "/admin/api/liberar" && req.method === "POST") {
         const b = await leerCuerpo(req), key = "cod:" + String(b.hash || "");
         const v = await redis(["GET", key]); if (!v) return enviar(res, 404, { error: "No existe" });
@@ -593,8 +649,9 @@ const server = http.createServer(async (req, res) => {
       if (u.pathname === "/admin/api/eliminar" && req.method === "POST") {
         const b = await leerCuerpo(req); let hash = String(b.hash || ""), codigo = "";
         if (!hash && b.codigo) { codigo = normCodeS(b.codigo); hash = cyrb53S(codigo); }
-        if (!CODIGOS.has(hash)) return enviar(res, 404, { error: "Ese código no existe" });
+        if (!(await existeCodigo(hash))) return enviar(res, 404, { error: "Ese código no existe" });
         if (!codigo) { const v = await redis(["GET", "cod:" + hash]); if (v) codigo = JSON.parse(v).codigo || ""; }
+        if (!codigo) { const g = await redis(["GET", "gen:" + hash]); if (g) codigo = JSON.parse(g).codigo || ""; }
         await redis(["SET", "anu:" + hash, JSON.stringify({ t: Date.now(), codigo })]);
         return enviar(res, 200, { ok: true });
       }
