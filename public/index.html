@@ -1060,7 +1060,7 @@ const REGLA_NO={"19":["guacharo"],"20":["guacharo"],"22":["guacharo"],"05":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611211015";
+const BUILD="202611211030";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1074,7 +1074,8 @@ const PAR69={"06":["09"],"09":["06"],"16":["19"],"19":["16"],"26":["29"],"29":["
 const PAR69G={"16":["19","61"],"19":["16","61"],"61":["16","19"]};
 function par69(id,n){ const a=((id==="guacharo"&&PAR69G[n])?PAR69G[n]:(PAR69[n]||[])).slice(); const l=LOTS.find(x=>x.id===id); const v=l?volteo(l,n):null; if(v&&!a.includes(v)) a.push(v); return a; }
 /* ---- los que más señales tienen (en Jugada) ---- */
-function rankRows(l,st,last,arr,P){
+function rankRows(l,st,last,arr,P){ return congelar("r",l,st,last,P,arr.map(x=>x[0]).join(","),()=>rankRows0(l,st,last,arr,P)); }
+function rankRows0(l,st,last,arr,P){
   const sn=st.cfg.sal==null?100:st.cfg.sal, h=sn?st.hist.slice(-sn):st.hist.slice();
   const cnt={}; h.forEach(k=>cnt[k]=(cnt[k]||0)+1);
   const top=[...topSalidores()];
@@ -2375,7 +2376,8 @@ function renderCyc(){ const box=$("cycBox"); if(!box) return; const l=L(), st=S(
   const b=box.querySelector(".cycCp"); if(b) b.onclick=()=>{ const txt="🔄 Animales en su punto · "+l.name+"\n"+top.map((x,i)=>(i+1)+". "+l.A[x.n][1]+" "+x.n+" "+l.A[x.n][0]).join("\n");
     try{ navigator.clipboard.writeText(txt).then(()=>{ b.textContent="✓ Copiado"; setTimeout(()=>b.textContent="⧉ Copiar",1500); }); }catch(e){} };
 }
-function senalCalc(l,st,last,P){
+function senalCalc(l,st,last,P){ return congelar("s",l,st,last,P,"",()=>senalCalc0(l,st,last,P)); }
+function senalCalc0(l,st,last,P){
   const off=sgOff(), on=k=>!off.includes(k);
   const sn=st.cfg.sal==null?100:st.cfg.sal, h=sn?st.hist.slice(-sn):st.hist.slice();
   const cnt={}; h.forEach(k=>cnt[k]=(cnt[k]||0)+1);
@@ -2404,18 +2406,19 @@ function senalCalc(l,st,last,P){
 }
 function SG_TXT(){ return ["","Débil","Baja","Media","Alta","Muy alta"]; }
 /* ===== 🎯 Pronóstico del próximo sorteo: 3 animales con el porqué ===== */
-/* 🧊 Pronóstico congelado: se calcula una vez por resultado de ESTA lotería y queda fijo hasta el próximo */
-function pronCalc(l,st,last,P){
+/* 🧊 Congelado: Pronóstico, Señal y Estrellas se calculan una vez por resultado de ESTA lotería y quedan fijos hasta el próximo */
+function congelar(tag,l,st,last,P,extra,fn){
   let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
   const td=today(), H=st.hist||[], nHoy=st.hoy&&st.hoy.fecha===td?Math.max(0,H.length-st.hoy.ini):0;
   let gs=""; try{ gs=[...P.now.entries()].map(x=>x.join(":")).sort().join(",")+"|"+(P.vadd?[...P.vadd.keys()].sort().join(","):""); }catch(e){}
-  const k=[l.id,td,nHoy,last,BUILD,sgOff().join(),gs].join("|");
+  const k=[tag,l.id,td,nHoy,H.length,last,BUILD,sgOff().join(),JSON.stringify(st.cfg||{}),gs,extra||""].join("|");
   const F=st.pronFix||(st.pronFix={});
   if(F[k]) return F[k];
-  const o=pronCalc0(l,st,last,P);
-  if(D.length>=60){ F[k]=o; const ks=Object.keys(F); if(ks.length>4) ks.slice(0,ks.length-4).forEach(x=>delete F[x]); }
+  const o=fn();
+  if(D.length>=60){ F[k]=o; const ks=Object.keys(F); if(ks.length>12) ks.slice(0,ks.length-12).forEach(x=>delete F[x]); }
   return o;
 }
+function pronCalc(l,st,last,P){ return congelar("p",l,st,last,P,"",()=>pronCalc0(l,st,last,P)); }
 function pronCalc0(l,st,last,P){
   const off=sgOff(), on=k=>!off.includes(k), dos=x=>String(x).padStart(2,"0");
   const px=proxSorteo(l), hk=dos(px.d.getHours())+":"+dos(px.d.getMinutes());
@@ -2498,7 +2501,7 @@ async function cargarHist(id){
   const c=HCACHE[id]; if(c&&(c.err||Date.now()-c.t<10*60000)&&!c.cargando) return c;
   const api=(typeof API_URL!=="undefined"&&API_URL)?API_URL:"";
   if(!api){ HCACHE[id]={err:"sinapi",t:Date.now()}; return HCACHE[id]; }
-  try{ const r=await fetch(api+"/api/historial?lot="+id); const j=await r.json(); if(!j.ok) throw 0; j.t=Date.now(); HCACHE[id]=j; return j; }
+  try{ const r=await fetch(api+"/api/historial?lot="+id); const j=await r.json(); if(!j.ok) throw 0; const td=today(); if(Array.isArray(j.dias)) j.dias=j.dias.filter(d=>d[0]<td); j.t=Date.now(); HCACHE[id]=j; return j; }
   catch(e){ return {err:"red",t:Date.now()}; }
 }
 function renderHist(){
