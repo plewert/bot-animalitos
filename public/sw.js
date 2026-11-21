@@ -1,10 +1,42 @@
 // Archivo para que el bot se pueda instalar como app y reciba avisos.
-// No guarda el bot en caché: siempre carga la versión más nueva.
+// 📴 Siempre intenta traer la versión más nueva del servidor. Si no hay conexión
+// (o se corta), abre la última copia guardada del bot en el teléfono.
 const API = "https://bot-animalitos-api.onrender.com";
+const APP = "app-v1";
+const FIJOS = ["manifest.json", "icon-192.png", "icon-512.png"];
 
-self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("install", (e) => { self.skipWaiting(); e.waitUntil(caches.open(APP).then((c) => c.addAll(FIJOS)).catch(() => {})); });
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
-self.addEventListener("fetch", () => {});
+
+function conTiempo(p, ms) { return new Promise((ok, mal) => { const t = setTimeout(() => mal(new Error("tiempo")), ms); p.then((r) => { clearTimeout(t); ok(r); }, (e) => { clearTimeout(t); mal(e); }); }); }
+
+self.addEventListener("fetch", (e) => {
+  const req = e.request;
+  if (req.method !== "GET") return;
+  let url; try { url = new URL(req.url); } catch (x) { return; }
+  if (url.origin !== self.location.origin) return;            // el servidor de resultados va directo, nunca se guarda
+  if (req.mode === "navigate") {                                // la página del bot
+    e.respondWith((async () => {
+      try {
+        const r = await conTiempo(fetch(req, { cache: "no-store" }), 12000);
+        if (r && r.ok) { const c = await caches.open(APP); await c.put("bot", r.clone()); }
+        return r;
+      } catch (x) {
+        const c = await caches.open(APP); const g = await c.match("bot");
+        if (g) return g;
+        throw x;
+      }
+    })());
+    return;
+  }
+  const nom = url.pathname.split("/").pop();
+  if (FIJOS.includes(nom)) {                                    // íconos y manifest
+    e.respondWith((async () => {
+      try { const r = await fetch(req); if (r && r.ok) { const c = await caches.open(APP); await c.put(nom, r.clone()); } return r; }
+      catch (x) { const c = await caches.open(APP); const g = await c.match(nom); if (g) return g; throw x; }
+    })());
+  }
+});
 
 const h12 = (h) => { const [a, m] = String(h || "").split(":").map(Number); if (isNaN(a)) return h || ""; return ((a % 12) || 12) + ":" + String(m || 0).padStart(2, "0") + (a < 12 ? " a. m." : " p. m."); };
 
