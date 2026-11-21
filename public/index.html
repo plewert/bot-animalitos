@@ -601,6 +601,11 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   .cres .r{display:flex;justify-content:space-between;gap:8px}
   .cres .g{color:var(--grn)} .cres .o{color:#ffd27a}
   .tnum.cmb{background:#3d2a05;color:#ffd27a;border-color:#f5b83d}
+  .hwait{display:flex;align-items:center;gap:12px;padding:16px 6px;font-size:15px;line-height:1.35}
+  .hwait small{opacity:.75}
+  .hspin{flex:none;width:20px;height:20px;border:3px solid rgba(47,211,154,.3);border-top-color:#2fd39a;border-radius:50%;animation:hspin 1s linear infinite}
+  @keyframes hspin{to{transform:rotate(360deg)}}
+  .hslow{margin:6px 0;padding:6px 10px;border-radius:10px;background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.35);color:#ffd166;font-size:13px}
   .pron{margin:12px 0 4px;padding:10px 12px;border:1px solid #f5b83d;border-radius:16px;background:rgba(245,184,61,.04)}
   .pron .prh{display:flex;align-items:center;gap:8px;color:#ffd27a;font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:14px}
   .pron .prs{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:13.5px;margin:4px 0 6px}
@@ -1060,7 +1065,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611211045";
+const BUILD="202611211105";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1095,11 +1100,22 @@ function rankRows0(l,st,last,arr,P){
   }).sort((x,y)=>(!!x.lv-!!y.lv)||(y.sc-x.sc)||(y.c-x.c));
   return rows;
 }
+/* ⏳ mientras no llega el historial del servidor, Pronóstico/Señal/Estrellas no muestran animales (así no se desordenan al abrir) */
+var HWAIT_T0=performance.now(), HWAIT_TIMER=null;
+function esperaHist(l){
+  let api=""; try{ api=API_URL; }catch(e){ return ""; } if(!api) return "";
+  let c=null; try{ c=HCACHE[l.id]; }catch(e){ return ""; } if(c&&c.dias&&c.dias.length) return "";
+  if(performance.now()-HWAIT_T0<20000){ if(!HWAIT_TIMER) HWAIT_TIMER=setTimeout(()=>{ try{ render(); }catch(e){} },20500-(performance.now()-HWAIT_T0)); return "wait"; }
+  return "slow";
+}
+function cargandoBox(){ return `<div class="hwait"><span class="hspin"></span><span>⏳ <b>Cargando datos del servidor…</b><br><small>En unos segundos salen los animales ya en su orden final.</small></span></div>`; }
+const HSLOW='<div class="hslow">⏳ Todavía cargando datos del servidor: estos animales pueden cambiar cuando termine.</div>';
 function rankHtml(l,st,last,arr,P){
+  const HW=esperaHist(l); if(HW==="wait"&&arr&&arr.length) return `<div class="rank"><div class="rh">◆ Ordenados por señales: el 1 es el más fuerte</div>${cargandoBox()}</div>`;
   const YH=yaHoy(st);
   if(!arr||!arr.length) return "";
   const rows=rankRows(l,st,last,arr,P);
-  return `<div class="rank"><div class="rh">◆ Ordenados por señales: el 1 es el más fuerte</div>${rows.some(r=>YH.has(r.n))?'<div class="yhn">⚠️ Los marcados ya salieron hoy: casi nunca repiten el mismo día.</div>':""}${rows.map((r,i)=>`<div class="rr${i===0&&!r.lv&&r.st3?" top":""}${r.lv?" jl"+r.lv:""}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}${r.lv?'<i class="rcage"></i>':""}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${YH.has(r.n)?'<span class="yhb">⚠️ ya salió hoy</span>':""}${r.tags.length?`<div class="rt">${r.tags.map(t=>`<span>${t}</span>`).join("")}</div>`:""}${r.lv?`<div class="rjl">🔒 ${r.lv===2?"Jaula fuerte":"Jaula"} · ${daysSince(st.last[r.n])} días · no jugarlo</div>`:""}</div><span class="rs">${r.lv?"—":"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`;
+  return `<div class="rank"><div class="rh">◆ Ordenados por señales: el 1 es el más fuerte</div>${HW==="slow"?HSLOW:""}${rows.some(r=>YH.has(r.n))?'<div class="yhn">⚠️ Los marcados ya salieron hoy: casi nunca repiten el mismo día.</div>':""}${rows.map((r,i)=>`<div class="rr${i===0&&!r.lv&&r.st3?" top":""}${r.lv?" jl"+r.lv:""}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}${r.lv?'<i class="rcage"></i>':""}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${YH.has(r.n)?'<span class="yhb">⚠️ ya salió hoy</span>':""}${r.tags.length?`<div class="rt">${r.tags.map(t=>`<span>${t}</span>`).join("")}</div>`:""}${r.lv?`<div class="rjl">🔒 ${r.lv===2?"Jaula fuerte":"Jaula"} · ${daysSince(st.last[r.n])} días · no jugarlo</div>`:""}</div><span class="rs">${r.lv?"—":"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`;
 }
 /* los 10 que más han salido (igual que la sección Salidores) */
 function topSalidores(){
@@ -2448,10 +2464,11 @@ function pronCalc0(l,st,last,P){
 }
 function pronHtml(l,st,last,P){
   if(!last||!l.A[last]) return "";
+  const HW=esperaHist(l); if(HW==="wait") return `<div class="pron"><div class="prh">🎯 Pronóstico del próximo sorteo</div>${cargandoBox()}</div>`;
   let o; try{ o=pronCalc(l,st,last,P); }catch(e){ return ""; }
   if(!o.R.length) return "";
   return `<div class="pron"><div class="prh">🎯 Pronóstico del próximo sorteo</div>
-    <div class="prs"><span>${esc(l.name)} · tras ${l.A[last][1]} ${last}${horaSalio(st)}</span><b>⏰ ${o.man?"Mañana ":""}${o.hLab}</b></div>
+    <div class="prs"><span>${esc(l.name)} · tras ${l.A[last][1]} ${last}${horaSalio(st)}</span><b>⏰ ${o.man?"Mañana ":""}${o.hLab}</b></div>${HW==="slow"?HSLOW:""}
     ${o.R.map((x,i)=>`<div class="prr${i===0?" top":""}"><div class="pre">${l.A[x.n][1]}</div><div style="flex:1;min-width:0">
       <div class="prn"><span><b>${x.n}</b> ${esc(l.A[x.n][0])}</span><span class="prb${x.lv>=5?" max":""}">${[1,2,3,4,5].map(k=>`<i class="${k<=x.lv?"on":""}" style="height:${4+k*3}px"></i>`).join("")}</span></div>
       <div>${x.t.map(([c,t])=>`<span class="prt t-${c}">${esc(t)}</span>`).join("")}</div></div></div>`).join("")}
@@ -2471,11 +2488,12 @@ document.addEventListener("click",e=>{
     copyTxt("🎯 *Pronóstico · "+l.name+"*\n⏰ Sorteo de "+(o.man?"mañana a ":"")+"las "+o.hLab+"\n"+o.R.map(x=>l.A[x.n][1]+" "+x.n+" "+l.A[x.n][0]).join("\n")+FOOTER,b,"⧉ Copiar pronóstico"); }catch(err){}
 });
 function senalHtml(l,st,last,P){
+  const HW=esperaHist(l); if(HW==="wait") return `<div class="senal"><div class="sgh"><span>📡 Señal</span></div>${cargandoBox()}</div>`;
   const R=senalCalc(l,st,last,P), off=sgOff();
   const cfg=`<div class="sgcfg" hidden>${SG_DATOS().map(([k,t])=>`<label><input type="checkbox" data-k="${k}" ${off.includes(k)?"":"checked"}> ${t}</label>`).join("")}</div>`;
   if(!R.length) return `<div class="senal"><div class="sgh"><span>📡 Señal</span><button class="sgset" type="button">⚙ Qué datos usar</button></div>${cfg}<p class="note" style="margin:6px 0 0">No hay datos suficientes para dar una señal todavía.</p></div>`;
   return `<div class="senal"><div class="sgh"><span>📡 Señal</span><small>tras ${l.A[last][1]} ${last}${horaSalio(st)}</small></div>
-    <div class="sgsub">Los 5 con más puntos juntando todos los datos. Toca uno para ver por qué.</div>
+    ${HW==="slow"?HSLOW:""}<div class="sgsub">Los 5 con más puntos juntando todos los datos. Toca uno para ver por qué.</div>
     ${R.map((x,i)=>`<div class="sgr${i===0?" top":""}"><div class="sgl"><span class="ri">${i+1}</span><span class="re">${l.A[x.n][1]}</span><div class="rn"><b>${x.n}</b> ${esc(l.A[x.n][0])}</div><div><div class="sgb">${[1,2,3,4,5].map(k=>`<i class="${k<=x.lv?"on":""}" style="height:${4+k*3}px"></i>`).join("")}</div><div class="sgt">${SG_TXT()[x.lv]}</div></div></div>
       <div class="sgd">${x.f.map(([t,p])=>`<div class="sgf"><span>${t}</span><span class="b"><i style="width:${Math.min(100,Math.abs(p)*25)}%${p<0?";background:#ff3b5c":""}"></i></span><span class="v">${p>0?"+"+p:p}</span></div>`).join("")}</div></div>`).join("")}
     <div class="sgbtns"><button class="sgcp" type="button">⧉ Copiar señal</button><button class="sgset" type="button">⚙ Qué datos usar</button></div>${cfg}</div>`;
@@ -2501,7 +2519,7 @@ async function cargarHist(id){
   const c=HCACHE[id]; if(c&&(c.err||Date.now()-c.t<10*60000)&&!c.cargando) return c;
   const api=(typeof API_URL!=="undefined"&&API_URL)?API_URL:"";
   if(!api){ HCACHE[id]={err:"sinapi",t:Date.now()}; return HCACHE[id]; }
-  try{ const r=await fetch(api+"/api/historial?lot="+id); const j=await r.json(); if(!j.ok) throw 0; const td=today(); if(Array.isArray(j.dias)) j.dias=j.dias.filter(d=>d[0]<td); j.t=Date.now(); HCACHE[id]=j; return j; }
+  try{ const r=await fetch(api+"/api/historial?lot="+id); const j=await r.json(); if(!j.ok) throw 0; const td=today(); if(Array.isArray(j.dias)) j.dias=j.dias.filter(d=>d[0]<td); j.t=Date.now(); const era=HCACHE[id]&&HCACHE[id].dias&&HCACHE[id].dias.length; HCACHE[id]=j; if(!era&&j.dias&&j.dias.length) setTimeout(()=>{ try{ if(L().id===id) render(); }catch(e){} },0); return j; }
   catch(e){ return {err:"red",t:Date.now()}; }
 }
 function renderHist(){
