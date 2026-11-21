@@ -432,7 +432,7 @@ async function vigilar() {
       try {
         const r = await datos(lot, "resultados");
         if (!r.datos || !r.datos.length) continue;
-        try { await guardarDia(lot, hoyVE(), r.datos.map((x) => [x.hora, x.num])); HISTCACHE.delete(lot); } catch (e) {}
+        try { await guardarDia(lot, hoyVE(), r.datos.map((x) => [x.hora, x.num])); for (const k of [...HISTCACHE.keys()]) if (k.startsWith(lot + ":")) HISTCACHE.delete(k); } catch (e) {}
         const u = r.datos[r.datos.length - 1];
         const clave = hoyVE() + " " + u.hora + " " + u.num;
         const prev = await redis(["GET", "ult:" + lot]);
