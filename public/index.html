@@ -1065,7 +1065,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611211145";
+const BUILD="202611211315";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2907,7 +2907,7 @@ document.addEventListener("click",e=>{
 (function(){
   const d=new Date(), m=d.getMonth()+1, dia=d.getDate();
   if(!((m===11&&dia>=21)||m===12||(m===1&&dia<=7))) return;
-  const anio=m===12?d.getFullYear()+1:d.getFullYear();
+  const anio=m>=11?d.getFullYear()+1:d.getFullYear();
   const css=`body.nav{padding-top:20px}
 #nvSnow{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}#nvSnow i{position:absolute;top:-30px;color:#fff;font-style:normal;text-shadow:0 0 6px #fff;animation-name:nvfall,nvsway;animation-timing-function:linear,ease-in-out;animation-iteration-count:infinite,infinite;animation-direction:normal,alternate}
 @keyframes nvfall{to{transform:translateY(110vh)}}@keyframes nvsway{from{margin-left:-14px}to{margin-left:14px}}
@@ -2944,6 +2944,41 @@ document.addEventListener("click",e=>{
       tabs.insertAdjacentHTML("beforebegin",`<div class="nvban" id="nvBan" style="background:${B[0]}"><span class="tr">${B[1]}</span><div><b>${B[2]}</b><small>${B[3]}</small>${B[4]}</div><span class="tr">${B[5]}</span><button class="x" type="button" aria-label="Cerrar">✕</button></div>`);
       const x=document.querySelector("#nvBan .x"); if(x) x.onclick=()=>{ const b=document.getElementById("nvBan"); if(b) b.remove(); try{ sessionStorage.setItem("nvx",String(m)+"-"+dia); }catch(e){} };
     }
+  }catch(e){}
+  /* 🔔 Música de Navidad (canciones libres): se prende/apaga con el botón; recuerda la elección; bajito y en bucle */
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    const nota=n=>{ const k={C:-9,D:-7,E:-5,F:-4,G:-2,A:0,B:2}[n[0]]; return 440*Math.pow(2,(k+12*(+n[1]-4))/12); };
+    const P=t=>t.split(" ").map(x=>{ const [n,d]=x.split(":"); return [n,+d]; });
+    const L1="A4:4 A4:2 C5:3 B4:1 A4:2 G4:3 A4:1 G4:2 E4:6";
+    const dA="G4:1.5 F4:.5 E4:1 D4:1 C4:1 D4:1 E4:1 C4:1", dB="D4:.5 E4:.5 F4:.5 D4:.5 E4:1.5 D4:.5 C4:1 B3:1 C4:2";
+    const CANC=[
+      {b:.22,j:2,n:P("E5:1 E5:1 E5:2 E5:1 E5:1 E5:2 E5:1 G5:1 C5:1.5 D5:.5 E5:4 F5:1 F5:1 F5:1.5 F5:.5 F5:1 E5:1 E5:1 E5:.5 E5:.5 E5:1 D5:1 D5:1 E5:1 D5:2 G5:2 E5:1 E5:1 E5:2 E5:1 E5:1 E5:2 E5:1 G5:1 C5:1.5 D5:.5 E5:4 F5:1 F5:1 F5:1.5 F5:.5 F5:1 E5:1 E5:1 E5:.5 E5:.5 G5:1 G5:1 F5:1 D5:1 C5:4")},
+      {b:.17,j:0,n:P("G4:3 A4:1 G4:2 E4:6 G4:3 A4:1 G4:2 E4:6 D5:4 D5:2 B4:6 C5:4 C5:2 G4:6 "+L1+" "+L1+" D5:4 D5:2 F5:3 D5:1 B4:2 C5:6 E5:6 C5:3 G4:1 E4:2 G4:3 F4:1 D4:2 C4:12")},
+      {b:.34,j:1,n:P("G4:1 C5:1 C5:.5 D5:.5 C5:.5 B4:.5 A4:1 A4:1 A4:1 D5:1 D5:.5 E5:.5 D5:.5 C5:.5 B4:1 G4:1 G4:1 E5:1 E5:.5 F5:.5 E5:.5 D5:.5 C5:1 A4:1 G4:.5 G4:.5 A4:1 D5:1 B4:1 C5:3")},
+      {b:.3,j:1,n:P([dA,dB,dA,dB].join(" "))}
+    ];
+    let ctx=null, master=null, on=false, idx=0, timer=null, ruido=null;
+    try{ on=localStorage.getItem("nvmus")==="1"; }catch(e){}
+    const campana=(f,t,d)=>{ [[1,1,3.2],[2,.5,9],[3.01,.25,12]].forEach(([k,a,dec])=>{ const o=ctx.createOscillator(), g=ctx.createGain(); o.type="sine"; o.frequency.value=f*k;
+        g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(a,t+0.005); g.gain.exponentialRampToValueAtTime(0.0001,t+Math.max(.5,d)+0.8/dec*3);
+        o.connect(g); g.connect(master); o.start(t); o.stop(t+Math.max(.5,d)+1.2); }); };
+    const cascabel=t=>{ if(!ruido){ ruido=ctx.createBuffer(1,ctx.sampleRate*0.1,ctx.sampleRate); const c=ruido.getChannelData(0); for(let i=0;i<c.length;i++) c[i]=(Math.random()*2-1)*Math.exp(-i/ctx.sampleRate*60); }
+      const s=ctx.createBufferSource(), fl=ctx.createBiquadFilter(), g=ctx.createGain(); s.buffer=ruido; fl.type="bandpass"; fl.frequency.value=6000; g.gain.value=.35; s.connect(fl); fl.connect(g); g.connect(master); s.start(t); };
+    const tocar=()=>{ if(!on||!ctx) return; const c=CANC[idx%CANC.length]; idx++; let t=ctx.currentTime+0.15, t0=t;
+      c.n.forEach(([n,d])=>{ campana(nota(n),t,d*c.b); t+=d*c.b; });
+      if(c.j) for(let x=t0;x<t;x+=c.b*c.j) cascabel(x);
+      clearTimeout(timer); timer=setTimeout(tocar,(t-ctx.currentTime+2.5)*1000); };
+    const arrancar=()=>{ try{ if(!ctx){ ctx=new AC(); master=ctx.createGain(); master.gain.value=.07; master.connect(ctx.destination); }
+        if(ctx.state==="suspended") ctx.resume(); master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setValueAtTime(.07,ctx.currentTime); tocar(); }catch(e){} };
+    const parar=()=>{ clearTimeout(timer); try{ if(ctx){ master.gain.setValueAtTime(0,ctx.currentTime); ctx.close(); } }catch(e){} ctx=null; master=null; ruido=null; };
+    const sty=document.createElement("style"); sty.textContent=`#nvMus{position:fixed;left:10px;bottom:84px;z-index:70;border:2px solid #ffd76a;background:linear-gradient(135deg,#7a0f1c,#0d4d2a);color:#fff;border-radius:999px;padding:6px 11px;font-size:13px;font-weight:800;box-shadow:0 0 12px #ffd76a66;cursor:pointer}#nvMus.off{opacity:.8;filter:grayscale(.4)}`; document.head.appendChild(sty);
+    const bt=document.createElement("button"); bt.id="nvMus"; bt.type="button"; document.body.appendChild(bt);
+    const pinta=()=>{ bt.textContent=on?"🔔 Música":"🔕 Música"; bt.classList.toggle("off",!on); bt.title=on?"Apagar la música de Navidad":"Prender la música de Navidad"; };
+    pinta();
+    bt.onclick=e=>{ e.stopPropagation(); on=!on; try{ localStorage.setItem("nvmus",on?"1":"0"); }catch(x){} pinta(); if(on) arrancar(); else parar(); };
+    if(on){ const primero=()=>{ document.removeEventListener("pointerdown",primero,true); if(on&&!ctx) arrancar(); }; document.addEventListener("pointerdown",primero,true); }
+    document.addEventListener("visibilitychange",()=>{ try{ if(!ctx) return; if(document.hidden) ctx.suspend(); else if(on) ctx.resume(); }catch(e){} });
   }catch(e){}
 })();
 </script>
