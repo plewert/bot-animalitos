@@ -459,7 +459,7 @@ async function ultimos() {
 // Guarda en Upstash los sorteos de cada día: clave "h:<lotería>:<AAAA-MM-DD>" = [["13:00","09"], ...]
 // Al arrancar, completa poco a poco los días que falten del último año (sin apuro, para no cargar a lotoven).
 const HIST_DIAS = 365;   // lo que usa el bot
-const HIST_MAX = 1095;   // 3 años guardados para estudiar los datos (/api/historial?lot=x&dias=1095)
+const HIST_MAX = 2920;   // 8 años guardados para estudiar los datos (/api/historial?lot=x&dias=2920)
 const fechaMenos = (n) => { const d = new Date(hoyVE() + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
 async function bajarDia(lot, fecha) {
   const url = FUENTES[lot].resultados.replace(/\/?$/, "/") + fecha + "/";
