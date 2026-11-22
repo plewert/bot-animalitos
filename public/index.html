@@ -1067,7 +1067,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611211640";
+const BUILD="202611212030";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2968,6 +2968,73 @@ document.addEventListener("click",e=>{
       const x=document.querySelector("#nvBan .x"); if(x) x.onclick=()=>{ const b=document.getElementById("nvBan"); if(b) b.remove(); try{ sessionStorage.setItem("nvx",String(m)+"-"+dia); }catch(e){} };
     }
   }catch(e){}
+  /* 🎁 Regalo de Navidad: 1 regalo por teléfono al día; el servidor decide (10 premios, 1 en 200) */
+  try{ (function(){
+    let api=""; try{ api=API_URL; }catch(e){} if(!api) return;
+    const RK="bot-regalo", hoyF=()=>today();
+    let CARG=false, ERR=false;
+    const leer=()=>{ if(CARG) return {cargando:true}; if(ERR) return {error:true}; try{ const r=JSON.parse(localStorage.getItem(RK)||"null"); return r&&r.fecha===hoyF()?r:null; }catch(e){ return null; } };
+    const guardar=r=>{ try{ localStorage.setItem(RK,JSON.stringify(Object.assign({fecha:hoyF()},r))); }catch(e){} };
+    let QUEDAN=null;
+    const sty=document.createElement("style"); sty.textContent=`
+      .rgc{margin:14px 0 4px;border-radius:18px;padding:14px;text-align:center;border:2px solid #ffd76a;background:linear-gradient(160deg,#7a0f1c,#0d4d2a);box-shadow:0 0 20px #ffd76a44;color:#fff}
+      .rgc.pz{background:linear-gradient(160deg,#1b2a4a,#0d2a3a);border-color:#8fb3ff;box-shadow:none}
+      .rgc .rt{font-size:12px;font-weight:800;color:#ffd76a;letter-spacing:.5px}.rgc .rg{font-size:50px;line-height:1.15}.rgc .rh{font-weight:900;font-size:18px;margin:2px 0}
+      .rgc .rs{font-size:13.5px;opacity:.9}.rgc .rb{display:inline-block;margin-top:9px;padding:10px 18px;border-radius:999px;background:#ffd76a;color:#3a0a10;font-weight:900;border:0;font-size:15px;cursor:pointer}
+      .rgc .rb.sec{background:transparent;color:#ffd76a;border:2px solid #ffd76a;margin-left:6px}.rgc .rb.off{background:#24304f;color:#8fb3ff;cursor:default}
+      .rgc .rq{font-size:12px;opacity:.85;margin-top:7px}.rgc .rc{font-family:monospace;font-size:22px;font-weight:900;background:#05060c;border:2px dashed #2dff8a;color:#2dff8a;padding:9px;border-radius:12px;margin:10px 0;letter-spacing:1px}
+      .rgc .rgx{animation:rgx .6s ease-in-out infinite alternate}@keyframes rgx{from{transform:rotate(-8deg) scale(1)}to{transform:rotate(8deg) scale(1.08)}}
+      #rgBtn{position:fixed;left:10px;bottom:128px;z-index:71;border:2px solid #ffd76a;background:linear-gradient(135deg,#7a0f1c,#0d4d2a);color:#fff;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:800;box-shadow:0 0 14px #ffd76acc;cursor:pointer}
+      #rgBtn.ya{box-shadow:none;opacity:.75;filter:grayscale(.3)}
+      #rgMod{position:fixed;inset:0;z-index:200;background:rgba(3,5,12,.78);display:flex;align-items:center;justify-content:center;padding:18px}
+      #rgMod .rgc{max-width:360px;width:100%;position:relative}#rgMod .rx{position:absolute;top:6px;right:10px;background:none;border:0;color:#fff;font-size:22px;cursor:pointer}
+      body.locked #rgBtn{display:none}`; document.head.appendChild(sty);
+    const falta=()=>{ const n=new Date(), m=new Date(n); m.setHours(24,0,0,0); const x=Math.max(0,m-n), h=Math.floor(x/3600000), mi=Math.floor(x%3600000/60000); return h+" h "+mi+" min"; };
+    const quedanTxt=()=>QUEDAN==null?"1 regalo por día":(QUEDAN>0?"1 regalo por día · quedan "+QUEDAN+" premio"+(QUEDAN===1?"":"s"):"Ya se entregaron todos los premios 🎄");
+    function html(r,donde){
+      if(r&&r.cargando) return `<div class="rt">🎄 REGALO DE NAVIDAD 🎄</div><div class="rg rgx">🎁</div><div class="rh">Abriendo tu regalo…</div>`;
+      if(r&&r.error) return `<div class="rt">🎄 REGALO DE NAVIDAD 🎄</div><div class="rg">🎁</div><div class="rh">No se pudo abrir</div><div class="rs">Revisa tu conexión e intenta otra vez.</div><button class="rb" data-a="abrir">Intentar otra vez</button>`;
+      if(r&&r.gano){
+        const act=donde==="entrada"?`<button class="rb" data-a="activar">Activar mi semana</button>`:"";
+        return `<div class="rt">🎄 REGALO DE NAVIDAD 🎄</div><div class="rg">🎉</div><div class="rh">¡Feliz Navidad!<br>Tu regalo es:</div><div class="rc">${r.codigo}</div>
+          <div class="rs">${donde==="entrada"?"Una semana GRATIS del bot. Toca para activarlo ahora.":"Una semana GRATIS del bot. Guárdalo para cuando se te venza tu semana, o regálaselo a un amigo."}</div>${act}<button class="rb sec" data-a="copiar">⧉ Copiar</button>`; }
+      if(r) return `<div class="rt">🎄 REGALO DE NAVIDAD 🎄</div><div class="rg">🎀</div><div class="rh">${r.agotado?"Ya se entregaron todos los premios":"Esta vez no hubo premio"}</div>
+          <div class="rs">${r.agotado?"¡Gracias por participar y feliz Navidad! 🎄":"¡Sigue intentando!<br>Mañana podrías ser el ganador. 🍀"}</div>${r.agotado?"":`<div class="rb off">Vuelve mañana · ${falta()}</div>`}`;
+      if(QUEDAN===0) return `<div class="rt">🎄 REGALO DE NAVIDAD 🎄</div><div class="rg">🎄</div><div class="rh">Ya se entregaron todos los premios</div><div class="rs">¡Gracias por participar y feliz Navidad!</div>`;
+      return `<div class="rt">🎄 REGALO DE NAVIDAD 🎄</div><div class="rg rgx">🎁</div><div class="rh">¡Tienes un regalo hoy!</div><div class="rs">Ábrelo y descubre si te ganaste una semana GRATIS del bot.</div><button class="rb" data-a="abrir">Abrir mi regalo</button><div class="rq">${quedanTxt()}</div>`;
+    }
+    const cajas=new Set();
+    function pintar(){ const r=leer(); cajas.forEach(([el,donde])=>{ el.classList.toggle("pz",!!(r&&!r.gano&&!r.cargando&&!r.error)); el.innerHTML=(donde==="bot"?'<button class="rx" data-a="cerrar">✕</button>':"")+html(r,donde); });
+      const b=document.getElementById("rgBtn"); if(b){ b.classList.toggle("ya",!!(r&&!r.cargando&&!r.error)); b.textContent=r&&r.gano?"🎉 Mi premio":"🎁 Regalo"; } }
+    let abriendo=false;
+    async function abrir(donde){
+      if(abriendo) return; abriendo=true; ERR=false; CARG=true; pintar();
+      try{
+        const ctl=new AbortController(), to=setTimeout(()=>ctl.abort(),75000);
+        const r=await fetch(api+"/api/regalo",{method:"POST",headers:{"Content-Type":"application/json"},signal:ctl.signal,body:JSON.stringify({dev:devId(),ua:uaCorto(),donde})});
+        clearTimeout(to); const j=await r.json();
+        if(!j.ok){ if(j.motivo==="fuera"){ cajas.forEach(([el])=>el.remove()); } else ERR=true; }
+        else { if(typeof j.quedan==="number") QUEDAN=j.quedan; guardar(j.gano?{gano:true,codigo:j.codigo}:{gano:false,agotado:!!j.agotado}); }
+      }catch(e){ ERR=true; }
+      CARG=false; abriendo=false; pintar();
+    }
+    function acciones(el,donde){ el.addEventListener("click",ev=>{ const a=ev.target.closest("[data-a]"); if(!a) return; const r=leer();
+      if(a.dataset.a==="abrir") abrir(donde);
+      else if(a.dataset.a==="cerrar"){ const m=document.getElementById("rgMod"); if(m) m.remove(); cajas.forEach(x=>{ if(x[0]===el) cajas.delete(x); }); }
+      else if(a.dataset.a==="copiar"&&r&&r.codigo){ try{ navigator.clipboard.writeText(r.codigo).then(()=>{ a.textContent="✅ Copiado"; setTimeout(()=>a.textContent="⧉ Copiar",1500); }); }catch(e){ prompt("Copia tu código:",r.codigo); } }
+      else if(a.dataset.a==="activar"&&r&&r.codigo){ const g=document.getElementById("gcode"), f=document.getElementById("gform"); if(g&&f){ g.value=r.codigo; f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true})); window.scrollTo({top:0,behavior:"smooth"}); } }
+    }); }
+    // A. pantalla de entrada (sin código)
+    const gf=document.getElementById("gform");
+    if(gf){ const c=document.createElement("div"); c.className="rgc"; c.id="rgEnt"; gf.insertAdjacentElement("afterend",c); cajas.add([c,"entrada"]); acciones(c,"entrada"); }
+    // B. dentro del bot (clientes): botón flotante que abre la tarjeta
+    const bt=document.createElement("button"); bt.id="rgBtn"; bt.type="button"; bt.textContent="🎁 Regalo"; document.body.appendChild(bt);
+    bt.onclick=()=>{ if(document.getElementById("rgMod")) return; const m=document.createElement("div"); m.id="rgMod"; const c=document.createElement("div"); c.className="rgc"; m.appendChild(c); document.body.appendChild(m);
+      m.addEventListener("click",ev=>{ if(ev.target===m){ m.remove(); cajas.forEach(x=>{ if(x[0]===c) cajas.delete(x); }); } }); cajas.add([c,"bot"]); acciones(c,"bot"); pintar(); };
+    pintar();
+    fetch(api+"/api/regalo/estado").then(r=>r.json()).then(j=>{ if(j&&j.ok){ if(!j.activo){ cajas.forEach(([el])=>el.remove()); bt.remove(); return; } QUEDAN=j.quedan; pintar(); } }).catch(()=>{});
+    setInterval(()=>{ const r=leer(); if(!r||!r.gano) pintar(); },60000);
+  })(); }catch(e){}
   /* 🔔 Música de Navidad (canciones libres): se prende/apaga con el botón; recuerda la elección; bajito y en bucle */
   try{
     const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
