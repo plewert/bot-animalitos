@@ -253,6 +253,40 @@ async function usarCodigo(b) {
   await redis(["SET", key, JSON.stringify(rec)]);
   return { ok: true, fin: finDe(rec.ini) };
 }
+// 🎁 Regalo de Navidad: 1 intento por teléfono al día, 10 premios en total, máximo 1 premio por día
+const REGALO = { premios: 10, prob: 200, maxDia: 1 };
+const fechaVE = () => new Date(Date.now() - 4 * 3600000).toISOString().slice(0, 10);
+function temporadaRegalo() { const f = fechaVE(), m = +f.slice(5, 7), d = +f.slice(8, 10); return (m === 11 && d >= 21) || m === 12 || (m === 1 && d <= 7); }
+async function regaloEstado() {
+  const n = +(await redis(["GET", "reg:n"])) || 0;
+  return { ok: true, activo: temporadaRegalo(), quedan: Math.max(0, REGALO.premios - n), total: REGALO.premios };
+}
+async function abrirRegalo(b, ip) {
+  if (!temporadaRegalo()) return { ok: false, motivo: "fuera" };
+  const dev = String(b.dev || "").slice(0, 80); if (!dev) return { ok: false, motivo: "sin_dispositivo" };
+  const f = fechaVE(), kd = "reg:dia:" + f + ":" + dev;
+  const ya = await redis(["GET", kd]); if (ya) return Object.assign({ ok: true, repetido: true }, JSON.parse(ya), await regaloEstado());
+  let res = { gano: false };
+  const est = await regaloEstado();
+  if (est.quedan <= 0) res = { gano: false, agotado: true };
+  else if (crypto.randomInt(REGALO.prob) === 0) {
+    const nd = await redis(["INCR", "reg:d:" + f]); await redis(["EXPIRE", "reg:d:" + f, 172800]);
+    if (nd > REGALO.maxDia) await redis(["DECR", "reg:d:" + f]);
+    else {
+      const n = await redis(["INCR", "reg:n"]);
+      if (n > REGALO.premios) { await redis(["DECR", "reg:n"]); await redis(["DECR", "reg:d:" + f]); }
+      else {
+        const [c] = await generarCodigos(1);
+        const h = cyrb53S(c), g = JSON.parse((await redis(["GET", "gen:" + h])) || "{}"); g.regalo = true;
+        await redis(["SET", "gen:" + h, JSON.stringify(g)]);
+        await redis(["SET", "reg:gan:" + h, JSON.stringify({ codigo: c, t: Date.now(), ua: String(b.ua || "").slice(0, 20), donde: String(b.donde || "").slice(0, 10) })]);
+        res = { gano: true, codigo: c };
+      }
+    }
+  }
+  await redis(["SET", kd, JSON.stringify(res), "EX", 172800]);
+  return Object.assign({ ok: true }, res, await regaloEstado());
+}
 // Prueba gratis: una por dispositivo
 const DEMO_MIN = 30;
 async function usarDemo(b) {
@@ -535,8 +569,11 @@ async function listaCodigos() {
   const gk = (await redis(["KEYS", "gen:*"])) || [], gv = gk.length ? await redis(["MGET", ...gk]) : [];
   const gen = {}; gk.forEach((k, i) => { try { gen[k.slice(4)] = JSON.parse(gv[i] || "{}"); } catch (e) { gen[k.slice(4)] = {}; } });
   const usadoH = new Set(keys.map((k) => k.slice(4)));
+  const rk = (await redis(["KEYS", "reg:gan:*"])) || [], rv = rk.length ? await redis(["MGET", ...rk]) : [];
+  const regalos = rv.map((v) => { try { return JSON.parse(v); } catch (e) { return null; } }).filter(Boolean).sort((a, b) => b.t - a.t);
   return {
     anulados: Object.keys(anu).filter((h) => !usadoH.has(h)).map((h) => ({ hash: h, codigo: anu[h].codigo || (gen[h] && gen[h].codigo) || "(código sin activar)", t: anu[h].t })),
+    regalos, regaloTotal: REGALO.premios, regaloProb: REGALO.prob,
     sinUsar: Object.keys(gen).filter((h) => !usadoH.has(h) && !anu[h]).map((h) => ({ hash: h, codigo: gen[h].codigo, t: gen[h].t, gen: !!gen[h].gen })).sort((a, b) => (b.t || 0) - (a.t || 0)),
     demos,
     total: CODIGOS.size + Object.keys(gen).filter((h) => !CODIGOS.has(h)).length,
@@ -555,11 +592,11 @@ input,button{font:inherit;border-radius:10px;border:1px solid #2b3550;background
 .el{border-color:#ff3b5c;background:#2a0710;color:#ff8ea0}.rs{margin-left:auto;border-color:#2dff8a;color:#2dff8a}.an{color:#ff3b5c;font-weight:700}
 .fil{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.fil button{border-radius:999px;padding:6px 12px;font-size:13.5px}.fil .on{background:#2dff8a22;border-color:#2dff8a;color:#2dff8a;font-weight:700}
 .cp{margin-left:auto;border-color:#2ef2ff;color:#2ef2ff}.gbox{border-color:#2dff8a88!important}.gres{margin-top:6px;padding:8px;border-radius:10px;background:#0f2a1a;border:1px solid #2dff8a55}.gl{font-family:monospace;font-size:15px;line-height:1.7}.gres .cp{margin:6px 0 0}
-.abox{display:block}.abox summary{cursor:pointer;color:#8a9bbd}.abox textarea{width:100%;box-sizing:border-box;min-height:80px;margin:8px 0;border-radius:10px;background:#0b1124;color:#e8f1ff;border:1px solid #2b3550;font:inherit}
+.rbox{border-color:#ffd76a88!important;background:#1a0f05}.abox{display:block}.abox summary{cursor:pointer;color:#8a9bbd}.abox textarea{width:100%;box-sizing:border-box;min-height:80px;margin:8px 0;border-radius:10px;background:#0b1124;color:#e8f1ff;border:1px solid #2b3550;font:inherit}
 .ebox{border:1px dashed #ff3b5c88;border-radius:12px;padding:10px;margin:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ebox input{flex:1;min-width:150px}</style></head><body>
 <h1>◆ Códigos · Bot de animalitos</h1>
 <div id="login"><input id="cl" type="password" placeholder="Clave de administrador"> <button class="b1" id="en">Entrar</button><div id="msg"></div></div>
-<div id="pan" style="display:none"><div class="s" id="res"></div>
+<div id="pan" style="display:none"><div class="s" id="res"></div><div class="ebox rbox" id="reg"></div>
 <div class="ebox gbox"><span>➕ Generar códigos nuevos:</span><input id="gn" type="number" min="1" max="50" value="5" style="max-width:80px;flex:none"><button class="b1" id="gbtn">Generar</button><div id="gout" style="width:100%"></div></div>
 <div class="ebox"><span>🚫 Eliminar un código (aunque no esté activado):</span><input id="ecod" placeholder="BOT-XXXX-XXXX"><button class="el" id="ebtn">Eliminar</button><span class="s" id="emsg"></span></div>
 <div class="fil" id="fil"></div>
@@ -575,6 +612,7 @@ function pintar(){const q=document.getElementById("bus").value.trim().toUpperCas
 const U=D.usados, SU=D.sinUsar||[], AN=D.anulados||[];
 const uso=U.filter(x=>x.estado==="activo"), ven=U.filter(x=>x.estado==="vencido"), elim=U.filter(x=>x.estado==="anulado");
 const nEl=elim.length+AN.length, nSin=Math.max(0,D.total-U.length-AN.length);
+const RG=D.regalos||[];document.getElementById("reg").innerHTML='<div style="width:100%"><b>🎁 Regalo de Navidad:</b> '+RG.length+' de '+(D.regaloTotal||10)+' premios entregados · probabilidad 1 en '+(D.regaloProb||200)+(RG.length?'<div class="s" style="margin-top:4px">'+RG.map(x=>'🏆 <b>'+x.codigo+'</b> · '+f(x.t)+' · '+(x.ua||"")+(x.donde==="entrada"?" · gente nueva":(x.donde==="bot"?" · cliente":""))).join("<br>")+'</div>':'<div class="s">Todavía nadie ha ganado.</div>')+'</div>';
 document.getElementById("res").textContent=D.total+" códigos · "+uso.length+" en uso ahora · "+ven.length+" vencidos · "+nEl+" eliminados · "+nSin+" sin usar · "+(D.demos||0)+" pruebas gratis";
 const T=[["uso","🟢 En uso",uso.length],["sin","🆕 Sin usar",SU.length],["ven","⏰ Vencidos",ven.length],["eli","🚫 Eliminados",nEl],["tod","Todos",""]];
 document.getElementById("fil").innerHTML=T.map(t=>'<button data-f="'+t[0]+'" class="'+(FIL===t[0]?"on":"")+'">'+t[1]+(t[2]!==""?" ("+t[2]+")":"")+'</button>').join("");
@@ -615,6 +653,11 @@ const server = http.createServer(async (req, res) => {
       const b = await leerCuerpo(req);
       try { return enviar(res, 200, await usarCodigo(b)); }
       catch (e) { return enviar(res, 503, { ok: false, motivo: String(e.message) === "no_config" ? "no_config" : "error" }); }
+    }
+    if (u.pathname === "/api/regalo/estado") { try { return enviar(res, 200, await regaloEstado()); } catch (e) { return enviar(res, 503, { ok: false }); } }
+    if (u.pathname === "/api/regalo" && req.method === "POST") {
+      const b = await leerCuerpo(req), ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
+      try { return enviar(res, 200, await abrirRegalo(b, ip)); } catch (e) { return enviar(res, 503, { ok: false, motivo: "error" }); }
     }
     if (u.pathname === "/api/demo" && req.method === "POST") {
       const b = await leerCuerpo(req);
