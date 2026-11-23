@@ -1072,7 +1072,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611221140";
+const BUILD="202611222130";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -1888,7 +1888,7 @@ function check(code,activar){
     t=Date.now(); setAct(h,t);
   }
   const fin=t+DIAS*86400000;
-  if(Date.now()>fin) return {ok:false,msg:"Tu semana de acceso con ese código ya terminó."};
+  if(Date.now()>fin) return {ok:false,msg:"Tu acceso con ese código ya terminó."};
   return {ok:true,fin};
 }
 /* ---- código de un solo dispositivo (lo revisa el servidor) ---- */
@@ -1896,7 +1896,7 @@ function devId(){let d=null;try{d=localStorage.getItem("bot-dev")}catch(e){}
   if(!d){d=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));try{localStorage.setItem("bot-dev",d)}catch(e){}}
   return d;}
 function uaCorto(){const u=navigator.userAgent;return /iphone|ipad/i.test(u)?"iPhone":/android/i.test(u)?"Android":/windows/i.test(u)?"PC Windows":/mac/i.test(u)?"Mac":"Otro";}
-const MSG_COD={no_existe:"Ese código no existe.",en_uso:"Este código ya está en uso en otro dispositivo. Escribe a soporte para liberarlo.",vencido:"Tu semana de acceso con ese código ya terminó.",no_activable:"Ese código ya no se puede activar.",anulado:"Este código fue desactivado. Escribe a soporte por WhatsApp."};
+const MSG_COD={no_existe:"Ese código no existe.",en_uso:"Este código ya está en uso en otro dispositivo. Escribe a soporte para liberarlo.",vencido:"Tu acceso con ese código ya terminó.",no_activable:"Ese código ya no se puede activar.",anulado:"Este código fue desactivado. Escribe a soporte por WhatsApp."};
 async function servidorCodigo(code,activar){
   if(typeof API_URL==="undefined"||!API_URL) return null;
   try{
@@ -2615,7 +2615,7 @@ function renovarAviso(){ try{
   if(v){ const sm=v.querySelector(".sm"); if(sm) sm.textContent=esHoy?"Vence hoy":"Vence mañana"; v.classList.add("venceya"); }
   let x=""; try{ x=localStorage.getItem("bot-ren-x")||""; }catch(e){}
   if(rest>3*3600000&&x===today()){ if(b) b.remove(); return; }
-  const tit=rest<=3*3600000?"Tu semana se vence en "+falta:(esHoy?"Tu semana se vence hoy":"Tu semana se vence mañana");
+  const tit=rest<=3*3600000?"Tu acceso se vence en "+falta:(esHoy?"Tu acceso se vence hoy":"Tu acceso se vence mañana");
   const wa="https://wa.me/584247467906?text="+encodeURIComponent("Hola, quiero renovar mi código del Bot de Animalitos ("+CUR+")");
   const html=`<span class="ri">⏳</span><span class="rt2"><b>${tit}</b><br>Vence el <b>${dia} a las ${hora}</b> (faltan ${falta}). Renueva para no quedarte sin tus jugadas.<br><a class="rw" href="${wa}" target="_blank" rel="noopener">💬 Renovar por WhatsApp</a></span><button class="rx" type="button" aria-label="Cerrar">✕</button>`;
   if(!b){ const t=document.getElementById("tabs"); if(!t) return; t.insertAdjacentHTML("beforebegin",'<div id="renBan"></div>'); b=document.getElementById("renBan"); }
