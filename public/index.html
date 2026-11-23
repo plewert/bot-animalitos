@@ -602,6 +602,13 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   .cres .r{display:flex;justify-content:space-between;gap:8px}
   .cres .g{color:var(--grn)} .cres .o{color:#ffd27a}
   .tnum.cmb{background:#3d2a05;color:#ffd27a;border-color:#f5b83d}
+  .gprecios{margin:14px 0 4px;border-radius:18px;padding:14px;border:2px solid #2ef2ff;background:rgba(46,242,255,.07);color:#e8f1ff;text-align:center}
+  .gprecios .gpt{font-weight:900;font-size:17px;color:#2ef2ff}.gprecios .gps{font-size:12.5px;opacity:.8;margin-bottom:12px}
+  .gprecios .gpl{display:flex;gap:8px}.gprecios .gpp{flex:1;border:1px solid #2b3550;border-radius:14px;padding:10px 4px;background:#0b1124;position:relative}
+  .gprecios .gpp.best{border:2px solid #ffd23f;background:#1c1606}.gprecios .gpp.best .gpv{color:#ffd23f}
+  .gprecios .gpb{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:10.5px;font-weight:900;background:#ffd23f;color:#3a0a10;border-radius:999px;padding:1px 8px;white-space:nowrap}
+  .gprecios .gpd{font-size:13px;opacity:.85}.gprecios .gpv{font-size:24px;font-weight:900}.gprecios .gpx{font-size:11px;opacity:.7}
+  .gprecios .gpw{display:block;margin-top:12px;padding:11px;border-radius:999px;background:#25d366;color:#05210f;font-weight:900;text-decoration:none}
   #renBan{margin:8px 0;padding:12px;border-radius:16px;border:2px solid #ff3b5c;background:linear-gradient(135deg,rgba(255,59,92,.18),rgba(255,184,77,.12));color:#fff;display:flex;gap:10px;align-items:center;box-shadow:0 0 18px #ff3b5c55;font-size:14px;line-height:1.35}
   #renBan .ri{font-size:30px;flex:none}#renBan .rt2{flex:1}#renBan .rt2>b:first-child{color:#ffb3c0;font-size:15.5px}
   #renBan .rw{display:inline-block;margin-top:8px;padding:8px 14px;border-radius:999px;background:#25d366;color:#05210f;font-weight:900;text-decoration:none}
@@ -812,6 +819,7 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
     <div class="tagline" style="margin-top:6px">Acceso con código</div>
     <form id="gform"><input id="gcode" autocomplete="off" placeholder="BOT-XXXX-XXXX"><div class="err" id="gerr"></div>
     <button class="btn main" type="submit">Entrar</button></form>
+    <div class="gprecios" id="gprecios"></div>
     <div class="gor">— ¿todavía no tienes código? —</div>
     <button class="btn gdemo" type="button" id="gdemo">▶ Probar gratis 30 minutos</button>
     <div class="gsm" id="gdemoTxt">Una prueba por teléfono · solo Lotto Activo</div>
@@ -1073,7 +1081,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611230935";
+const BUILD="202611231200";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(){
@@ -2632,6 +2640,18 @@ function unlock(code,fin){
   {const d=new Date(fin); document.getElementById("vence").innerHTML='<span class="lg">Acceso hasta '+fmtFecha(fin)+'</span><span class="sm">Hasta '+String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+'</span>';}
   VENCE_FIN=fin; setTimeout(renovarAviso,300);
 }
+/* 🤝 Precios del bot: cambiar aquí y se actualiza en todas partes */
+const PRECIOS=[{d:7,p:3.5},{d:14,p:6.5},{d:30,p:12.5}];
+const WA_VENTAS="584247467906";
+function preciosHtml(){
+  const best=PRECIOS.reduce((a,b)=>b.p/b.d<a.p/a.d?b:a);
+  const fmt=x=>String(x).replace(".",",");
+  const wa="https://wa.me/"+WA_VENTAS+"?text="+encodeURIComponent("Hola, quiero comprar un código del Bot de Animalitos");
+  return `<div class="gpt">🤝 Precios del bot</div><div class="gps">En dólares o en bolívares a tasa del Banco Central de Venezuela</div>
+    <div class="gpl">${PRECIOS.map(x=>`<div class="gpp${x===best?" best":""}">${x===best?'<span class="gpb">MÁS AHORRO</span>':""}<div class="gpd">${x.d} días</div><div class="gpv">${x.p}$</div><div class="gpx">${fmt((x.p/x.d).toFixed(2))}$ por día</div></div>`).join("")}</div>
+    <a class="gpw" href="${wa}" target="_blank" rel="noopener">💬 Comprar por WhatsApp</a>`;
+}
+try{ const gp=document.getElementById("gprecios"); if(gp) gp.innerHTML=preciosHtml(); }catch(e){}
 /* ⏳ Aviso para renovar: sale cuando quedan 24 horas o menos de la semana */
 var VENCE_FIN=0;
 function renovarAviso(){ try{
