@@ -18,7 +18,7 @@ self.addEventListener("fetch", (e) => {
   if (req.mode === "navigate") {                                // la página del bot
     e.respondWith((async () => {
       try {
-        const r = await conTiempo(fetch(req, { cache: "no-store" }), 12000);
+        const r = await conTiempo(fetch(req, { cache: "no-cache" }), 12000);   // "no-cache": si la página no cambió, el servidor responde corto (304)
         if (r && r.ok) { const c = await caches.open(APP); await c.put("bot", r.clone()); }
         return r;
       } catch (x) {

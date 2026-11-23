@@ -1072,11 +1072,19 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611222140";
+const BUILD="202611222235";
+/* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
+let VER_ULT=0;
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
-    const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
-    const m=t.match(/const BUILD="(\d+)"/); if(m&&m[1]!==BUILD){ location.replace(location.pathname+"?v="+m[1]); }
+    if(Date.now()-VER_ULT<2*60000) return; VER_ULT=Date.now();
+    let nueva=null;
+    try{ const r=await fetch("version.json?nc="+Date.now(),{cache:"no-store"}); if(r.ok){ const j=await r.json(); if(j&&j.build) nueva=String(j.build); } }catch(e){}
+    if(nueva===null){ // sin version.json: como antes, pero como mucho 1 vez cada 6 horas
+      let u=0; try{ u=+localStorage.getItem("bot-ver-full")||0; }catch(e){}
+      if(Date.now()-u<6*3600000) return; try{ localStorage.setItem("bot-ver-full",String(Date.now())); }catch(e){}
+      const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-cache"}); const t=await r.text(); const m=t.match(/const BUILD="(\d+)"/); if(m) nueva=m[1]; }
+    if(nueva&&nueva>BUILD){ location.replace(location.pathname+"?v="+nueva); }
   }catch(e){}
 }
 setTimeout(revisarVersion,1500); setInterval(revisarVersion,10*60000);
@@ -1111,7 +1119,7 @@ function rankRows0(l,st,last,arr,P){
 var HWAIT_T0=performance.now(), HWAIT_TIMER=null;
 function esperaHist(l){
   let api=""; try{ api=API_URL; }catch(e){ return ""; } if(!api) return "";
-  let c=null; try{ c=HCACHE[l.id]; }catch(e){ return ""; }
+  let c=null; try{ c=HCACHE[l.id]; if(!(c&&c.dias)){ const g=histGuardado(l.id); if(g){ HCACHE[l.id]=c={ok:true,dias:g.dias,t:g.t,dia:g.f,comp:g.comp}; } } }catch(e){ return ""; }
   try{ if(NETFAIL&&!(c&&c.dias&&c.dias.length)) return "slow"; }catch(e){} if(c&&c.dias&&c.dias.length) return "";
   if(performance.now()-HWAIT_T0<20000){ if(!HWAIT_TIMER) HWAIT_TIMER=setTimeout(()=>{ try{ render(); }catch(e){} },20500-(performance.now()-HWAIT_T0)); return "wait"; }
   return "slow";
@@ -2553,11 +2561,21 @@ document.addEventListener("change",e=>{
 
 /* ---- 📊 historial de 1 año (lo guarda el servidor) ---- */
 const HCACHE={}; let HSEL={};
-async function cargarHist(id){
-  const c=HCACHE[id]; if(c&&(c.err||Date.now()-c.t<10*60000)&&!c.cargando) return c;
+/* 📅 historial de 1 año: se baja 1 vez al día por lotería y se guarda en el teléfono (solo cambia una vez al día) */
+function histGuardado(id){ try{ const g=JSON.parse(localStorage.getItem("bot-hist-"+id)||"null"); if(g&&g.f===today()&&Array.isArray(g.dias)&&g.dias.length) return g; }catch(e){} return null; }
+function histDiaCompleto(j){ try{ const ay=new Date(); ay.setDate(ay.getDate()-1); const fa=ay.getFullYear()+"-"+String(ay.getMonth()+1).padStart(2,"0")+"-"+String(ay.getDate()).padStart(2,"0"); const u=j.dias[j.dias.length-1]; return u&&u[0]===fa&&u[1].length>=11; }catch(e){ return true; } }
+var HVUELO={};
+function cargarHist(id){ if(HVUELO[id]) return HVUELO[id]; const pr=cargarHist0(id); HVUELO[id]=pr; pr.finally(()=>{ HVUELO[id]=null; }); return pr; }
+async function cargarHist0(id){
+  let c=HCACHE[id];
+  if(!c||!c.dias){ const g=histGuardado(id); if(g){ HCACHE[id]=c={ok:true,dias:g.dias,t:g.t,dia:g.f,comp:g.comp}; } }
+  if(c&&c.err==="sinapi") return c;
+  if(c&&c.dias&&c.dia===today()&&!c.cargando&&(c.comp||Date.now()-c.t<30*60000)) return c;
+  if(c&&c.err&&Date.now()-c.t<60000) return c;
   const api=(typeof API_URL!=="undefined"&&API_URL)?API_URL:"";
   if(!api){ HCACHE[id]={err:"sinapi",t:Date.now()}; return HCACHE[id]; }
-  try{ const r=await fetch(api+"/api/historial?lot="+id); const j=await r.json(); if(!j.ok) throw 0; const td=today(); if(Array.isArray(j.dias)) j.dias=j.dias.filter(d=>d[0]<td); j.t=Date.now(); const era=HCACHE[id]&&HCACHE[id].dias&&HCACHE[id].dias.length; HCACHE[id]=j; if(!era&&j.dias&&j.dias.length) setTimeout(()=>{ try{ if(L().id===id) render(); }catch(e){} },0); return j; }
+  try{ const r=await fetch(api+"/api/historial?lot="+id); const j=await r.json(); if(!j.ok) throw 0; const td=today(); if(Array.isArray(j.dias)) j.dias=j.dias.filter(d=>d[0]<td); j.t=Date.now(); j.dia=td; j.comp=histDiaCompleto(j);
+    try{ localStorage.setItem("bot-hist-"+id,JSON.stringify({f:td,t:j.t,comp:j.comp,dias:j.dias})); }catch(e){ try{ Object.keys(localStorage).filter(k=>k.startsWith("bot-hist-")&&k!=="bot-hist-"+id).forEach(k=>localStorage.removeItem(k)); localStorage.setItem("bot-hist-"+id,JSON.stringify({f:td,t:j.t,comp:j.comp,dias:j.dias})); }catch(e2){} } const era=HCACHE[id]&&HCACHE[id].dias&&HCACHE[id].dias.length; HCACHE[id]=j; if(!era&&j.dias&&j.dias.length) setTimeout(()=>{ try{ if(L().id===id) render(); }catch(e){} },0); return j; }
   catch(e){ return {err:"red",t:Date.now()}; }
 }
 function renderHist(){
