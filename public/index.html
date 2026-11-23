@@ -477,6 +477,7 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   .rr .rn b{color:var(--gold);font-family:"Orbitron",sans-serif;font-size:14px}
   .rr .rt{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
   .rr .rt span{font-size:11.5px;border-radius:99px;padding:1px 8px;background:rgba(255,255,255,.07);color:#c9d6ee;font-weight:600}
+  .rr .rt span.tg{background:#2a1f4a;color:#d8c6ff;border:1px solid #a78bfa88}
   .rr .rs{color:var(--gold);font-size:15px;letter-spacing:1px;white-space:nowrap}
   .rr .rs i{color:#3a4566;font-style:normal}
   .linkbtn.bell{font-size:15px;padding:4px 8px}
@@ -1072,7 +1073,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611222235";
+const BUILD="202611230935";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(){
@@ -1106,7 +1107,7 @@ function rankRows0(l,st,last,arr,P){
     const sc=(c-1)*2+(sal?2:0)+Math.min(a,3)*1.5+(cy?cy.p:0);
     const st3=lv?0:(sc>=4?3:sc>=2?2:sc>0?1:0);
     const tags=[];
-    if(c>1) tags.push("×"+c+" en la guía");
+    tags.push(c>1?"📖 ×"+c+" en la guía":"📖 en la guía");
     if(sal) tags.push("🔥 salidor");
     if(a) tags.push("✓ acertó "+a+(a===1?" vez":" veces"));
     if(v) tags.push("⇄ volteo 🔥");
@@ -1131,7 +1132,7 @@ function rankHtml(l,st,last,arr,P){
   const YH=yaHoy(st);
   if(!arr||!arr.length) return "";
   const rows=rankRows(l,st,last,arr,P);
-  return `<div class="rank"><div class="rh">◆ Ordenados por señales: el 1 es el más fuerte</div>${HW==="slow"?HSLOW:""}${rows.some(r=>YH.has(r.n))?'<div class="yhn">⚠️ Los marcados ya salieron hoy: casi nunca repiten el mismo día.</div>':""}${rows.map((r,i)=>`<div class="rr${i===0&&!r.lv&&r.st3?" top":""}${r.lv?" jl"+r.lv:""}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}${r.lv?'<i class="rcage"></i>':""}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${YH.has(r.n)?'<span class="yhb">⚠️ ya salió hoy</span>':""}${r.tags.length?`<div class="rt">${r.tags.map(t=>`<span>${t}</span>`).join("")}</div>`:""}${r.lv?`<div class="rjl">🔒 ${r.lv===2?"Jaula fuerte":"Jaula"} · ${daysSince(st.last[r.n])} días · no jugarlo</div>`:""}</div><span class="rs">${r.lv?"—":"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`;
+  return `<div class="rank"><div class="rh">◆ Ordenados por señales: el 1 es el más fuerte</div>${HW==="slow"?HSLOW:""}${rows.some(r=>YH.has(r.n))?'<div class="yhn">⚠️ Los marcados ya salieron hoy: casi nunca repiten el mismo día.</div>':""}${rows.map((r,i)=>`<div class="rr${i===0&&!r.lv&&r.st3?" top":""}${r.lv?" jl"+r.lv:""}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}${r.lv?'<i class="rcage"></i>':""}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${YH.has(r.n)?'<span class="yhb">⚠️ ya salió hoy</span>':""}${r.tags.length?`<div class="rt">${r.tags.map(t=>`<span${String(t).startsWith("📖")?' class="tg"':""}>${t}</span>`).join("")}</div>`:""}${r.lv?`<div class="rjl">🔒 ${r.lv===2?"Jaula fuerte":"Jaula"} · ${daysSince(st.last[r.n])} días · no jugarlo</div>`:""}</div><span class="rs">${r.lv?"—":"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`;
 }
 /* los 10 que más han salido (igual que la sección Salidores) */
 function topSalidores(){
