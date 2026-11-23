@@ -199,7 +199,7 @@ async function leerCuerpo(req) {
   let d = ""; for await (const c of req) { d += c; if (d.length > 5000) break; }
   try { return JSON.parse(d || "{}"); } catch (e) { return {}; }
 }
-const finDe = (ini) => ini + DIAS * 86400000;
+const finDe = (ini, d) => ini + (d || DIAS) * 86400000;   // d = días del código (7, 14 o 30)
 // 🚫 Códigos eliminados desde el panel de admin: dejan de funcionar
 const cyrb53S = (str, seed = 7) => { let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed; for (let i = 0, ch; i < str.length; i++) { ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36); };
 const normCodeS = (c) => { const t = String(c || "").normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g, ""); return t.length === 11 && t.startsWith("BOT") ? "BOT-" + t.slice(3, 7) + "-" + t.slice(7) : String(c || "").trim().toUpperCase(); };
@@ -207,7 +207,8 @@ const anulado = async (hash) => !!(await redis(["GET", "anu:" + hash]));
 // ➕ Códigos generados desde el panel (y los que agregas a tu lista): se guardan en Upstash como "gen:<huella>"
 const existeCodigo = async (hash) => CODIGOS.has(hash) || !!(await redis(["GET", "gen:" + hash]));
 const ABC = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-async function generarCodigos(n) {
+async function generarCodigos(n, dias) {
+  dias = [7, 14, 30].includes(+dias) ? +dias : DIAS;
   n = Math.max(1, Math.min(50, parseInt(n, 10) || 0)); const out = [];
   for (let k = 0; out.length < n && k < n * 20; k++) {
     const r = () => Array.from(crypto.randomBytes(4), (b) => ABC[b % ABC.length]).join("");
@@ -216,7 +217,7 @@ async function generarCodigos(n) {
     out.push({ c, h });
   }
   const t = Date.now();
-  for (const x of out) await redis(["SET", "gen:" + x.h, JSON.stringify({ codigo: x.c, t, gen: true })]);
+  for (const x of out) await redis(["SET", "gen:" + x.h, JSON.stringify({ codigo: x.c, t, gen: true, dias })]);
   return out.map((x) => x.c);
 }
 async function agregarALista(texto) {
@@ -239,11 +240,12 @@ async function usarCodigo(b) {
   if (!rec) {
     if (!b.activar) return { ok: false, motivo: "no_activado" };
     if (CODIGOS.has(hash) && ahora > Date.parse(ACTIVAR_ANTES + "T23:59:59-04:00")) return { ok: false, motivo: "no_activable" };
-    rec = { codigo: String(b.codigo || "").slice(0, 20), dev, ua: String(b.ua || "").slice(0, 20), ini: ahora, uso: ahora };
+    let dias = DIAS; try { const g = await redis(["GET", "gen:" + hash]); if (g) dias = [7, 14, 30].includes(+JSON.parse(g).dias) ? +JSON.parse(g).dias : DIAS; } catch (e) {}
+    rec = { codigo: String(b.codigo || "").slice(0, 20), dev, ua: String(b.ua || "").slice(0, 20), ini: ahora, uso: ahora, dias };
     await redis(["SET", key, JSON.stringify(rec)]);
-    return { ok: true, fin: finDe(rec.ini) };
+    return { ok: true, fin: finDe(rec.ini, rec.dias) };
   }
-  if (ahora > finDe(rec.ini)) return { ok: false, motivo: "vencido", fin: finDe(rec.ini) };
+  if (ahora > finDe(rec.ini, rec.dias)) return { ok: false, motivo: "vencido", fin: finDe(rec.ini, rec.dias) };
   if (!rec.dev) { // liberado: lo toma este dispositivo, la semana sigue igual
     if (!b.activar) return { ok: false, motivo: "no_activado" };
     rec.dev = dev; rec.ua = String(b.ua || "").slice(0, 20);
@@ -251,7 +253,7 @@ async function usarCodigo(b) {
   if (rec.dev !== dev) return { ok: false, motivo: "en_uso" };
   rec.uso = ahora; if (!rec.codigo && b.codigo) rec.codigo = String(b.codigo).slice(0, 20);
   await redis(["SET", key, JSON.stringify(rec)]);
-  return { ok: true, fin: finDe(rec.ini) };
+  return { ok: true, fin: finDe(rec.ini, rec.dias) };
 }
 // 🎁 Regalo de Navidad: 1 intento por teléfono al día, 10 premios en total, máximo 1 premio por día
 const REGALO = { premios: 10, prob: 200, maxDia: 1 };
@@ -336,7 +338,7 @@ async function suscribir(b) {
   if (!rec || !(await existeCodigo(hash))) return { ok: false, motivo: "sin_codigo" };
   if (await anulado(hash)) { await redis(["DEL", subKey(endpoint)]); return { ok: false, motivo: "anulado" }; }
   if (rec.dev !== dev) return { ok: false, motivo: "en_uso" };
-  const fin = finDe(rec.ini); if (Date.now() > fin) return { ok: false, motivo: "vencido" };
+  const fin = finDe(rec.ini, rec.dias); if (Date.now() > fin) return { ok: false, motivo: "vencido" };
   await redis(["SET", subKey(endpoint), JSON.stringify({ sub, lots, hash, fin, t: Date.now() })]);
   return { ok: true, lots };
 }
@@ -574,11 +576,11 @@ async function listaCodigos() {
   return {
     anulados: Object.keys(anu).filter((h) => !usadoH.has(h)).map((h) => ({ hash: h, codigo: anu[h].codigo || (gen[h] && gen[h].codigo) || "(código sin activar)", t: anu[h].t })),
     regalos, regaloTotal: REGALO.premios, regaloProb: REGALO.prob,
-    sinUsar: Object.keys(gen).filter((h) => !usadoH.has(h) && !anu[h]).map((h) => ({ hash: h, codigo: gen[h].codigo, t: gen[h].t, gen: !!gen[h].gen })).sort((a, b) => (b.t || 0) - (a.t || 0)),
+    sinUsar: Object.keys(gen).filter((h) => !usadoH.has(h) && !anu[h]).map((h) => ({ hash: h, codigo: gen[h].codigo, t: gen[h].t, gen: !!gen[h].gen, dias: +gen[h].dias || DIAS })).sort((a, b) => (b.t || 0) - (a.t || 0)),
     demos,
     total: CODIGOS.size + Object.keys(gen).filter((h) => !CODIGOS.has(h)).length,
-    usados: keys.map((k, i) => { const r = JSON.parse(vals[i] || "{}"); const fin = finDe(r.ini || 0);
-      return { hash: k.slice(4), codigo: r.codigo || "(sin nombre)", ua: r.ua || "", ini: r.ini, fin, uso: r.uso, libre: !r.dev, estado: anu[k.slice(4)] ? "anulado" : ahora > fin ? "vencido" : "activo" }; })
+    usados: keys.map((k, i) => { const r = JSON.parse(vals[i] || "{}"); const fin = finDe(r.ini || 0, r.dias);
+      return { hash: k.slice(4), codigo: r.codigo || "(sin nombre)", ua: r.ua || "", ini: r.ini, fin, uso: r.uso, dias: r.dias || DIAS, libre: !r.dev, estado: anu[k.slice(4)] ? "anulado" : ahora > fin ? "vencido" : "activo" }; })
       .sort((a, b) => (b.ini || 0) - (a.ini || 0)),
   };
 }
@@ -592,12 +594,13 @@ input,button{font:inherit;border-radius:10px;border:1px solid #2b3550;background
 .el{border-color:#ff3b5c;background:#2a0710;color:#ff8ea0}.rs{margin-left:auto;border-color:#2dff8a;color:#2dff8a}.an{color:#ff3b5c;font-weight:700}
 .fil{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.fil button{border-radius:999px;padding:6px 12px;font-size:13.5px}.fil .on{background:#2dff8a22;border-color:#2dff8a;color:#2dff8a;font-weight:700}
 .cp{margin-left:auto;border-color:#2ef2ff;color:#2ef2ff}.gbox{border-color:#2dff8a88!important}.gres{margin-top:6px;padding:8px;border-radius:10px;background:#0f2a1a;border:1px solid #2dff8a55}.gl{font-family:monospace;font-size:15px;line-height:1.7}.gres .cp{margin:6px 0 0}
+.dz{font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:999px;border:1px solid #2b3550;color:#8a9bbd;vertical-align:middle}.dz.d14{color:#2ef2ff;border-color:#2ef2ff88}.dz.d30{color:#ffd76a;border-color:#ffd76a88}
 .rbox{border-color:#ffd76a88!important;background:#1a0f05}.abox{display:block}.abox summary{cursor:pointer;color:#8a9bbd}.abox textarea{width:100%;box-sizing:border-box;min-height:80px;margin:8px 0;border-radius:10px;background:#0b1124;color:#e8f1ff;border:1px solid #2b3550;font:inherit}
 .ebox{border:1px dashed #ff3b5c88;border-radius:12px;padding:10px;margin:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ebox input{flex:1;min-width:150px}</style></head><body>
 <h1>◆ Códigos · Bot de animalitos</h1>
 <div id="login"><input id="cl" type="password" placeholder="Clave de administrador"> <button class="b1" id="en">Entrar</button><div id="msg"></div></div>
 <div id="pan" style="display:none"><div class="s" id="res"></div><div class="ebox rbox" id="reg"></div>
-<div class="ebox gbox"><span>➕ Generar códigos nuevos:</span><input id="gn" type="number" min="1" max="50" value="5" style="max-width:80px;flex:none"><button class="b1" id="gbtn">Generar</button><div id="gout" style="width:100%"></div></div>
+<div class="ebox gbox"><span>➕ Generar códigos nuevos:</span><input id="gn" type="number" min="1" max="50" value="5" style="max-width:70px;flex:none"><span>de</span><select id="gd" style="font:inherit;border-radius:10px;border:1px solid #2b3550;background:#0b1124;color:#e8f1ff;padding:9px 10px"><option value="7">7 días</option><option value="14">14 días</option><option value="30">30 días</option></select><button class="b1" id="gbtn">Generar</button><div id="gout" style="width:100%"></div></div>
 <div class="ebox"><span>🚫 Eliminar un código (aunque no esté activado):</span><input id="ecod" placeholder="BOT-XXXX-XXXX"><button class="el" id="ebtn">Eliminar</button><span class="s" id="emsg"></span></div>
 <div class="fil" id="fil"></div>
 <input id="bus" placeholder="Buscar código" style="width:100%;margin:6px 0;box-sizing:border-box"><div id="lis"></div>
@@ -618,8 +621,8 @@ const T=[["uso","🟢 En uso",uso.length],["sin","🆕 Sin usar",SU.length],["ve
 document.getElementById("fil").innerHTML=T.map(t=>'<button data-f="'+t[0]+'" class="'+(FIL===t[0]?"on":"")+'">'+t[1]+(t[2]!==""?" ("+t[2]+")":"")+'</button>').join("");
 document.querySelectorAll("#fil button").forEach(b=>b.onclick=()=>{FIL=b.dataset.f;pintar();});
 const m=x=>!q||String(x.codigo).includes(q);
-const fU=x=>'<div class="it"><div><b>'+x.codigo+'</b><div class="s">'+(x.libre?"liberado, esperando otro dispositivo":(x.ua||"dispositivo"))+' · desde '+f(x.ini)+'</div></div>'+(x.estado==="anulado"?'<div class="an">🚫 Eliminado</div><button class="rs" data-h="'+x.hash+'">Restaurar</button>':'<div class="'+(x.estado==="vencido"?"ve":(x.libre?"li":"ok"))+'">'+(x.estado==="vencido"?"Vencido "+f(x.fin):"Activo · vence "+f(x.fin))+'</div>'+(x.libre||x.estado==="vencido"?"":'<button class="lb" data-h="'+x.hash+'">Liberar</button>')+'<button class="el" data-h="'+x.hash+'">Eliminar</button>')+'</div>';
-const fS=x=>'<div class="it"><div><b>'+x.codigo+'</b><div class="s">Nunca activado · '+(x.gen?"creado ":"agregado ")+(x.t?f(x.t):"")+'</div></div><button class="cp" data-c="'+x.codigo+'">⧉ Copiar</button><button class="el" data-h="'+x.hash+'">Eliminar</button></div>';
+const fU=x=>'<div class="it"><div><b>'+x.codigo+'</b> <span class="dz d'+(x.dias||7)+'">'+(x.dias||7)+' días</span><div class="s">'+(x.libre?"liberado, esperando otro dispositivo":(x.ua||"dispositivo"))+' · desde '+f(x.ini)+'</div></div>'+(x.estado==="anulado"?'<div class="an">🚫 Eliminado</div><button class="rs" data-h="'+x.hash+'">Restaurar</button>':'<div class="'+(x.estado==="vencido"?"ve":(x.libre?"li":"ok"))+'">'+(x.estado==="vencido"?"Vencido "+f(x.fin):"Activo · vence "+f(x.fin))+'</div>'+(x.libre||x.estado==="vencido"?"":'<button class="lb" data-h="'+x.hash+'">Liberar</button>')+'<button class="el" data-h="'+x.hash+'">Eliminar</button>')+'</div>';
+const fS=x=>'<div class="it"><div><b>'+x.codigo+'</b> <span class="dz d'+(x.dias||7)+'">'+(x.dias||7)+' días</span><div class="s">Nunca activado · '+(x.gen?"creado ":"agregado ")+(x.t?f(x.t):"")+'</div></div><button class="cp" data-c="'+x.codigo+'">⧉ Copiar</button><button class="el" data-h="'+x.hash+'">Eliminar</button></div>';
 const fA=x=>'<div class="it"><div><b>'+x.codigo+'</b><div class="s">sin activar · eliminado '+(x.t?f(x.t):"")+'</div></div><div class="an">🚫 Eliminado</div><button class="rs" data-h="'+x.hash+'">Restaurar</button></div>';
 let h="";
 if(FIL==="uso") h=uso.filter(m).map(fU).join("")||'<div class="s">Nadie está usando un código ahora mismo.</div>';
@@ -633,7 +636,7 @@ document.querySelectorAll(".it .el").forEach(b=>b.onclick=async()=>{if(!confirma
 document.querySelectorAll(".rs").forEach(b=>b.onclick=async()=>{if(!confirmar(b,"Restaurar"))return;await api("/admin/api/restaurar",{hash:b.dataset.h});cargar();});
 document.querySelectorAll(".lb").forEach(b=>b.onclick=async()=>{if(!confirmar(b))return;await api("/admin/api/liberar",{hash:b.dataset.h});cargar();});}
 document.getElementById("gbtn").onclick=async()=>{const b=document.getElementById("gbtn"),o=document.getElementById("gout"),n=+document.getElementById("gn").value||0;if(n<1||n>50){o.innerHTML='<div class="ve">Escribe un número del 1 al 50.</div>';return;}b.disabled=true;o.innerHTML='<div class="s">Generando…</div>';
-try{const r=await api("/admin/api/generar",{n});const L=r.codigos||[];o.innerHTML='<div class="gres"><div class="ok"><b>✅ '+L.length+' código'+(L.length>1?"s":"")+' nuevo'+(L.length>1?"s":"")+' listo'+(L.length>1?"s":"")+' (funcionan ya):</b></div><div class="gl">'+L.join("<br>")+'</div><button class="cp" id="gcp">⧉ Copiar '+(L.length>1?"los "+L.length:"")+'</button></div>';document.getElementById("gcp").onclick=e=>copiar(L.join("\\n"),e.target);FIL="sin";cargar();}catch(e){o.innerHTML='<div class="ve">'+e.message+'</div>';}b.disabled=false;};
+try{const dd=+document.getElementById("gd").value||7;const r=await api("/admin/api/generar",{n,dias:dd});const L=r.codigos||[];o.innerHTML='<div class="gres"><div class="ok"><b>✅ '+L.length+' código'+(L.length>1?"s":"")+' nuevo'+(L.length>1?"s":"")+' de '+(r.dias||dd)+' días listo'+(L.length>1?"s":"")+' (funcionan ya):</b></div><div class="gl">'+L.join("<br>")+'</div><button class="cp" id="gcp">⧉ Copiar '+(L.length>1?"los "+L.length:"")+'</button></div>';document.getElementById("gcp").onclick=e=>copiar(L.join("\\n"),e.target);FIL="sin";cargar();}catch(e){o.innerHTML='<div class="ve">'+e.message+'</div>';}b.disabled=false;};
 document.getElementById("abtn").onclick=async()=>{const m=document.getElementById("amsg"),t=document.getElementById("atx").value;if(!t.trim()){m.textContent="Pega los códigos primero";return;}
 try{const r=await api("/admin/api/agregar",{texto:t});m.textContent="✅ "+r.agregados+" agregados"+(r.ya?" · "+r.ya+" ya estaban":"")+(r.malos.length?" · ❌ no existen: "+r.malos.join(", "):"");document.getElementById("atx").value="";FIL="sin";cargar();}catch(e){m.textContent=e.message;}};
 function confirmar(b,t){t=t||"Liberar";if(b.dataset.c)return true;b.dataset.c=1;b.textContent="¿Seguro? Toca otra vez";setTimeout(()=>{b.dataset.c="";b.textContent=t},4000);return false;}
@@ -681,7 +684,7 @@ const server = http.createServer(async (req, res) => {
     if (u.pathname.startsWith("/admin/api/")) {
       if (!CLAVE || req.headers["x-clave"] !== CLAVE) return enviar(res, 401, { error: "Clave incorrecta" });
       if (u.pathname === "/admin/api/lista") return enviar(res, 200, await listaCodigos());
-      if (u.pathname === "/admin/api/generar" && req.method === "POST") { const b = await leerCuerpo(req); return enviar(res, 200, { ok: true, codigos: await generarCodigos(b.n) }); }
+      if (u.pathname === "/admin/api/generar" && req.method === "POST") { const b = await leerCuerpo(req); return enviar(res, 200, { ok: true, codigos: await generarCodigos(b.n, b.dias), dias: [7, 14, 30].includes(+b.dias) ? +b.dias : DIAS }); }
       if (u.pathname === "/admin/api/agregar" && req.method === "POST") { const b = await leerCuerpo(req); return enviar(res, 200, await agregarALista(b.texto)); }
       if (u.pathname === "/admin/api/liberar" && req.method === "POST") {
         const b = await leerCuerpo(req), key = "cod:" + String(b.hash || "");
