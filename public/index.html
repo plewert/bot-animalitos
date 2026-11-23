@@ -1081,7 +1081,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611231200";
+const BUILD="202611231445";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(){
@@ -3162,6 +3162,48 @@ document.addEventListener("click",e=>{
     const top=pc&&mb.parentNode===pr?pr.getBoundingClientRect().top:-1e9; mb.classList.toggle("mini",pc&&(mb.parentNode===pr?top<-40:window.scrollY>260)); };
   if(typeof render==="function"){ const r0=render; render=function(){ try{ if(mb.previousSibling!==home) home.after(mb); }catch(e){} const x=r0.apply(this,arguments); f(); return x; }; }
   window.addEventListener("scroll",()=>{ if(!t) t=requestAnimationFrame(f); },{passive:true}); window.addEventListener("resize",f); f(); })();
+
+/* 📱 Barra de jugada compacta en el teléfono: al bajar se encoge (salió + animales para jugar); "▾ ver todo" la abre */
+(function(){ try{
+  const mb=document.getElementById("mbar"); if(!mb) return;
+  const sty=document.createElement("style"); sty.textContent=`
+    body.inapp .mbar.mmini>*:not(.top):not(.pks):not(.vfbox){display:none!important}
+    body.inapp .mbar.mmini{padding:6px 9px}
+    body.inapp .mbar.mmini .top{font-size:13px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+    body.inapp .mbar.mmini .top .mvol{display:none}
+    body.inapp .mbar.mmini .top .hbS{font-size:0!important}
+    body.inapp .mbar.mmini .top .hbS::before{content:"✅ acertó";font-size:12px;color:#2dff8a;font-weight:800}
+    body.inapp .mbar.mmini .top{padding-right:92px}
+    body.inapp .mbar.mmini{position:sticky}
+    body.inapp .mbar.mmini .pks{margin-top:5px}
+    body.inapp .mbar.mmini .pks span{padding:2px 8px;font-size:13.5px}
+    body.inapp .mbar.mmini .vfbox{margin:5px 0 0;padding:0;border:0;background:none;display:flex;align-items:center;gap:6px}
+    body.inapp .mbar.mmini .vfbox .vft{display:none}
+    body.inapp .mbar.mmini .vfbox::before{content:attr(data-ico);font-size:14px}
+    body.inapp .mbar.mmini .vfbox .pks{margin:0}
+    body.inapp .mbar.mmini .vfbox .pks span.dup{display:none}
+    body.inapp .mbar.mmini .vfbox.vacio{display:none!important}
+    .mbar .mver{display:none;margin-left:auto;flex:none;font:800 12px "Rajdhani",system-ui;color:var(--cyan);border:1px solid rgba(46,242,255,.5);border-radius:999px;padding:2px 9px;background:rgba(46,242,255,.08);cursor:pointer}
+    body.inapp .mbar.mmini .mver{display:inline-block;position:absolute;right:8px;top:6px}
+    body.inapp.desliza #rgBtn,body.inapp.desliza #nvMus{opacity:0;pointer-events:none}
+    #rgBtn,#nvMus{transition:opacity .25s}`;
+  document.head.appendChild(sty);
+  let abierto=false, td=0;
+  const prep=()=>{ try{
+      const top=mb.querySelector(".top"); if(top&&!top.querySelector(".mver")){ const b=document.createElement("button"); b.type="button"; b.className="mver"; b.textContent="▾ ver todo"; b.onclick=e=>{ e.stopPropagation(); abierto=true; mb.classList.remove("mmini"); }; top.appendChild(b); }
+      const vb=mb.querySelector(".vfbox"); if(vb){ vb.dataset.ico=vb.classList.contains("vff")?"🐾":"☠";
+        const ya=new Set([...mb.querySelectorAll(":scope>.pks span")].map(x=>(x.textContent.match(/\d+/)||[""])[0]));
+        let quedan=0; vb.querySelectorAll(".pks span").forEach(x=>{ const n=(x.textContent.match(/\d+/)||[""])[0]; const d=ya.has(n); x.classList.toggle("dup",d); if(!d) quedan++; });
+        vb.classList.toggle("vacio",!quedan); }
+    }catch(e){} };
+  const f=()=>{ if(!document.body.classList.contains("inapp")){ mb.classList.remove("mmini"); return; }
+    prep(); const y=window.scrollY;
+    if(y<150) abierto=false;
+    mb.classList.toggle("mmini",!abierto&&y>220); };
+  if(typeof render==="function"){ const r0=render; render=function(){ const x=r0.apply(this,arguments); f(); return x; }; }
+  window.addEventListener("scroll",()=>{ f(); document.body.classList.add("desliza"); clearTimeout(td); td=setTimeout(()=>document.body.classList.remove("desliza"),700); },{passive:true});
+  f();
+}catch(e){} })();
 </script>
 </body>
 </html>
