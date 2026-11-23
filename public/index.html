@@ -1072,7 +1072,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611222130";
+const BUILD="202611222140";
 async function revisarVersion(){
   try{ if(location.protocol!=="https:") return;
     const r=await fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}); const t=await r.text();
@@ -2393,11 +2393,23 @@ function cycTabla(l){ let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }c
   if(D.length<60) return null; const k=l.id+"|"+D.length+"|"+D[D.length-1][0];
   if(CYC_CACHE[k]) return CYC_CACHE[k]; const t=cycLearn(l,cycSeq(l)); CYC_CACHE={}; CYC_CACHE[k]=t; return t; }
 function cycGap(st,n){ const H=st.hist; for(let i=H.length-1;i>=0;i--) if(H[i]===n) return H.length-i; return 99999; }
+/* ⏸ cuándo salió: "salió en el sorteo anterior", "salió hoy 4:30 p. m. (hace 3 sorteos)", "salió ayer 7:30 p. m." */
+function cycCuando(l,st,n,g){ try{
+  if(g===1) return "salió en el sorteo anterior";
+  const td=today(), it=st.dia&&st.dia.fecha===td?st.dia.items||[]:[];
+  for(let i=it.length-1;i>=0;i--) if(it[i].num===n) return "salió hoy "+fmtH12(it[i].hora)+" (hace "+g+" sorteos)";
+  let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
+  const ay=new Date(); ay.setDate(ay.getDate()-1); const fa=ay.getFullYear()+"-"+String(ay.getMonth()+1).padStart(2,"0")+"-"+String(ay.getDate()).padStart(2,"0");
+  for(let k=D.length-1;k>=0&&k>=D.length-3;k--){ const [f,its]=D[k]; if(f>=td) continue;
+    const m=its.filter(x=>x[1]===n).sort((a,b)=>a[0]<b[0]?-1:1).pop();
+    if(m) return (f===fa?"salió ayer ":"salió el "+f.slice(8,10)+"/"+f.slice(5,7)+" ")+fmtH12(m[0]); }
+}catch(e){} return "salió hace "+g+" sorteos"; }
 function cycInfo(l,st,n){ const t=cycTabla(l); if(!t) return null; const g=cycGap(st,n), r=t[cycBin(g)]||1;
   const CW=2; /* peso del ciclo: probado en 3 años, peso 2 fue el mejor */ const p=Math.max(-6*CW,Math.min(4*CW,Math.round((r-1)*10*CW))); if(!p) return null;
   const dd=(g/12).toFixed(1).replace(".0","");
-  const lab=p>0?"🔄 En su punto · "+dd+(dd==="1"?" día":" días")+" sin salir":(g<=12?"⏸ Acaba de salir ("+g+(g===1?" sorteo":" sorteos")+")":"🔒 Jaula muy larga ("+dd+" días)");
-  const corto=p>0?"🔄 en su punto":(g<=12?"⏸ acaba de salir":"🔒 jaula muy larga");
+  const cu=(p<0&&g<=12)?cycCuando(l,st,n,g):"";
+  const lab=p>0?"🔄 En su punto · "+dd+(dd==="1"?" día":" días")+" sin salir":(g<=12?"⏸ "+cu.charAt(0).toUpperCase()+cu.slice(1):"🔒 Jaula muy larga ("+dd+" días)");
+  const corto=p>0?"🔄 en su punto":(g<=12?"⏸ "+cu:"🔒 jaula muy larga");
   return {p,g,r,lab,corto}; }
 function cycTop(l,st,k){ const t=cycTabla(l); if(!t) return []; const H=st.hist, last=H[H.length-1];
   return l.order.filter(n=>n!==last).map(n=>{ const g=cycGap(st,n); return {n,g,r:t[cycBin(g)]||1}; }).sort((a,b)=>b.r-a.r||a.g-b.g).slice(0,k||5); }
