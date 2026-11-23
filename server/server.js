@@ -4,6 +4,7 @@
 
 const http = require("http");
 const crypto = require("crypto");
+const zlib = require("zlib");
 
 // ===================== CONFIGURACIÓN =====================
 // Enlaces de cada lotería. "estadisticas" = tabla de última fecha / días sin salir.
@@ -141,14 +142,22 @@ function parseResultados(html, lot) {
 }
 
 function enviar(res, code, obj, tipo) {
-  res.writeHead(code, {
+  const cuerpo = typeof obj === "string" ? obj : JSON.stringify(obj);
+  const h = {
     "Content-Type": tipo || "application/json; charset=utf-8",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type, X-Clave",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Cache-Control": "no-store",
-  });
-  res.end(typeof obj === "string" ? obj : JSON.stringify(obj));
+    "Vary": "Accept-Encoding",
+  };
+  // 📦 comprimido (gzip): las respuestas grandes, como el historial, pesan mucho menos
+  let ae = ""; try { ae = String((res.req && res.req.headers["accept-encoding"]) || ""); } catch (e) {}
+  if (cuerpo.length > 1024 && /\bgzip\b/.test(ae)) {
+    try { const z = zlib.gzipSync(cuerpo); h["Content-Encoding"] = "gzip"; res.writeHead(code, h); return res.end(z); } catch (e) {}
+  }
+  res.writeHead(code, h);
+  res.end(cuerpo);
 }
 
 async function datos(lot, que) {
