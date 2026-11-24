@@ -662,7 +662,7 @@ document.getElementById("bus").oninput=pintar; if(C)cargar();
 const FD_KEY = process.env.FOOTBALL_DATA_KEY || "";
 const FUT_COMPS = { CL: "Champions", PL: "Premier League", PD: "LaLiga", SA: "Serie A", BL1: "Bundesliga", FL1: "Ligue 1", DED: "Eredivisie", PPL: "Portugal", BSA: "Brasil" };
 const FUT_PRIOR = { PL: 0, PD: -0.08, SA: -0.08, BL1: -0.1, FL1: -0.18, PPL: -0.25, DED: -0.25, BSA: -0.2, OTRO: -0.4 };
-const FUT_LR = 0.05, FUT_LRC = 0.02;
+const FUT_LR = 0.05, FUT_LR_LIGA = 0.03, FUT_LRC = 0.02;   // probado: en ligas funciona mejor cambiar más despacio; Champions igual
 const FUT = { matches: new Map(), teams: {}, meta: {}, preds: {}, model: null, cargado: false, ocupado: false, winAt: 0, builtAt: 0, err: "" };
 
 let fdUlt = 0, fdCola = Promise.resolve();
@@ -761,7 +761,8 @@ function futModelo() {
     const neutral = m.stg === "FINAL";
     const lh = Math.exp(base[m.c] + (neutral ? 0 : ha[m.c]) + att[m.h] - dfn[m.a]), la = Math.exp(base[m.c] + att[m.a] - dfn[m.h]);
     const eh = m.hg - lh, ea = m.ag - la;
-    att[m.h] += FUT_LR * eh; dfn[m.a] -= FUT_LR * eh; att[m.a] += FUT_LR * ea; dfn[m.h] -= FUT_LR * ea;
+    const lr = m.c === "CL" ? FUT_LR : FUT_LR_LIGA;
+    att[m.h] += lr * eh; dfn[m.a] -= lr * eh; att[m.a] += lr * ea; dfn[m.h] -= lr * ea;
     const ph = P(m.h), pa = P(m.a);
     ca[ph] += FUT_LRC * eh; cd[pa] -= FUT_LRC * eh; ca[pa] += FUT_LRC * ea; cd[ph] -= FUT_LRC * ea;
     base[m.c] += 0.005 * (eh + ea) / 2; ha[m.c] += 0.003 * (eh - ea) / 2;
