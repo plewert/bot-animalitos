@@ -1086,7 +1086,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611240645";
+const BUILD="202611241230";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(){
@@ -1209,8 +1209,8 @@ function ventana(st){
   let base=null;
   const dia=st.dia&&st.dia.fecha===today()?st.dia.items:null, hoyL=deHoy(st);
   if(dia&&dia.length&&hoyL.length===dia.length&&hoyL.every((n,i)=>n===dia[i].num)){
-    const [a,m]=dia[dia.length-1].hora.split(":").map(Number); base=new Date(); base.setHours(a,m,0,0);
-  }else if(st.tap&&st.tap.i===h.length){ base=new Date(st.tap.t); if(base.getMinutes()<mm) base.setHours(base.getHours()-1); base.setMinutes(mm,0,0); }
+    const [a,m]=dia[dia.length-1].hora.split(":").map(Number); base=ahora(); base.setHours(a,m,0,0);
+  }else if(st.tap&&st.tap.i===h.length){ base=new Date(st.tap.t+VZS()); if(base.getMinutes()<mm) base.setHours(base.getHours()-1); base.setMinutes(mm,0,0); }
   if(!base) return null;
   const ini=new Date(base); ini.setHours(ini.getHours()+1);
   if(ini.getHours()>ULTIMO||ini.getDate()!==base.getDate()||base.getHours()>=ULTIMO){ ini.setTime(base.getTime()); ini.setDate(ini.getDate()+(base.getHours()>=PRIMER?1:0)); ini.setHours(PRIMER,mm,0,0); }
@@ -1220,7 +1220,7 @@ function ventana(st){
 }
 function ventanaHtml(st){
   const w=ventana(st); if(!w) return "";
-  const now=Date.now(), manana=w.ini.toDateString()!==new Date().toDateString()&&w.ini>new Date();
+  const now=ahoraMs(), manana=w.ini.toDateString()!==ahora().toDateString()&&w.ini>ahora();
   const rango=(w.fin.getTime()===w.ini.getTime()?"a las <b>"+fmtH(w.ini)+"</b>":"de <b>"+fmtH(w.ini)+"</b> a <b>"+fmtH(w.fin)+"</b>");
   if(now>w.fin.getTime()+10*60000) return `<div class="clk v"><span>⌛</span><div>Horario vencido: era ${rango} · Toca 🔄 Actualizar o marca el último que salió.</div></div>`;
   const pct=Math.max(0,Math.min(100,(now-w.base.getTime())/(w.fin.getTime()+10*60000-w.base.getTime())*100));
@@ -1270,15 +1270,19 @@ function salioHtml(l,st,last){ let h=""; try{ const w=ventana(st); if(w) h=fmtH(
 function horaSalio(st){ try{ const w=ventana(st); return w?" ("+fmtH(w.base)+")":""; }catch(e){ return ""; } }
 function ventanaTxt(st){
   const w=ventana(st); if(!w) return "";
-  const manana=w.ini.toDateString()!==new Date().toDateString()&&w.ini>new Date();
+  const manana=w.ini.toDateString()!==ahora().toDateString()&&w.ini>ahora();
   return "\n⏰ *"+(manana?"Mañana: jugar ":"Jugar ")+(w.fin.getTime()===w.ini.getTime()?"a las "+fmtH(w.ini):"de "+fmtH(w.ini)+" a "+fmtH(w.fin))+"*";
 }
 setInterval(()=>{ if(!document.body.classList.contains("locked")) try{render();}catch(e){} },60000);
 
 /* ---- jaulas: días sin salir ---- */
 const pad2=x=>String(x).padStart(2,"0");
-function today(){const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());}
-function daysSince(ds){const [y,m,d]=ds.split("-").map(Number); const a=new Date(y,m-1,d), t=new Date(); const b=new Date(t.getFullYear(),t.getMonth(),t.getDate()); return Math.round((b-a)/86400000);}
+/* 🇻🇪 Todo el bot cuenta días y horas con la hora de Venezuela, aunque el teléfono esté en otro país */
+function VZS(){ return (new Date().getTimezoneOffset()-240)*60000; }
+function ahora(){ return new Date(Date.now()+VZS()); }
+function ahoraMs(){ return Date.now()+VZS(); }
+function today(){const d=ahora(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());}
+function daysSince(ds){const [y,m,d]=ds.split("-").map(Number); const a=new Date(y,m-1,d), t=ahora(); const b=new Date(t.getFullYear(),t.getMonth(),t.getDate()); return Math.round((b-a)/86400000);}
 const fmtD=ds=>{const [y,m,d]=ds.split("-");return d+"/"+m+"/"+y;};
 // datos de lotoven.com/animalito/lottoactivo/estadisticas/ tomados el 14/11/2026
 const SEED_DATE="2026-11-14";
@@ -1687,7 +1691,7 @@ async function autoCargar(id,manual){
       }
       hoyN=items.length;
     }
-    const hh=new Date().toLocaleTimeString("es-VE",{hour:"numeric",minute:"2-digit"});
+    const hh=new Date().toLocaleTimeString("es-VE",{timeZone:"America/Caracas",hour:"numeric",minute:"2-digit"});
     if(hoyN!==null) AUTO.estado[id]={c:"ok",t:(hoyN?"Hoy: "+hoyN+" sorteo"+(hoyN>1?"s":""):"Todavía no hay sorteos hoy")+" · revisado "+hh+(AUTO.nuevos[id]&&hoyN?" · "+AUTO.nuevos[id]+" nuevo"+(AUTO.nuevos[id]>1?"s":""):"")};
     else if(partes.length) AUTO.estado[id]={c:"ok",t:"Jaulas al día · revisado "+hh};
     else AUTO.estado[id]={c:"err",t:"Sin resultados automáticos para "+lot.name+" todavía. Puedes marcar los animales a mano."};
@@ -1738,7 +1742,7 @@ setInterval(()=>{ if(!document.body.classList.contains("locked")) autoTodas(fals
 /* ⚡ los 15 minutos después de cada sorteo: revisa cada minuto hasta que llegue el resultado */
 setInterval(()=>{ try{
   if(document.body.classList.contains("locked")||!API_URL) return;
-  const now=new Date(), td=today();
+  const now=ahora(), td=today();
   LOTS.forEach(l=>{ const mm=minLot(l.id), dif=(now.getMinutes()-mm+60)%60; if(dif>15) return;
     const s=new Date(now.getTime()-dif*60000), h=s.getHours(); if(h<PRIMER||h>ULTIMO) return;
     const st=ST.lots[l.id], it=st&&st.dia&&st.dia.fecha===td?st.dia.items:[], hk=String(h).padStart(2,"0")+":";
@@ -2005,14 +2009,14 @@ function proxSorteo(l){
   const st=ST.lots[l.id]||{}; let min=minLot(l.id);
   const it=st.dia&&st.dia.items&&st.dia.items.length?st.dia.items[st.dia.items.length-1]:null;
   if(it&&it.hora){ const m=+String(it.hora).split(":")[1]; if(!isNaN(m)) min=m; }
-  const now=new Date(), d=new Date(now);
+  const now=ahora(), d=new Date(now);
   for(let h=PRIMER;h<=ULTIMO;h++){ d.setHours(h,min,0,0); if(d>now) return {d,hoy:true}; }
   d.setDate(d.getDate()+1); d.setHours(PRIMER,min,0,0); return {d,hoy:false};
 }
 function pintarCuenta(){
   const CD_NOM={activo:"LOTTO ACTIVO",granjita:"GRANJITA",guacharo:"GUÁCHARO",inter:"INTER"};
   const box=document.getElementById("cdown"); if(!box) return;
-  box.innerHTML=LOTS.map(l=>{ const p=proxSorteo(l), ms=p.d-Date.now(), m=Math.ceil(ms/60000);
+  box.innerHTML=LOTS.map(l=>{ const p=proxSorteo(l), ms=p.d-ahoraMs(), m=Math.ceil(ms/60000);
     const t=!p.hoy?"Mañana":m<60?m+" min":Math.floor(m/60)+" h "+(m%60)+" min";
     return `<button type="button" data-id="${l.id}" class="${ST.cur===l.id?"on":""}${p.hoy&&m<=5?" pr":""}"><span class="n">${CD_NOM[l.id]||esc(l.name)}</span><span class="t">${t}</span><span class="h">${fmtH(p.d)}</span></button>`; }).join("");
   box.querySelectorAll("button").forEach(b=>b.onclick=()=>{ const t=document.querySelector('.tab[data-id="'+b.dataset.id+'"]'); if(t) t.click(); setTimeout(pintarCuenta,50); });
@@ -2046,7 +2050,7 @@ function celebrar(l,n){
 function pintarRing(){
   const box=$("cdRing"); if(!box) return; const l=L();
   let p; try{ p=proxSorteo(l); }catch(e){ return; }
-  const rem=Math.max(0,p.d-new Date()), s=Math.floor(rem/1000), red=p.hoy&&rem<60000;
+  const rem=Math.max(0,p.d-ahora()), s=Math.floor(rem/1000), red=p.hoy&&rem<60000;
   const tx=s>=3600?Math.floor(s/3600)+"h "+String(Math.floor(s%3600/60)).padStart(2,"0")+"m":String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   const fill=rem<=3600000?1-rem/3600000:0, off=(264*(1-fill)).toFixed(1);
   const hr=p.d.toLocaleTimeString("es-VE",{hour:"numeric",minute:"2-digit"}).replace(/\s?([ap])\.?\s?m\.?/i," $1. m.");
@@ -2428,7 +2432,7 @@ function cycCuando(l,st,n,g){ try{
   const td=today(), it=st.dia&&st.dia.fecha===td?st.dia.items||[]:[];
   for(let i=it.length-1;i>=0;i--) if(it[i].num===n) return "salió hoy "+fmtH12(it[i].hora)+" (hace "+g+" sorteos)";
   let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
-  const ay=new Date(); ay.setDate(ay.getDate()-1); const fa=ay.getFullYear()+"-"+String(ay.getMonth()+1).padStart(2,"0")+"-"+String(ay.getDate()).padStart(2,"0");
+  const ay=ahora(); ay.setDate(ay.getDate()-1); const fa=ay.getFullYear()+"-"+String(ay.getMonth()+1).padStart(2,"0")+"-"+String(ay.getDate()).padStart(2,"0");
   for(let k=D.length-1;k>=0&&k>=D.length-3;k--){ const [f,its]=D[k]; if(f>=td) continue;
     const m=its.filter(x=>x[1]===n).sort((a,b)=>a[0]<b[0]?-1:1).pop();
     if(m) return (f===fa?"salió ayer ":"salió el "+f.slice(8,10)+"/"+f.slice(5,7)+" ")+fmtH12(m[0]); }
@@ -2507,7 +2511,7 @@ function pronCalc0(l,st,last,P){
   const px=proxSorteo(l), hk=dos(px.d.getHours())+":"+dos(px.d.getMinutes());
   const hh=px.d.getHours(), hLab=((hh%12)||12)+(px.d.getMinutes()?":"+dos(px.d.getMinutes()):"")+(hh<12?" a. m.":" p. m.");
   let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
-  const hc={}; let hT=0; const cy={}, c7={}; const lim=new Date(); lim.setDate(lim.getDate()-7); const fl=lim.getFullYear()+"-"+String(lim.getMonth()+1).padStart(2,"0")+"-"+String(lim.getDate()).padStart(2,"0");
+  const hc={}; let hT=0; const cy={}, c7={}; const lim=ahora(); lim.setDate(lim.getDate()-7); const fl=lim.getFullYear()+"-"+String(lim.getMonth()+1).padStart(2,"0")+"-"+String(lim.getDate()).padStart(2,"0");
   D.forEach(([f,it])=>it.forEach(([h,n])=>{ if(!l.A[n]) return; cy[n]=(cy[n]||0)+1; if(f>=fl) c7[n]=(c7[n]||0)+1; if(h===hk){ hc[n]=(hc[n]||0)+1; hT++; } }));
   const nd=D.length, hEsp=hT/l.order.length;
   const H=st.hist, ac={}; let acT=0; for(let i=0;i<H.length-1;i++) if(H[i]===last){ ac[H[i+1]]=(ac[H[i+1]]||0)+1; acT++; }
@@ -2584,7 +2588,7 @@ document.addEventListener("change",e=>{
 const HCACHE={}; let HSEL={};
 /* 📅 historial de 1 año: se baja 1 vez al día por lotería y se guarda en el teléfono (solo cambia una vez al día) */
 function histGuardado(id){ try{ const g=JSON.parse(localStorage.getItem("bot-hist-"+id)||"null"); if(g&&g.f===today()&&Array.isArray(g.dias)&&g.dias.length) return g; }catch(e){} return null; }
-function histDiaCompleto(j){ try{ const ay=new Date(); ay.setDate(ay.getDate()-1); const fa=ay.getFullYear()+"-"+String(ay.getMonth()+1).padStart(2,"0")+"-"+String(ay.getDate()).padStart(2,"0"); const u=j.dias[j.dias.length-1]; return u&&u[0]===fa&&u[1].length>=11; }catch(e){ return true; } }
+function histDiaCompleto(j){ try{ const ay=ahora(); ay.setDate(ay.getDate()-1); const fa=ay.getFullYear()+"-"+String(ay.getMonth()+1).padStart(2,"0")+"-"+String(ay.getDate()).padStart(2,"0"); const u=j.dias[j.dias.length-1]; return u&&u[0]===fa&&u[1].length>=11; }catch(e){ return true; } }
 var HVUELO={};
 function cargarHist(id){ if(HVUELO[id]) return HVUELO[id]; const pr=cargarHist0(id); HVUELO[id]=pr; pr.finally(()=>{ HVUELO[id]=null; }); return pr; }
 async function cargarHist0(id){
@@ -2740,7 +2744,7 @@ function triTxt(l,o){ return o.t.map((n,k)=>l.A[n][1]+" "+n+" "+l.A[n][0]+" "+(o
 /* ===== 🎯 Tripletas más fijas (para mañana o para hoy) ===== */
 var FIJ_CACHE={}, FIJ_PEND={};
 function fijDia(){
-  const now=new Date(), d=new Date(now); let man=now.getHours()>=ULTIMO;
+  const now=ahora(), d=new Date(now); let man=now.getHours()>=ULTIMO;
   if(man) d.setDate(d.getDate()+1);
   const t=d.toLocaleDateString("es-VE",{weekday:"long",day:"2-digit",month:"2-digit"});
   return (man?"para mañana ":"para hoy ")+t;
@@ -2755,7 +2759,7 @@ function fijCyc(l,st,t,D){
       if(i++>30&&s.size>=8){ const base=s.size/N; l.order.forEach(a=>{ if(!last[a]) return; const b=fijBin(Math.round((d0-new Date(last[a]+"T12:00:00"))/864e5)); e[b]=(e[b]||0)+base; if(s.has(a)) h[b]=(h[b]||0)+1; }); }
       s.forEach(n=>last[n]=f); });
     T={}; Object.keys(e).forEach(b=>T[b]=((h[b]||0)+5)/(e[b]+5)); FIJ_DT={}; FIJ_DT[k]=T; }
-  const add=new Date().getHours()>=ULTIMO?1:0; let p=0; const up=[], dn=[];
+  const add=ahora().getHours()>=ULTIMO?1:0; let p=0; const up=[], dn=[];
   t.forEach(n=>{ if(!st.last[n]) return; const g=daysSince(st.last[n])+add, r=T[fijBin(g)]||1, q=Math.max(-4,Math.min(3,Math.round((r-1)*10)));
     p+=q; if(q>0) up.push(n); else if(q<0) dn.push([n,g]); });
   const tags=[]; if(up.length) tags.push(["y","🔄 "+(up.length>1?up.slice(0,-1).join(", ")+" y "+up[up.length-1]:up[0])+" en su punto"]);
@@ -2769,7 +2773,7 @@ function fijCalc(l){
   if(FIJ_CACHE[key]) return FIJ_CACHE[key];
   if(D.length<30) return {R:[],falta:true};
   const nd=D.length, pd={}, par={}, trio={}, f30={}; let t30=0;
-  const lim=new Date(); lim.setDate(lim.getDate()-30); const fl=lim.getFullYear()+"-"+String(lim.getMonth()+1).padStart(2,"0")+"-"+String(lim.getDate()).padStart(2,"0");
+  const lim=ahora(); lim.setDate(lim.getDate()-30); const fl=lim.getFullYear()+"-"+String(lim.getMonth()+1).padStart(2,"0")+"-"+String(lim.getDate()).padStart(2,"0");
   D.forEach(([f,it])=>{ const u=[...new Set(it.map(x=>x[1]).filter(n=>l.A[n]))];
     u.forEach(n=>pd[n]=(pd[n]||0)+1);
     for(let i=0;i<u.length;i++) for(let j=i+1;j<u.length;j++){ const k=[u[i],u[j]].sort().join("|"); par[k]=(par[k]||0)+1; }
@@ -2811,7 +2815,7 @@ var IA_CACHE={k:"",v:null};
 function iaCalc(l,st){
   let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
   if(D.length<60) return null;
-  const add=new Date().getHours()>=ULTIMO?1:0;
+  const add=ahora().getHours()>=ULTIMO?1:0;
   const k=l.id+"|"+D.length+"|"+D[D.length-1][0]+D[D.length-1][1].length+"|"+st.hist.length+"|"+add+"|"+todayStr()+"|"+l.order.map(a=>st.last[a]||"").join(",");
   if(IA_CACHE.k===k) return IA_CACHE.v;
   const T=iaTabla(l,D);
@@ -2837,7 +2841,7 @@ function renderArma(){
   let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
   const head=`<div class="arh">🎯 Arma tu tripleta con la <span class="iab">IA</span></div>`;
   if(D.length<60){ box.innerHTML=`<div class="arw">${head}<p class="note" style="margin:6px 0 0">Hace falta el historial del servidor. Aparece en unos segundos.</p></div>`; return; }
-  const T=iaTabla(l,D), add=new Date().getHours()>=ULTIMO?1:0;
+  const T=iaTabla(l,D), add=ahora().getHours()>=ULTIMO?1:0;
   const gp=a=>daysSince(st.last[a])+add, rt=a=>st.last[a]?(T[fijBin(gp(a))]||1):1, dd=g=>g+(g===1?" día":" días");
   const X=AR_SEL[l.id]&&l.A[AR_SEL[l.id]]?AR_SEL[l.id]:null;
   const lista=AR_ALL?l.order:l.order.slice(0,12); if(X&&!lista.includes(X)) lista.push(X);
@@ -2872,7 +2876,7 @@ function renderRev(){
   let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
   const head=`<div class="arh" style="color:#ffe08a">🔍 Revisa tu tripleta con la <span class="iab">IA</span></div>`;
   if(D.length<60){ box.innerHTML=`<div class="arw rvw">${head}<p class="note" style="margin:6px 0 0">Hace falta el historial del servidor. Aparece en unos segundos.</p></div>`; return; }
-  const T=iaTabla(l,D), add=new Date().getHours()>=ULTIMO?1:0;
+  const T=iaTabla(l,D), add=ahora().getHours()>=ULTIMO?1:0;
   const gp=a=>daysSince(st.last[a])+add, rt=a=>st.last[a]?(T[fijBin(gp(a))]||1):1, dd=g=>g+(g===1?" día":" días");
   const sel=(RV_SEL[l.id]||[]).filter(n=>l.A[n]);
   const lista=RV_ALL?l.order:l.order.slice(0,12); sel.forEach(n=>{ if(!lista.includes(n)) lista.push(n); });
@@ -2913,7 +2917,7 @@ function avisosJugada(){ try{ const l=L(), st=S(), pr=$("pred"); if(!pr) return;
   if(cfgPropio(l,st)) h+='<div class="ofcl ofp">⚙️ <b>Estás usando ajustes propios</b> en "Qué datos usar", por eso tu jugada puede ser distinta a la de otros. <button type="button" class="ofb">Volver a la jugada oficial</button></div>';
   if(h){ h2.insertAdjacentHTML("afterend",h); const b=pr.querySelector(".ofb"); if(b) b.onclick=()=>{ const s2=S(); s2.cfg=Object.assign(s2.cfg||{},{sal:null,jmin:5,jmax:12,guide:l.guides[0].id}); try{ localStorage.removeItem("bot-senal-off"); }catch(e){} save(); render(); }; }
 }catch(e){} }
-function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+function todayStr(){ const d=ahora(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
 function renderIA(){
   const box=$("iaBox"); if(!box) return; const l=L(), st=S(); let o=null; try{ o=iaCalc(l,st); }catch(e){}
   const head=`<div class="iah">🤖 Tripletas <span class="iab">IA</span> · el bot a su criterio</div>`;
@@ -2997,7 +3001,7 @@ document.addEventListener("click",e=>{
   if(e.target.id==="hoyTriAll"||e.target.id==="hoyTriWin"){ const w=e.target.id==="hoyTriWin", T=triHoy().filter(o=>!w||o.win), btn=e.target, lab=w?"⧉ Copiar ganadoras":"⧉ Copiar todas";
     if(!T.length){ btn.textContent=w?"Todavía no hay ganadoras":"Todavía no hay tripletas"; clearTimeout(btn._t); btn._t=setTimeout(()=>btn.textContent=lab,2000); return; }
     copyTxt("🎯 *"+(w?"Tripletas ganadoras de hoy 🏆":"Tripletas de hoy")+" · "+l.name+"*\n"+T.map((o,k)=>(k+1)+") "+triTxt(l,o)).join("\n")+FOOTER,btn,lab); return; }
-  if(e.target.id==="hoyResCp"){ const td=new Date().toLocaleDateString("es-VE",{weekday:"long",day:"2-digit",month:"2-digit"});
+  if(e.target.id==="hoyResCp"){ const td=new Date().toLocaleDateString("es-VE",{timeZone:"America/Caracas",weekday:"long",day:"2-digit",month:"2-digit"});
     const txt="📋 *Resultados de hoy*\n"+td+"\n"+hoyLots().filter(x=>x.d.length).map(({l,d})=>"\n*"+l.name+"*\n"+d.map(x=>h12(x.hora)+" → "+l.A[x.num][1]+" "+x.num+" "+l.A[x.num][0]).join("\n")).join("\n");
     copyTxt(hoyLots().some(x=>x.d.length)?txt+FOOTER:"📋 Todavía no hay resultados hoy.",e.target,"⧉ Copiar resultados para WhatsApp"); }
 });
@@ -3193,7 +3197,7 @@ document.addEventListener("click",e=>{
       #rgMod{position:fixed;inset:0;z-index:200;background:rgba(3,5,12,.78);display:flex;align-items:center;justify-content:center;padding:18px}
       #rgMod .rgc{max-width:360px;width:100%;position:relative}#rgMod .rx{position:absolute;top:6px;right:10px;background:none;border:0;color:#fff;font-size:22px;cursor:pointer}
       body.locked #rgBtn{display:none}`; document.head.appendChild(sty);
-    const falta=()=>{ const n=new Date(), m=new Date(n); m.setHours(24,0,0,0); const x=Math.max(0,m-n), h=Math.floor(x/3600000), mi=Math.floor(x%3600000/60000); return h+" h "+mi+" min"; };
+    const falta=()=>{ const n=ahora(), m=new Date(n); m.setHours(24,0,0,0); const x=Math.max(0,m-n), h=Math.floor(x/3600000), mi=Math.floor(x%3600000/60000); return h+" h "+mi+" min"; };
     const quedanTxt=()=>QUEDAN==null?"1 regalo por día":(QUEDAN>0?"1 regalo por día · quedan "+QUEDAN+" premio"+(QUEDAN===1?"":"s"):"Ya se entregaron todos los premios 🎄");
     function html(r,donde){
       if(r&&r.cargando) return `<div class="rt">🎄 REGALO DE NAVIDAD 🎄</div><div class="rg rgx">🎁</div><div class="rh">Abriendo tu regalo…</div>`;
