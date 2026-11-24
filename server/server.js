@@ -654,6 +654,209 @@ document.getElementById("en").onclick=()=>{C=document.getElementById("cl").value
 document.getElementById("bus").oninput=pintar; if(C)cargar();
 </script></body></html>`;
 
+
+// ===================== ⚽ FÚTBOL (football-data.org, plan gratis) =====================
+// Variable en Render (Environment): FOOTBALL_DATA_KEY
+// Descarga las temporadas 1 vez cada 12 horas y los partidos de -3 a +4 días cada 30 min (solo cuando alguien abre la pestaña).
+// Nada en vivo: solo pronósticos antes del partido y el resultado final después.
+const FD_KEY = process.env.FOOTBALL_DATA_KEY || "";
+const FUT_COMPS = { CL: "Champions", PL: "Premier League", PD: "LaLiga", SA: "Serie A", BL1: "Bundesliga", FL1: "Ligue 1", DED: "Eredivisie", PPL: "Portugal", BSA: "Brasil" };
+const FUT_PRIOR = { PL: 0, PD: -0.08, SA: -0.08, BL1: -0.1, FL1: -0.18, PPL: -0.25, DED: -0.25, BSA: -0.2, OTRO: -0.4 };
+const FUT_LR = 0.05, FUT_LRC = 0.02;
+const FUT = { matches: new Map(), teams: {}, meta: {}, preds: {}, model: null, cargado: false, ocupado: false, winAt: 0, builtAt: 0, err: "" };
+
+let fdUlt = 0, fdCola = Promise.resolve();
+async function fdReal(path) {
+  if (!FD_KEY) throw new Error("sin_clave");
+  const espera = fdUlt + (+process.env.FD_GAP || 6500) - Date.now();          // plan gratis: 10 consultas por minuto
+  if (espera > 0) await new Promise(r => setTimeout(r, espera));
+  fdUlt = Date.now();
+  const r = await fetch("https://api.football-data.org/v4" + path, { headers: { "X-Auth-Token": FD_KEY }, signal: AbortSignal.timeout(25000) });
+  if (r.status === 429) { fdUlt = Date.now() + 60000; throw new Error("limite"); }
+  if (!r.ok) throw new Error("fd_" + r.status);
+  return r.json();
+}
+function fd(path) { const p = fdCola.then(() => fdReal(path)); fdCola = p.catch(() => {}); return p; }
+
+function futCompacta(m, comp) {
+  const s = m.score || {};
+  const ft = (s.regularTime && s.regularTime.home != null) ? s.regularTime : (s.fullTime || {});   // resultado a los 90 minutos
+  const h = m.homeTeam || {}, a = m.awayTeam || {};
+  if (h.id) FUT.teams[h.id] = h.shortName || h.name || FUT.teams[h.id] || "?";
+  if (a.id) FUT.teams[a.id] = a.shortName || a.name || FUT.teams[a.id] || "?";
+  return { id: m.id, d: m.utcDate, c: comp || (m.competition && m.competition.code), h: h.id, a: a.id, st: m.status, hg: ft.home, ag: ft.away, stg: m.stage || "" };
+}
+const futRedis = async (cmd) => { try { return await redis(cmd); } catch (e) { return null; } };
+
+async function futCargar() {
+  if (FUT.cargado) return;
+  FUT.cargado = true;
+  try {
+    const [meta, teams, preds] = await Promise.all([futRedis(["GET", "fut:meta"]), futRedis(["GET", "fut:teams"]), futRedis(["GET", "fut:preds"])]);
+    FUT.meta = meta ? JSON.parse(meta) : {};
+    FUT.teams = teams ? JSON.parse(teams) : {};
+    FUT.preds = preds ? JSON.parse(preds) : {};
+    const claves = Object.keys(FUT.meta.keys || {});
+    if (claves.length) {
+      const vals = await futRedis(["MGET", ...claves]) || [];
+      vals.forEach(v => { if (v) JSON.parse(v).forEach(m => FUT.matches.set(m.id, m)); });
+    }
+    FUT.builtAt = FUT.meta.at || 0;
+    futModelo();
+  } catch (e) { FUT.err = String(e.message || e); }
+}
+
+// Descarga la temporada actual de cada liga (y la anterior, 1 vez por semana)
+async function futTemporadas() {
+  if (!FD_KEY || FUT.ocupado) return;
+  FUT.ocupado = true;
+  try {
+    await futCargar();
+    FUT.meta.keys = FUT.meta.keys || {}; FUT.meta.prev = FUT.meta.prev || {};
+    for (const comp of Object.keys(FUT_COMPS)) {
+      let j;
+      try { j = await fd("/competitions/" + comp + "/matches"); } catch (e) { FUT.err = comp + ": " + e.message; if (e.message === "limite") break; continue; }
+      const ms = (j.matches || []);
+      const temp = parseInt((j.filters && j.filters.season) || (ms[0] && ms[0].season && String(ms[0].season.startDate).slice(0, 4)), 10);
+      const lista = ms.map(m => futCompacta(m, comp));
+      lista.forEach(m => FUT.matches.set(m.id, m));
+      const k = "fut:m:" + comp + ":" + temp;
+      FUT.meta.keys[k] = Date.now();
+      await futRedis(["SET", k, JSON.stringify(lista)]);
+      if (temp && (!FUT.meta.prev[comp] || Date.now() - FUT.meta.prev[comp] > 7 * 86400000)) {
+        try {
+          const jp = await fd("/competitions/" + comp + "/matches?season=" + (temp - 1));
+          const lp = (jp.matches || []).map(m => futCompacta(m, comp));
+          lp.forEach(m => FUT.matches.set(m.id, m));
+          const kp = "fut:m:" + comp + ":" + (temp - 1);
+          FUT.meta.keys[kp] = Date.now();
+          await futRedis(["SET", kp, JSON.stringify(lp)]);
+        } catch (e) { if (e.message === "limite") break; }
+        FUT.meta.prev[comp] = Date.now();
+      }
+    }
+    // Solo se guardan las 2 temporadas más nuevas de cada liga
+    const porComp = {};
+    Object.keys(FUT.meta.keys).forEach(k => { const [, , c, t] = k.split(":"); (porComp[c] = porComp[c] || []).push(+t); });
+    for (const c in porComp) { porComp[c].sort((x, y) => y - x).slice(2).forEach(t => { delete FUT.meta.keys["fut:m:" + c + ":" + t]; futRedis(["DEL", "fut:m:" + c + ":" + t]); }); }
+    FUT.meta.at = Date.now(); FUT.builtAt = FUT.meta.at;
+    await futRedis(["SET", "fut:meta", JSON.stringify(FUT.meta)]);
+    await futRedis(["SET", "fut:teams", JSON.stringify(FUT.teams)]);
+    futModelo();
+  } finally { FUT.ocupado = false; }
+}
+
+// Modelo: fuerza de ataque y defensa de cada equipo (Poisson), igual que en la prueba
+function futModelo() {
+  const todos = [...FUT.matches.values()];
+  const pais = {};
+  for (const m of todos) if (m.c !== "CL" && m.h && m.a) { pais[m.h] = pais[m.h] || m.c; pais[m.a] = pais[m.a] || m.c; }
+  const ms = todos.filter(m => m.st === "FINISHED" && m.hg != null && m.ag != null && m.h && m.a).sort((x, y) => (x.d < y.d ? -1 : x.d > y.d ? 1 : 0));
+  const ca = { ...FUT_PRIOR }, cd = { ...FUT_PRIOR }, att = {}, dfn = {}, base = {}, ha = {};
+  const P = t => pais[t] || "OTRO";
+  const ini = t => { if (!(t in att)) { att[t] = ca[P(t)] || 0; dfn[t] = cd[P(t)] || 0; } };
+  for (const m of ms) {
+    ini(m.h); ini(m.a);
+    if (!(m.c in base)) { base[m.c] = Math.log(1.35); ha[m.c] = 0.25; }
+    const neutral = m.stg === "FINAL";
+    const lh = Math.exp(base[m.c] + (neutral ? 0 : ha[m.c]) + att[m.h] - dfn[m.a]), la = Math.exp(base[m.c] + att[m.a] - dfn[m.h]);
+    const eh = m.hg - lh, ea = m.ag - la;
+    att[m.h] += FUT_LR * eh; dfn[m.a] -= FUT_LR * eh; att[m.a] += FUT_LR * ea; dfn[m.h] -= FUT_LR * ea;
+    const ph = P(m.h), pa = P(m.a);
+    ca[ph] += FUT_LRC * eh; cd[pa] -= FUT_LRC * eh; ca[pa] += FUT_LRC * ea; cd[ph] -= FUT_LRC * ea;
+    base[m.c] += 0.005 * (eh + ea) / 2; ha[m.c] += 0.003 * (eh - ea) / 2;
+  }
+  FUT.model = { att, dfn, base, ha, ca, cd, pais, n: ms.length };
+}
+
+function futProbs(lh, la) {
+  const f = [1]; for (let i = 1; i <= 10; i++) f[i] = f[i - 1] * i;
+  const ph = [], pa = [];
+  for (let i = 0; i <= 10; i++) { ph[i] = Math.exp(-lh) * lh ** i / f[i]; pa[i] = Math.exp(-la) * la ** i / f[i]; }
+  let p1 = 0, px = 0, p2 = 0, ov = 0, tot = 0;
+  for (let i = 0; i <= 10; i++) for (let j = 0; j <= 10; j++) {
+    const p = ph[i] * pa[j]; tot += p;
+    if (i > j) p1 += p; else if (i === j) px += p; else p2 += p;
+    if (i + j >= 3) ov += p;
+  }
+  return [p1 / tot, px / tot, p2 / tot, ov / tot];
+}
+function futPred(m) {
+  const M = FUT.model; if (!M) return null;
+  const P = t => M.pais[t] || (m.c !== "CL" ? m.c : "OTRO");
+  const A = t => (t in M.att ? M.att[t] : (M.ca[P(t)] || 0)), D = t => (t in M.dfn ? M.dfn[t] : (M.cd[P(t)] || 0));
+  const b = m.c in M.base ? M.base[m.c] : Math.log(1.35), h = m.c in M.ha ? M.ha[m.c] : 0.25;
+  const neutral = m.stg === "FINAL";
+  const lh = Math.min(5, Math.exp(b + (neutral ? 0 : h) + A(m.h) - D(m.a))), la = Math.min(5, Math.exp(b + A(m.a) - D(m.h)));
+  const [p1, px, p2, ov] = futProbs(lh, la);
+  const pr = { "1": p1, "X": px, "2": p2 };
+  const top = Object.keys(pr).reduce((x, y) => (pr[y] > pr[x] ? y : x));
+  const low = Object.keys(pr).reduce((x, y) => (pr[y] < pr[x] ? y : x));
+  let k, kp;
+  if (pr[top] >= 0.6) { k = top; kp = pr[top]; } else { k = low === "2" ? "1X" : low === "1" ? "X2" : "12"; kp = 1 - pr[low]; }
+  const g = ov >= 0.55 ? "+" : ov <= 0.45 ? "-" : "=";
+  const r = n => Math.round(n * 100);
+  return { p: [r(p1), r(px), r(p2)], o: r(ov), k, kp: r(kp), g };
+}
+function futAcierto(pr, hg, ag) {
+  if (!pr || hg == null || ag == null) return null;
+  const res = hg > ag ? "1" : hg === ag ? "X" : "2";
+  return { r: pr.k.includes(res), g: pr.g === "=" ? null : ((hg + ag >= 3) === (pr.g === "+")) };
+}
+function futSumDias(f, n) { const d = new Date(f + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+
+// Partidos de 3 días atrás a 4 días adelante (1 sola consulta)
+async function futVentana() {
+  const hoy = hoyVE();
+  const j = await fd("/matches?dateFrom=" + futSumDias(hoy, -3) + "&dateTo=" + futSumDias(hoy, 4));
+  let nuevos = false;
+  const lista = [];
+  for (const m of (j.matches || [])) {
+    const comp = m.competition && m.competition.code;
+    if (!FUT_COMPS[comp]) continue;
+    const c = futCompacta(m, comp);
+    const prev = FUT.matches.get(c.id);
+    if (c.st === "FINISHED" && (!prev || prev.st !== "FINISHED")) nuevos = true;
+    FUT.matches.set(c.id, c); lista.push(c);
+  }
+  if (nuevos) futModelo();
+  const ahora = Date.now();
+  for (const m of lista) {
+    const empezo = new Date(m.d).getTime() <= ahora || !/^(SCHEDULED|TIMED)$/.test(m.st);
+    if (!empezo) { const p = futPred(m); if (p) FUT.preds[m.id] = Object.assign(p, { t: m.d }); }   // se congela al empezar el partido
+    if (m.st === "FINISHED" && FUT.preds[m.id]) FUT.preds[m.id].res = [m.hg, m.ag];
+  }
+  for (const id in FUT.preds) if (ahora - new Date(FUT.preds[id].t).getTime() > 10 * 86400000) delete FUT.preds[id];
+  FUT.win = lista; FUT.winAt = ahora;
+  await futRedis(["SET", "fut:preds", JSON.stringify(FUT.preds)]);
+  await futRedis(["SET", "fut:teams", JSON.stringify(FUT.teams)]);
+}
+
+async function futRespuesta() {
+  if (!FD_KEY) return { ok: false, motivo: "sin_clave" };
+  await futCargar();
+  if (!FUT.win || Date.now() - FUT.winAt > 30 * 60000) {
+    try { await futVentana(); } catch (e) { FUT.err = String(e.message || e); if (!FUT.win) return { ok: false, motivo: "error", error: FUT.err }; }
+  }
+  if ((!FUT.builtAt || Date.now() - FUT.builtAt > 12 * 3600000) && !FUT.ocupado) futTemporadas().catch(e => { FUT.err = String(e.message || e); });
+  const T = id => FUT.teams[id] || "?";
+  const partidos = FUT.win.map(m => {
+    const pr = FUT.preds[m.id] || null;
+    return { id: m.id, c: m.c, t: m.d, st: m.st, h: T(m.h), a: T(m.a), pr: pr ? { p: pr.p, o: pr.o, k: pr.k, kp: pr.kp, g: pr.g } : null,
+      res: m.st === "FINISHED" ? [m.hg, m.ag] : null, ac: m.st === "FINISHED" ? futAcierto(pr, m.hg, m.ag) : null };
+  }).sort((x, y) => (x.t < y.t ? -1 : x.t > y.t ? 1 : 0));
+  // Cuántas acertó el bot en los últimos 7 días (pronóstico hecho antes del partido)
+  let n = 0, ok = 0, ns = 0, oks = 0;
+  for (const id in FUT.preds) {
+    const p = FUT.preds[id]; if (!p.res || Date.now() - new Date(p.t).getTime() > 7 * 86400000) continue;
+    const a = futAcierto(p, p.res[0], p.res[1]); n++; if (a.r) ok++;
+    if (p.k.length === 1) { ns++; if (a.r) oks++; }
+  }
+  return { ok: true, at: FUT.winAt, comps: FUT_COMPS, preparando: !FUT.model || FUT.model.n < 50, stats: { n, ok, ns, oks }, partidos };
+}
+
+async function futTalVez() { await futCargar(); if (FD_KEY && Date.now() - FUT.builtAt > 12 * 3600000) await futTemporadas(); }
+
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   try {
@@ -688,6 +891,7 @@ const server = http.createServer(async (req, res) => {
       const nd = Math.min(HIST_MAX, Math.max(1, parseInt(u.searchParams.get("dias"), 10) || HIST_DIAS));
       try { return enviar(res, 200, await historial(lot, nd)); } catch (e) { return enviar(res, 503, { ok: false, motivo: String(e.message) === "no_config" ? "no_config" : "error" }); }
     }
+    if (u.pathname === "/api/futbol") { try { return enviar(res, 200, await futRespuesta()); } catch (e) { return enviar(res, 503, { ok: false, motivo: "error" }); } }
     if (u.pathname === "/api/historial/estado") return enviar(res, 200, { ok: true, corriendo: HIST.corriendo, hechos: HIST.hechos, faltan: HIST.faltan, errores: HIST.errores, ultimo: HIST.ultimo });
     if (u.pathname === "/admin") return enviar(res, 200, ADMIN_HTML, "text/html; charset=utf-8");
     if (u.pathname.startsWith("/admin/api/")) {
@@ -756,6 +960,7 @@ if (require.main === module) {
   server.listen(PORT, () => console.log("Servidor de resultados listo en el puerto " + PORT));
   setTimeout(vigilar, 20000); setInterval(vigilar, 2 * 60000);
   setTimeout(completarHistorial, 60000); setInterval(completarHistorial, 6 * 3600000);
+  if (FD_KEY) { setTimeout(() => futTalVez().catch(() => {}), 90000); setInterval(() => futTalVez().catch(() => {}), 3 * 3600000); }
 }
 
-module.exports = { bajarDia, historial, completarHistorial, HIST, parseEstadisticas, parseResultados, aTexto, hoyVE, horaVE, vigilar, empujar, suscribir, ultimos, enviarAvisos };
+module.exports = { futRespuesta, futModelo, futPred, futVentana, futTemporadas, FUT, futAcierto, bajarDia, historial, completarHistorial, HIST, parseEstadisticas, parseResultados, aTexto, hoyVE, horaVE, vigilar, empujar, suscribir, ultimos, enviarAvisos };
