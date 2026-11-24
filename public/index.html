@@ -1086,7 +1086,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611240630";
+const BUILD="202611240645";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(){
@@ -2408,10 +2408,12 @@ var CYC_CACHE={};
 const CYC_EDG=[2,5,12,24,48,96,200]; const cycBin=g=>{ if(g>=99999) return 8; for(let i=0;i<CYC_EDG.length;i++) if(g<=CYC_EDG[i]) return i; return 7; };
 function cycSeq(l,hasta){ let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
   const q=[]; D.slice().sort((a,b)=>a[0]<b[0]?-1:1).forEach(([f,it])=>{ if(hasta&&f>=hasta) return; it.filter(x=>l.A[x[1]]).slice().sort((a,b)=>a[0]<b[0]?-1:1).forEach(x=>q.push(x[1])); }); return q; }
-/* 🔄🔄 Ciclo doble (probado 2019-2026): además de cuándo salió la última vez, mira cuándo salió la penúltima. Guácharo sigue con el ciclo simple. */
-const CYC2_EDG=[24,48,72,96,150,250]; const cycBin2=g=>{ if(g>=99999) return 7; for(let i=0;i<CYC2_EDG.length;i++) if(g<=CYC2_EDG[i]) return i; return 6; };
-const cycDoble=l=>l.id!=="guacharo";
-const cycK=(l,g1,g2)=>cycDoble(l)?cycBin(g1)*8+cycBin2(g2):cycBin(g1);
+/* 🔄🔄 Ciclo doble (probado 2019-2026): además de cuándo salió la última vez, mira cuándo salió la penúltima.
+   Guácharo (77 animales) usa tiempos dos veces más largos para la penúltima (probado 2023-2026: 11,0% → 11,5%). */
+const CYC2_EDG=[24,48,72,96,150,250], CYC2_EDG_G=[48,96,144,192,300,500];
+const cycBin2=(g,E)=>{ if(g>=99999) return 7; for(let i=0;i<E.length;i++) if(g<=E[i]) return i; return 6; };
+const cycDoble=l=>true;
+const cycK=(l,g1,g2)=>cycDoble(l)?cycBin(g1)*8+cycBin2(g2,l.id==="guacharo"?CYC2_EDG_G:CYC2_EDG):cycBin(g1);
 function cycLearn(l,seq){ const N=l.order.length, h={}, e={}, li={}, l2={}, S=cycDoble(l)?20:5;
   seq.forEach((n,i)=>{ if(i>300) l.order.forEach(a=>{ const b=cycK(l,a in li?i-li[a]:99999,a in l2?i-l2[a]:99999); e[b]=(e[b]||0)+1/N; if(a===n) h[b]=(h[b]||0)+1; }); if(n in li) l2[n]=li[n]; li[n]=i; });
   const t={}; Object.keys(e).forEach(b=>t[b]=((h[b]||0)+S)/(e[b]+S)); return t; }
