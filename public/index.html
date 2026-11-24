@@ -1086,7 +1086,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611232015";
+const BUILD="202611232125";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(){
@@ -3306,7 +3306,8 @@ document.addEventListener("click",e=>{
     body.inapp.desliza #rgBtn,body.inapp.desliza #nvMus{opacity:0;pointer-events:none}
     #rgBtn,#nvMus{transition:opacity .25s}`;
   document.head.appendChild(sty);
-  let abierto=false, td=0;
+  let abierto=false, td=0, ultMini=0, tMini=0;
+  try{ document.documentElement.style.overflowAnchor="none"; }catch(e){}
   const prep=()=>{ try{
       const top=mb.querySelector(".top"); if(top&&!top.querySelector(".mver")){ const b=document.createElement("button"); b.type="button"; b.className="mver"; b.textContent="▾ ver todo"; b.onclick=e=>{ e.stopPropagation(); abierto=true; mb.classList.remove("mmini"); }; top.appendChild(b); }
       const vb=mb.querySelector(".vfbox"); if(vb){ vb.dataset.ico=vb.classList.contains("vff")?"🐾":"☠";
@@ -3317,7 +3318,13 @@ document.addEventListener("click",e=>{
   const f=()=>{ if(!document.body.classList.contains("inapp")){ mb.classList.remove("mmini"); return; }
     prep(); const y=window.scrollY;
     if(y<150) abierto=false;
-    mb.classList.toggle("mmini",!abierto&&y>220); };
+    /* sin rebote: se achica al pasar 220 px y solo se agranda cerca de arriba (40 px); además compensa el salto */
+    const mini=mb.classList.contains("mmini"), quiero=!abierto&&(mini?y>40:y>220);
+    if(quiero===mini) return;
+    if(Date.now()-ultMini<400){ clearTimeout(tMini); tMini=setTimeout(f,420); return; }
+    ultMini=Date.now();
+    const h0=mb.offsetHeight; mb.classList.toggle("mmini",quiero); const dh=h0-mb.offsetHeight;
+    if(quiero&&dh>0&&y-dh>=60) window.scrollBy(0,-dh); };
   if(typeof render==="function"){ const r0=render; render=function(){ const x=r0.apply(this,arguments); f(); return x; }; }
   window.addEventListener("scroll",()=>{ f(); document.body.classList.add("desliza"); clearTimeout(td); td=setTimeout(()=>document.body.classList.remove("desliza"),700); },{passive:true});
   f();
