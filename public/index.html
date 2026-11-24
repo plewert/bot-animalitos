@@ -816,7 +816,12 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   <div class="box">
     <div class="lock"><span>🔒</span></div>
     <h1>ANIMALITOS·BOT</h1>
-    <div class="tagline" style="margin-top:6px">Acceso con código</div>
+    <div class="gia" style="margin:12px 0 4px;padding:12px 12px 10px;border-radius:14px;border:1px solid rgba(255,210,63,.5);background:linear-gradient(160deg,rgba(46,242,255,.08),rgba(255,210,63,.08))">
+      <div style="font:800 11px Orbitron,sans-serif;letter-spacing:.18em;color:#2ef2ff">🧠 SISTEMA DE IA</div>
+      <div style="font:900 19px/1.15 Orbitron,sans-serif;margin:5px 0 6px">PRONÓSTICOS DE <span style="color:#2ef2ff">ANIMALITOS</span> Y <span style="color:#ffd23f">⚽ FÚTBOL</span></div>
+      <div style="font:600 14.5px/1.3 Rajdhani,sans-serif;color:#c9d6ee">Pronósticos inteligentes: analiza miles de sorteos y partidos reales para decirte qué jugar.</div>
+    </div>
+    <div class="tagline" style="margin-top:8px">Acceso con código</div>
     <form id="gform"><input id="gcode" autocomplete="off" placeholder="BOT-XXXX-XXXX"><div class="err" id="gerr"></div>
     <button class="btn main" type="submit">Entrar</button></form>
     <div class="gprecios" id="gprecios"></div>
@@ -1081,7 +1086,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611231955";
+const BUILD="202611232015";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(){
