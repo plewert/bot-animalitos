@@ -935,8 +935,8 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
     <h2>Jaulas · <span id="jLot"></span></h2>
     <p class="note" style="margin-top:0" id="jInfo"></p>
     <div class="row">
-      <label>Jaula desde <input type="number" id="jmin" min="1" step="1" value="5"> días</label>
-      <label>Jaula fuerte desde <input type="number" id="jmax" min="1" step="1" value="12"> días</label>
+      <label>Jaula desde <input type="number" id="jmin" min="1" step="1" value="5" disabled> días</label>
+      <label>Jaula fuerte desde <input type="number" id="jmax" min="1" step="1" value="12" disabled> días</label>
     </div>
     <div class="jl" id="jList"></div>
     <details style="margin-top:12px"><summary style="cursor:pointer;color:var(--cyan)">Actualizar con la tabla de estadísticas</summary>
@@ -1063,7 +1063,7 @@ new MutationObserver(ms=>{ for(const m of ms){
 } }).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
 
 const L=()=>LOTS.find(l=>l.id===ST.cur)||LOTS[0];
-function S(){const id=L().id; if(!ST.lots[id]) ST.lots[id]={hist:[],cfg:{}}; const st=ST.lots[id]; st.cfg=Object.assign({bet:10,pay:30,win:1,guide:L().guides[0].id,jmin:5,jmax:12},st.cfg); if(!st.last){st.last=Object.assign({},SEED[id]||{}); st.lastSrc=SEED[id]?SEED_DATE:null;} if(!L().guides.some(g=>g.id===st.cfg.guide)) st.cfg.guide=L().guides[0].id; return st;}
+function S(){const id=L().id; if(!ST.lots[id]) ST.lots[id]={hist:[],cfg:{}}; const st=ST.lots[id]; st.cfg=Object.assign({bet:10,pay:30,win:1,guide:L().guides[0].id,jmin:5,jmax:12},st.cfg); st.cfg.jmin=5; st.cfg.jmax=12; st.cfg.guide=L().guides[0].id; if(!st.last){st.last=Object.assign({},SEED[id]||{}); st.lastSrc=SEED[id]?SEED_DATE:null;} if(!L().guides.some(g=>g.id===st.cfg.guide)) st.cfg.guide=L().guides[0].id; return st;}
 const GD=()=>L().guides.find(g=>g.id===S().cfg.guide);
 
 /* predicción según la guía: qué jugar después de x (p = el anterior) */
@@ -1088,7 +1088,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611242035";
+const BUILD="202611250830";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -1113,7 +1113,7 @@ function par69(id,n){ const a=((id==="guacharo"&&PAR69G[n])?PAR69G[n]:(PAR69[n]|
 /* ---- los que más señales tienen (en Jugada) ---- */
 function rankRows(l,st,last,arr,P){ return congelar("r",l,st,last,P,arr.map(x=>x[0]).join(",")+"|"+huella(l,st),()=>rankRows0(l,st,last,arr,P)); }
 function rankRows0(l,st,last,arr,P){
-  const sn=st.cfg.sal==null?100:st.cfg.sal, h=sn?st.hist.slice(-sn):st.hist.slice();
+  const sn=100, h=sn?st.hist.slice(-sn):st.hist.slice();
   const cnt={}; h.forEach(k=>cnt[k]=(cnt[k]||0)+1);
   const top=[...topSalidores()];
   const H=st.hist, ac={}; for(let i=0;i<H.length-1;i++) if(H[i]===last) ac[H[i+1]]=(ac[H[i+1]]||0)+1;
@@ -1152,7 +1152,7 @@ function rankHtml(l,st,last,arr,P){
 }
 /* los 10 que más han salido (igual que la sección Salidores) */
 function topSalidores(){
-  const l=L(), st=S(), sn=st.cfg.sal==null?100:st.cfg.sal, h=sn?st.hist.slice(-sn):st.hist.slice();
+  const l=L(), st=S(), sn=100, h=sn?st.hist.slice(-sn):st.hist.slice();
   const cnt={}; l.order.forEach(k=>cnt[k]=0); h.forEach(k=>{if(k in cnt)cnt[k]++;});
   return new Set(l.order.map((k,i)=>[k,cnt[k],i]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]||a[2]-b[2]).slice(0,10).map(r=>r[0]));
 }
@@ -1287,7 +1287,7 @@ const fmtD=ds=>{const [y,m,d]=ds.split("-");return d+"/"+m+"/"+y;};
 const SEED_DATE="2026-11-14";
 const SEED={activo:{"03":"2026-10-25","08":"2026-11-01","34":"2026-11-05","19":"2026-11-08","17":"2026-11-08","06":"2026-11-09","10":"2026-11-10","12":"2026-11-10","21":"2026-11-10","31":"2026-11-11","30":"2026-11-11","33":"2026-11-11","01":"2026-11-11","22":"2026-11-11","0":"2026-11-11","29":"2026-11-12","15":"2026-11-12","28":"2026-11-12","00":"2026-11-12","24":"2026-11-12","11":"2026-11-12","07":"2026-11-13","20":"2026-11-13","32":"2026-11-13","25":"2026-11-13","23":"2026-11-13","35":"2026-11-13","26":"2026-11-13","04":"2026-11-13","09":"2026-11-13","16":"2026-11-13","02":"2026-11-14","13":"2026-11-14","27":"2026-11-14","36":"2026-11-14","18":"2026-11-14","05":"2026-11-14","14":"2026-11-14"}};
 const STATS_URL={activo:"lotoven.com/animalito/lottoactivo/estadisticas",granjita:"la página de estadísticas de La Granjita",guacharo:"la página de estadísticas del Guácharo",inter:"la página de estadísticas de Lotto Internacional"};
-function jLevel(st,n){const ds=st.last[n]; if(!ds) return 0; const d=daysSince(ds); return d>=st.cfg.jmax?2:(d>=st.cfg.jmin?1:0);}
+function jLevel(st,n){const ds=st.last[n]; if(!ds) return 0; const d=daysSince(ds); return d>=12?2:(d>=5?1:0);}
 function renderJaulas(){
   const l=L(), st=S();
   $("jLot").textContent=l.name; $("jUrl").textContent=STATS_URL[l.id]||"";
@@ -1302,8 +1302,8 @@ function renderJaulas(){
   const items=known.map(n=>[n,daysSince(st.last[n])]).filter(x=>x[1]>=st.cfg.jmin).sort((a,b)=>b[1]-a[1]);
   $("jList").innerHTML=items.length?items.map(([n,d])=>`<div class="jit ${d>=st.cfg.jmax?"j2":""}"><span class="e">${l.A[n][1]}</span><div><b>${n}</b><br>${esc(l.A[n][0])}</div><div class="d">${d} días<small>desde ${fmtD(st.last[n])}</small></div></div>`).join(""):'<div class="note">Ningún animal pasa de '+st.cfg.jmin+' días sin salir.</div>';
 }
-$("jmin").oninput=e=>{const st=S(); st.cfg.jmin=Math.max(1,+e.target.value||1); save(); render();};
-$("jmax").oninput=e=>{const st=S(); st.cfg.jmax=Math.max(1,+e.target.value||1); save(); render();};
+$("jmin").oninput=()=>{};
+$("jmax").oninput=()=>{};
 $("jparse").onclick=()=>{
   const l=L(), st=S(), txt=$("jpaste").value, found={}; let bad=0;
   const NAMES={}; l.order.forEach(n=>{NAMES[norm(l.A[n][0])]=n;}); Object.keys(ALIAS).forEach(k=>{if(l.A[ALIAS[k]]&&!NAMES[k]) NAMES[k]=ALIAS[k];});
@@ -2471,12 +2471,13 @@ function renderCyc(){ const box=$("cycBox"); if(!box) return; const l=L(), st=S(
     try{ navigator.clipboard.writeText(txt).then(()=>{ b.textContent="✓ Copiado"; setTimeout(()=>b.textContent="⧉ Copiar",1500); }); }catch(e){} };
 }
 /* 🔑 Huella: versión + datos con que se calcula la señal. Mismo código en dos aparatos = misma señal */
-function huella(l,st){ try{ const c=st.cfg||{}; const s=(st.hist||[]).join(",")+"|"+l.order.map(n=>jLevel(st,n)).join("")+"|"+sgOff().join()+"|"+[c.sal,c.jmin,c.jmax,c.guide].join(",");
+function huella(l,st){ try{ const c=st.cfg||{}; let dd=""; try{ const D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; dd=D.length+":"+(D[0]&&D[0][0])+":"+(D.length&&D[D.length-1][0])+":"+D.reduce((a,x)=>a+((x[1]&&x[1].length)||0),0); }catch(e){}
+  const s=(st.hist||[]).join(",")+"|"+l.order.map(n=>jLevel(st,n)).join("")+"|"+dd;
   let h=5381; for(let i=0;i<s.length;i++) h=((h*33)^s.charCodeAt(i))|0; return (h>>>0).toString(16).toUpperCase().padStart(8,"0").slice(-4); }catch(e){ return "----"; } }
 function senalCalc(l,st,last,P){ return congelar("s",l,st,last,P,huella(l,st),()=>senalCalc0(l,st,last,P)); }
 function senalCalc0(l,st,last,P){
   const off=sgOff(), on=k=>!off.includes(k);
-  const sn=st.cfg.sal==null?100:st.cfg.sal, h=sn?st.hist.slice(-sn):st.hist.slice();
+  const sn=100, h=sn?st.hist.slice(-sn):st.hist.slice();
   const cnt={}; h.forEach(k=>cnt[k]=(cnt[k]||0)+1);
   const top=[...topSalidores()], H=st.hist, ac={}; let acT=0;
   for(let i=0;i<H.length-1;i++) if(H[i]===last){ ac[H[i+1]]=(ac[H[i+1]]||0)+1; acT++; }
@@ -2920,7 +2921,7 @@ function renderRev(){
   const cb=box.querySelector(".rvcb"); if(cb) cb.onclick=()=>{ RV_SEL[l.id]=sel.map(a=>a===cb.dataset.a?cb.dataset.b:a); renderRev(); };
   const cp=box.querySelector(".rvcp"); if(cp) cp.onclick=()=>copyTxt("🔍 Mi tripleta · "+l.name+"\n"+fijTxt(l,sel),cp,"⧉ Copiar mi tripleta");
 }
-function cfgPropio(l,st){ try{ const c=st.cfg||{}; return (c.sal!=null&&c.sal!==100)||c.jmin!==5||c.jmax!==12||(l.guides&&c.guide!==l.guides[0].id)||sgOff().length>0; }catch(e){ return false; } }
+function cfgPropio(l,st){ return false; try{ const c=st.cfg||{}; return (c.sal!=null&&c.sal!==100)||c.jmin!==5||c.jmax!==12||(l.guides&&c.guide!==l.guides[0].id)||sgOff().length>0; }catch(e){ return false; } }
 function avisosJugada(){ try{ const l=L(), st=S(), pr=$("pred"); if(!pr) return; pr.querySelectorAll(".ofcl").forEach(e=>e.remove());
   const h2=pr.querySelector("h2"); if(!h2) return; let h="";
   const c=HCACHE[l.id]; if(API_URL&&!(c&&c.dias&&c.dias.length)) h+='<div class="ofcl ofw">⏳ <b>Cargando el historial del servidor…</b> La jugada se completa en unos segundos. Espera a que termine para jugar.</div>';
