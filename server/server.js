@@ -192,7 +192,7 @@ async function datos(lot, que) {
 // ===================== CÓDIGOS (un dispositivo por código) =====================
 // Guarda en Upstash Redis qué dispositivo usa cada código y desde cuándo.
 // Variables en Render (Environment): UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN, ADMIN_CLAVE
-const DIAS = 7, ACTIVAR_ANTES = "2026-12-31";
+const DIAS = 7, DIAS_OK = [2, 4, 7, 14, 30], ACTIVAR_ANTES = "2026-12-31";
 const CODIGOS = new Set(["14gat7m66cu", "rqrxoytdtf", "gm6i7ht7jp", "10o6ajpujw1", "125d1selcsh", "1nhjhao2hs1", "26pm5tofx3f", "y6p8qnr1af", "359pq4oy10", "jkm9c38d1w", "2cq7u9phnu2", "xsdrqx0swc", "1lah7i3pm7z", "2e5t20hp67o", "22dgpgvjygj", "14q10rmpqh6", "wr6xje4hbc", "2c7qwhaaz1s", "1wnb7igg6sv", "1mhsyzq5p4q", "1vs14asr7bh", "1ixjk7vo6bl", "18p6v9zzgka", "9jx8t7y9vr", "y6st0galuf", "162t9pohu2o", "26ls882ju64", "15008dtai3o", "3fefjgqa8i", "284hxm9stst", "ch89qxhdt0", "1bux781n9t4", "8adt2athro", "ytkzv3dp1e", "1220dtxx3fo", "20sdcq9qcfz", "1zpjzzptch6", "1idnagh9jkr", "2aakjoogwb5", "14yfu80lndw", "u7j3kpla0f", "15m2m3n7vkd", "23k1fxgiy62", "1olnoes7tly", "16y3fhvnien", "hcgarkck4y", "26ppazi62z9", "13b2k5vcwrb", "27avjvk8h80", "jrrr6ftgdu", "11aznlbutgh", "1v5hl0romd5", "1r0lm4kkgkx", "1kwq39t0sp7", "190hsb28xo", "195mmrvgeo2", "dzqll3vea6", "gnma17pb4", "bwmb4evvgy", "2cv59qh21ug", "2cvurfpk05e", "vl78qdr1fz", "2axtfla9piu", "slzmdo89na", "2a00fgx8s37", "1f403ot17lm", "141551813z3", "8e5n1ouqz1", "27zypw7ze4g", "yyme9pxcz0", "2gnxqy7rcff", "2ctdrjzni88", "2d9lhrl3km6", "24gw0d8xo65", "1ch0c0m9usb", "loutb0fq0s", "9onawau68v", "yu8fmajs3i", "rv773kohjc", "2dl03w7sxi1", "2eszpqridp0", "17k15idcnlx", "2f53fnqp6ws", "xcssihwxge", "fvx0jcvsos", "qitl16z2l5", "8cgdhcbdhp", "1c5t85pkzj9", "kqzvoxgfv2", "1u0n8u75zvk", "1pwqupjdpq1", "138qwpw6sg6", "15er547glhg", "2b0decpif4", "1fukcp1tsad", "1axxoxc0afg", "1e5ian7m518", "17gjq9r3bu5", "1049kf9pscv", "mya45h6lza", "ahdyefzrmi", "xutcpatghh", "nzob9wwknx", "2lhgbnkk2d", "2b613v8donw", "df79mzcfrt", "jbhfcfhcf3", "y2oqzb2uid", "2165hxhga9h", "1qgpq2e0w1z", "13hk926sir", "27rjzk2hy2m", "liw37aupt5", "1z0jsmr4uig", "26kj3n5fraa", "4e5q2h4j5x", "uu1skskl22", "1x6wlxpmvso", "pvf9o9w7do", "1jz5p4qglyq", "qetz5erlur", "28h3jvdskhm", "twuoyflspp", "259xfsiz7gl", "17w6cpq3wlm", "1lwz54lpcd1", "l0nfzg90ck", "6exjud2xmn", "jpuxq69rpt", "23672w1sl6", "1v4eiztwcm0", "q4g5801r0e", "1z21eupvuif", "20u1k7e7va7", "1c7phfyfiew", "1a50fdzxbph", "yrncobkn51", "1x31b4drjn8", "yn4ho7zna4", "13sltzf1do3"]); // huellas de los códigos válidos (no los códigos en sí)
 const R_URL = (process.env.UPSTASH_REDIS_REST_URL || "").replace(/\/$/, "");
 const R_TOK = process.env.UPSTASH_REDIS_REST_TOKEN || "";
@@ -208,7 +208,7 @@ async function leerCuerpo(req) {
   let d = ""; for await (const c of req) { d += c; if (d.length > 5000) break; }
   try { return JSON.parse(d || "{}"); } catch (e) { return {}; }
 }
-const finDe = (ini, d) => ini + (d || DIAS) * 86400000;   // d = días del código (7, 14 o 30)
+const finDe = (ini, d) => ini + (d || DIAS) * 86400000;   // d = días del código (2, 4, 7, 14 o 30)
 // 🚫 Códigos eliminados desde el panel de admin: dejan de funcionar
 const cyrb53S = (str, seed = 7) => { let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed; for (let i = 0, ch; i < str.length; i++) { ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36); };
 const normCodeS = (c) => { const t = String(c || "").normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g, ""); return t.length === 11 && t.startsWith("BOT") ? "BOT-" + t.slice(3, 7) + "-" + t.slice(7) : String(c || "").trim().toUpperCase(); };
@@ -217,7 +217,7 @@ const anulado = async (hash) => !!(await redis(["GET", "anu:" + hash]));
 const existeCodigo = async (hash) => CODIGOS.has(hash) || !!(await redis(["GET", "gen:" + hash]));
 const ABC = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 async function generarCodigos(n, dias) {
-  dias = [7, 14, 30].includes(+dias) ? +dias : DIAS;
+  dias = DIAS_OK.includes(+dias) ? +dias : DIAS;
   n = Math.max(1, Math.min(50, parseInt(n, 10) || 0)); const out = [];
   for (let k = 0; out.length < n && k < n * 20; k++) {
     const r = () => Array.from(crypto.randomBytes(4), (b) => ABC[b % ABC.length]).join("");
@@ -249,7 +249,7 @@ async function usarCodigo(b) {
   if (!rec) {
     if (!b.activar) return { ok: false, motivo: "no_activado" };
     if (CODIGOS.has(hash) && ahora > Date.parse(ACTIVAR_ANTES + "T23:59:59-04:00")) return { ok: false, motivo: "no_activable" };
-    let dias = DIAS; try { const g = await redis(["GET", "gen:" + hash]); if (g) dias = [7, 14, 30].includes(+JSON.parse(g).dias) ? +JSON.parse(g).dias : DIAS; } catch (e) {}
+    let dias = DIAS; try { const g = await redis(["GET", "gen:" + hash]); if (g) dias = DIAS_OK.includes(+JSON.parse(g).dias) ? +JSON.parse(g).dias : DIAS; } catch (e) {}
     rec = { codigo: String(b.codigo || "").slice(0, 20), dev, ua: String(b.ua || "").slice(0, 20), ini: ahora, uso: ahora, dias };
     await redis(["SET", key, JSON.stringify(rec)]);
     return { ok: true, fin: finDe(rec.ini, rec.dias) };
@@ -603,13 +603,13 @@ input,button{font:inherit;border-radius:10px;border:1px solid #2b3550;background
 .el{border-color:#ff3b5c;background:#2a0710;color:#ff8ea0}.rs{margin-left:auto;border-color:#2dff8a;color:#2dff8a}.an{color:#ff3b5c;font-weight:700}
 .fil{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.fil button{border-radius:999px;padding:6px 12px;font-size:13.5px}.fil .on{background:#2dff8a22;border-color:#2dff8a;color:#2dff8a;font-weight:700}
 .cp{margin-left:auto;border-color:#2ef2ff;color:#2ef2ff}.gbox{border-color:#2dff8a88!important}.gres{margin-top:6px;padding:8px;border-radius:10px;background:#0f2a1a;border:1px solid #2dff8a55}.gl{font-family:monospace;font-size:15px;line-height:1.7}.gres .cp{margin:6px 0 0}
-.dz{font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:999px;border:1px solid #2b3550;color:#8a9bbd;vertical-align:middle}.dz.d14{color:#2ef2ff;border-color:#2ef2ff88}.dz.d30{color:#ffd76a;border-color:#ffd76a88}
+.dz{font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:999px;border:1px solid #2b3550;color:#8a9bbd;vertical-align:middle}.dz.d2,.dz.d4{color:#ff9fd8;border-color:#ff9fd888}.dz.d14{color:#2ef2ff;border-color:#2ef2ff88}.dz.d30{color:#ffd76a;border-color:#ffd76a88}
 .rbox{border-color:#ffd76a88!important;background:#1a0f05}.abox{display:block}.abox summary{cursor:pointer;color:#8a9bbd}.abox textarea{width:100%;box-sizing:border-box;min-height:80px;margin:8px 0;border-radius:10px;background:#0b1124;color:#e8f1ff;border:1px solid #2b3550;font:inherit}
 .ebox{border:1px dashed #ff3b5c88;border-radius:12px;padding:10px;margin:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ebox input{flex:1;min-width:150px}</style></head><body>
 <h1>◆ Códigos · Bot de animalitos</h1>
 <div id="login"><input id="cl" type="password" placeholder="Clave de administrador"> <button class="b1" id="en">Entrar</button><div id="msg"></div></div>
 <div id="pan" style="display:none"><div class="s" id="res"></div><div class="ebox rbox" id="reg"></div>
-<div class="ebox gbox"><span>➕ Generar códigos nuevos:</span><input id="gn" type="number" min="1" max="50" value="5" style="max-width:70px;flex:none"><span>de</span><select id="gd" style="font:inherit;border-radius:10px;border:1px solid #2b3550;background:#0b1124;color:#e8f1ff;padding:9px 10px"><option value="7">7 días</option><option value="14">14 días</option><option value="30">30 días</option></select><button class="b1" id="gbtn">Generar</button><div id="gout" style="width:100%"></div></div>
+<div class="ebox gbox"><span>➕ Generar códigos nuevos:</span><input id="gn" type="number" min="1" max="50" value="5" style="max-width:70px;flex:none"><span>de</span><select id="gd" style="font:inherit;border-radius:10px;border:1px solid #2b3550;background:#0b1124;color:#e8f1ff;padding:9px 10px"><option value="2">2 días</option><option value="4">4 días</option><option value="7" selected>7 días</option><option value="14">14 días</option><option value="30">30 días</option></select><button class="b1" id="gbtn">Generar</button><div id="gout" style="width:100%"></div></div>
 <div class="ebox"><span>🚫 Eliminar un código (aunque no esté activado):</span><input id="ecod" placeholder="BOT-XXXX-XXXX"><button class="el" id="ebtn">Eliminar</button><span class="s" id="emsg"></span></div>
 <div class="fil" id="fil"></div>
 <input id="bus" placeholder="Buscar código" style="width:100%;margin:6px 0;box-sizing:border-box"><div id="lis"></div>
@@ -898,7 +898,7 @@ const server = http.createServer(async (req, res) => {
     if (u.pathname.startsWith("/admin/api/")) {
       if (!CLAVE || req.headers["x-clave"] !== CLAVE) return enviar(res, 401, { error: "Clave incorrecta" });
       if (u.pathname === "/admin/api/lista") return enviar(res, 200, await listaCodigos());
-      if (u.pathname === "/admin/api/generar" && req.method === "POST") { const b = await leerCuerpo(req); return enviar(res, 200, { ok: true, codigos: await generarCodigos(b.n, b.dias), dias: [7, 14, 30].includes(+b.dias) ? +b.dias : DIAS }); }
+      if (u.pathname === "/admin/api/generar" && req.method === "POST") { const b = await leerCuerpo(req); return enviar(res, 200, { ok: true, codigos: await generarCodigos(b.n, b.dias), dias: DIAS_OK.includes(+b.dias) ? +b.dias : DIAS }); }
       if (u.pathname === "/admin/api/agregar" && req.method === "POST") { const b = await leerCuerpo(req); return enviar(res, 200, await agregarALista(b.texto)); }
       if (u.pathname === "/admin/api/liberar" && req.method === "POST") {
         const b = await leerCuerpo(req), key = "cod:" + String(b.hash || "");
