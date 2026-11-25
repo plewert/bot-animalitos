@@ -331,6 +331,7 @@
   .auto{font-size:13px;color:var(--muted);margin:6px 0 2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .auto:empty{display:none}
   .auto .d{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+  .auto .tarda{flex-basis:100%;color:var(--gold);font-weight:600}
   .auto>span:nth-child(2){flex:1 1 0;min-width:0}
   .auto.ok .d{background:var(--grn);box-shadow:0 0 8px var(--grn)}
   .auto.wait .d{background:var(--gold);box-shadow:0 0 8px var(--gold);animation:blink 1s infinite}
@@ -869,7 +870,7 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
 
   <div class="layout">
     <div class="card" id="panelCard" data-view="panel" style="grid-area:panel;align-self:start">
-      <h2 class="lkh"><span id="panelTitle">Panel de animalitos</span><button id="lockBtn" type="button" class="lk">🔒 Bloqueado</button></h2><div id="lockMsg" class="lkmsg"></div>
+      <h2 class="lkh"><span id="panelTitle">Panel de animalitos</span><button id="lockBtn" type="button" class="lk">🤖 Resultados automáticos</button></h2><div id="lockMsg" class="lkmsg"></div>
       <div class="row" id="guideRow" style="margin-top:-6px"></div>
       <div class="legend" id="legend"><span><i style="background:var(--grn);box-shadow:0 0 8px var(--grn)"></i>0 y 00</span><span><i style="background:var(--red);box-shadow:0 0 8px var(--red)"></i>Rojos</span><span><i style="background:var(--vio);box-shadow:0 0 8px var(--vio)"></i>Negros</span><span><i style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></i>Salió</span><span><i style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></i>Compañeros</span></div>
       <div id="cdRing"></div>
@@ -921,8 +922,8 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
           <div class="st"><div class="v" id="sBal">0</div><div class="l">Ganancia / pérdida</div></div>
         </div>
         <div class="row">
-          <button class="btn" id="undo">↶ Deshacer</button>
-          <button class="btn" id="clear">Borrar historial</button>
+          <button class="btn" id="undo" style="display:none">↶ Deshacer</button>
+          <button class="btn" id="clear" style="display:none">Borrar historial</button>
           <span class="confirm" id="confirm"><span style="font-size:14px">¿Seguro?</span><button class="btn" id="yes">Sí, borrar</button><button class="btn" id="no">No</button></span>
         </div>
         <div class="hist" id="hist"></div>
@@ -1087,7 +1088,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611241955";
+const BUILD="202611242025";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -1651,7 +1652,10 @@ function autoMsg(){
   if(!API_URL){el.innerHTML="";return;}
   el.className="auto "+(e?e.c:"wait");
   const st=ST.lots[l.id], dia=st&&st.dia&&st.dia.fecha===today()?st.dia.items:[];
-  el.innerHTML='<span class="d"></span><span>'+(e?e.t:"Conectando con los resultados de hoy… la primera vez puede tardar hasta 1 minuto.")+'</span>'
+  let tarda=""; try{ if(e){ const mn=minLot(l.id), now=new Date(), d=new Date(now); let esp=0;
+    for(let h=PRIMER;h<=ULTIMO;h++){ d.setHours(h,mn,0,0); if(now-d>=20*60000) esp++; }
+    if(dia.length<esp){ const hh=PRIMER+dia.length; tarda=' <span class="tarda">⏳ El resultado de las '+h12(hh+":"+String(mn).padStart(2,"0"))+' está tardando; el bot lo cargará apenas salga.</span>'; } } }catch(_){}
+  el.innerHTML='<span class="d"></span><span>'+(e?e.t:"Conectando con los resultados de hoy… la primera vez puede tardar hasta 1 minuto.")+'</span>'+tarda
     +(e&&e.c!=="wait"?' <button id="autoRe">🔄 Actualizar</button>':"")
     +(dia.length?' <button id="autoVer" class="ver">'+(AUTO.ver?"Ocultar resultados":"Ver resultados de hoy ("+dia.length+")")+'</button>':"");
   const b=$("autoRe"); if(b) b.onclick=()=>autoTodas(true);
@@ -1775,14 +1779,14 @@ function renderMbar(){
     const acB=aciertoBadge(l,st);
     const YHm=yaHoy(st);
     mb.innerHTML=`<div class="top"><span${acB?' class="hitS"':""}>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>${acB}</span>${mv?`<span class="mvol">⇄ Volteo: <b>${l.A[mv][1]} ${mv}</b></span>`:""}</div>${acB?aciertoStrip(l,st):""}
-      <div class="acts" id="macts"><button class="undo cp" id="mcopy">⧉ Copiar</button><button class="undo" id="mundo">↶ Deshacer</button><button class="undo lp" id="mclear">🧹 Limpiar</button></div>
+      <div class="acts" id="macts"><button class="undo cp" id="mcopy">⧉ Copiar</button></div>
       <div class="acts conf" id="mconf" style="display:none"><span>¿Borrar todo lo marcado en ${esc(l.name)}?</span><button class="undo" id="mno">Cancelar</button><button class="undo yes" id="myes">Sí, limpiar</button></div>
       ${arr.length?'<div class="pdesc">🎯 Animales para jugar en el próximo sorteo:</div>':""}
       <div class="pks" data-w="1">${arr.length?arr.map(([n,c])=>`<span class="${cs.has(n)?"c":""}${P.vadd.has(n)?" v69":""}${YHm.has(n)?" yh":""}">${P.vadd.has(n)?"⇄ ":""}${l.A[n][1]} ${n}${P.vadd.has(n)?" 🔥":""}${c>1?" ×"+c:""}${YHm.has(n)?YA_B:""}</span>`).join(""):'<span style="color:var(--muted);background:none;border:0;font-weight:500">Sin combinaciones para este animal</span>'}</div>${arr.some(([n])=>YHm.has(n))?'<div class="yhn">⚠️ Los tachados ya salieron hoy: casi nunca repiten el mismo día.</div>':""}${arr.length?ventanaHtml(st):""}`;
     mb.insertAdjacentHTML("beforeend",vfHtml(l,last,true));
     const acs=mb.querySelector(".acstrip"); if(acs) acs.onclick=()=>{ try{ setView("jugada"); }catch(e){} setTimeout(()=>{ const w=document.querySelector("#pred .acw"); if(w) w.scrollIntoView({behavior:"smooth",block:"center"}); },80); };
-    $("mundo").onclick=()=>$("undo").click();
-    $("mclear").onclick=()=>{$("macts").style.display="none";$("mconf").style.display="flex";};
+    if($("mundo")) $("mundo").onclick=()=>$("undo").click();
+    if($("mclear")) $("mclear").onclick=()=>{$("macts").style.display="none";$("mconf").style.display="flex";};
     $("mno").onclick=()=>{$("mconf").style.display="none";$("macts").style.display="flex";};
     $("myes").onclick=()=>{const st=S(); st.hist=[]; st.lastUndo=[]; st.hoy=null; save(); render();};
     $("mcopy").onclick=()=>{
@@ -1832,7 +1836,7 @@ render();
     {sel:"#mbar",movil:true,t:"Barra de jugada",x:"El último animal que salió y lo que manda jugar la guía. Los <b>rosados ⇄</b> son volteos salidores. Si sale un felino o un veneno, aparece su recuadro aparte. <b>Copiar</b> lo manda a WhatsApp, <b>Deshacer</b> quita el último y <b>Limpiar</b> borra lo marcado."},
     {sel:"#autoSt",t:"Resultados automáticos",x:"Cuando esta línea está en <b>verde</b>, el bot carga solo los resultados del día y las jaulas. Con <b>Actualizar</b> revisa al momento."},
     {sel:"#panelCard",v:"panel",t:"Panel",x:"Todos los animales. En <b>dorado ★</b> lo que manda jugar la guía, en cian el que salió, y con <b>barrotes</b> los que llevan días sin salir."},
-    {sel:"#lockBtn",v:"panel",t:"🔒 Candado",x:"El panel está <b>bloqueado</b> para que nadie marque un animal sin querer: los resultados entran solos. Si necesitas marcar uno a mano, toca el candado 🔓; se vuelve a bloquear solo en 1 minuto."},
+    {sel:"#lockBtn",v:"panel",t:"🤖 Resultados automáticos",x:"Los resultados los carga <b>el bot solo</b>, apenas salen. Nadie puede marcarlos a mano, así todos ven lo mismo."},
     {sel:"#pred .pkhead",v:"jugada",t:"Animales para jugar",x:"Lo que toca jugar en el próximo sorteo, con su botón <b>Copiar</b>. Aquí entran tu guía, tus <b>grupos de fijos</b> (Perro, Caballo, Rana, Gato, Toro, Perico, Ratón…) y los <b>volteos ⇄</b> salidores. Las que tienen <b>rejas</b> son jaula: <b>no jugarlas</b>. Un <b>×2</b> indica que sale en varias combinaciones."},
     {sel:"#pred .pron",v:"jugada",t:"🎯 Pronóstico",x:"El resumen más fácil: los <b>3 animales más fuertes</b> para el próximo sorteo, con el porqué en etiquetas: 📖 guía, ⇄ volteo, 📈 salidor, 🔁 pareja fuerte, ⏰ salidor a esa hora, 🔥 caliente esta semana y 🐾☠ felino o veneno. Las barras <b>rojas</b> marcan el más fuerte. <b>Copiar pronóstico</b> lo manda a WhatsApp."},
     {sel:"#pred .rank",v:"jugada",t:"Señales",x:"<b>Los que más señales tienen ⭐</b> y <b>📡 Señal</b> juntan todos los datos: guía, salidores, aciertos, volteos, jaulas y venenos/felinos. Toca un animal de la Señal para ver sus puntos."},
@@ -3018,12 +3022,11 @@ document.addEventListener("click",e=>{
   let lk=true, tRel=null, tMsg=null;
   const msg=(t,fijo)=>{ clearTimeout(tMsg); m.textContent=t; m.classList.toggle("on",!!t); if(t&&!fijo) tMsg=setTimeout(()=>m.classList.remove("on"),3500); };
   const armar=()=>{ clearTimeout(tRel); tRel=setTimeout(()=>poner(true),60000); };
-  function poner(v){ lk=v; b.classList.toggle("off",!v); b.textContent=v?"🔒 Bloqueado":"🔓 Desbloqueado";
-    if(v){ clearTimeout(tRel); msg(""); } else { armar(); msg("🔓 Puedes marcar a mano. Se bloquea solo en 1 minuto.",true); } }
+  /* 🤖 Solo el bot marca resultados: el panel queda bloqueado siempre */
+  b.textContent="🤖 Resultados automáticos";
   g.addEventListener("click",e=>{ if(!e.target.closest(".a")) return;
-    if(lk){ e.stopPropagation(); e.preventDefault(); msg("🔒 Bloqueado: el bot carga los resultados solo. Toca el candado para marcar a mano."); }
-    else armar(); },true);
-  b.onclick=()=>poner(!lk);
+    e.stopPropagation(); e.preventDefault(); msg("🤖 Los resultados los carga el bot solo."); },true);
+  b.onclick=()=>msg("🤖 Los resultados los carga el bot solo: nadie puede marcarlos a mano.");
 })();
 
 /* ⚽ Pestaña Fútbol: pronósticos del día (no es en vivo). Datos: servidor /api/futbol (football-data.org) */
