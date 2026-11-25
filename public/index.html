@@ -709,6 +709,10 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   .pbrain .pbv{color:#d8c6ff;font-weight:700;white-space:nowrap} .pbrain .pbv::after{content:"Ver ▸"} .pbrain[open] .pbv::after{content:"Cerrar ▴"}
   .pbrain .pbd{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;font-size:13.5px;line-height:1.55}
   .pbrain .pbd>div>b:first-child{color:#d8c6ff} .pbrain .pbl{margin:3px 0 3px 4px} .pbrain .pbs{color:#2fd39a}
+.regdias{position:fixed;inset:0;z-index:99999;background:rgba(3,6,18,.78);display:flex;align-items:center;justify-content:center;padding:20px}
+.regdias .rgx{max-width:340px;width:100%;text-align:center;border:2px solid var(--gold);border-radius:22px;background:linear-gradient(180deg,#1a1405,#0b0f22);padding:22px 18px;display:flex;flex-direction:column;gap:8px;box-shadow:0 0 40px rgba(255,210,63,.35)}
+.regdias .rgx b{font-size:21px;color:var(--gold)} .regdias .rgx span{color:#e8f1ff;font-size:15.5px;line-height:1.4} .regdias .rgx span b{font-size:16px;color:var(--grn)}
+.regdias button{margin-top:8px;border:0;border-radius:999px;padding:11px;font-weight:800;font-size:16px;background:var(--gold);color:#1a1200;cursor:pointer}
 </style>
 <style id="anim4">
 .cdr{display:flex;align-items:center;gap:14px;margin:4px 0 12px;padding:8px 14px;border:2px solid var(--cyan);border-radius:16px;background:rgba(10,16,34,.9);box-shadow:0 0 14px rgba(46,242,255,.35)}
@@ -1088,7 +1092,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611250830";
+const BUILD="202611250900";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -1938,9 +1942,13 @@ async function servidorCodigo(code,activar){
     const j=await r.json(); if(j.motivo==="no_config"||j.motivo==="error") return null; return j;
   }catch(e){return null;}
 }
+/* 🎁 Días regalados desde el panel: se avisa una sola vez */
+function avisoRegalo(r){ try{ if(!r||!r.reg||!r.reg.t) return; const k="bot-reg-visto"; if(+(localStorage.getItem(k)||0)>=r.reg.t) return; localStorage.setItem(k,String(r.reg.t));
+  const d=document.createElement("div"); d.className="regdias"; d.innerHTML='<div class="rgx"><div style="font-size:46px">🎁</div><b>¡Te regalamos '+r.reg.d+' día'+(r.reg.d>1?'s':'')+'!</b><span>Tu acceso ahora vence el<br><b>'+fmtFecha(r.fin)+'</b></span><button type="button">¡Gracias!</button></div>';
+  d.querySelector("button").onclick=()=>d.remove(); d.onclick=e=>{ if(e.target===d) d.remove(); }; document.body.appendChild(d); }catch(e){} }
 async function revisarEnServidor(code){
   const r=await servidorCodigo(code,true); if(!r) return;
-  if(r.ok){ const h=cyrb53(normCode(code)); setAct(h,r.fin-DIAS*86400000);
+  if(r.ok){ const h=cyrb53(normCode(code)); setAct(h,r.fin-DIAS*86400000); avisoRegalo(r);
     const d=new Date(r.fin); const v=document.getElementById("vence"); if(v&&CUR) v.innerHTML='<span class="lg">Acceso hasta '+fmtFecha(r.fin)+'</span><span class="sm">Hasta '+String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+'</span>'; if(CUR){ VENCE_FIN=r.fin; renovarAviso(); } }
   else if(MSG_COD[r.motivo]&&CUR) lock(MSG_COD[r.motivo]);
 }
@@ -2720,7 +2728,7 @@ document.getElementById("gform").addEventListener("submit",async e=>{
   const r=await servidorCodigo(c,true);
   btn.disabled=false; err.style.color="";
   if(r){
-    if(r.ok){ if(!CODES.has(hc)) genAdd(hc); setAct(hc,r.fin-DIAS*86400000); err.textContent=""; unlock(normCode(c),r.fin); }
+    if(r.ok){ if(!CODES.has(hc)) genAdd(hc); setAct(hc,r.fin-DIAS*86400000); err.textContent=""; unlock(normCode(c),r.fin); avisoRegalo(r); }
     else err.textContent=MSG_COD[r.motivo]||"No se pudo verificar el código. Intenta otra vez.";
     return;
   }
@@ -2731,7 +2739,9 @@ document.getElementById("gform").addEventListener("submit",async e=>{
 document.getElementById("gcode").addEventListener("input",()=>{document.getElementById("gerr").textContent="";});
 document.getElementById("salir").onclick=()=>lock("");
 (function(){let c=null;try{c=localStorage.getItem(AKEY)}catch(e){}
-  if(c){const r=check(c,false); if(r.ok){ unlock(c,r.fin); setTimeout(()=>revisarEnServidor(c),300); } else lock(r.msg);} })();
+  if(c){const r=check(c,false); if(r.ok){ unlock(c,r.fin); setTimeout(()=>revisarEnServidor(c),300); } else { lock(r.msg);
+    /* vencido aquí: se pregunta al servidor por si le regalaron días */
+    servidorCodigo(c,true).then(j=>{ if(j&&j.ok){ setAct(cyrb53(normCode(c)),j.fin-DIAS*86400000); try{localStorage.setItem(AKEY,c)}catch(e){} unlock(c,j.fin); avisoRegalo(j); } }); } } })();
 (function(){ if(CUR) return; let fin=0,ini=0; try{fin=+(localStorage.getItem(DKEY)||0); ini=+(localStorage.getItem("bot-demo-ini")||0);}catch(e){}
   if(fin&&Date.now()<fin) startDemo(fin); else if(fin){ endDemo(); } else if(ini&&Date.now()>ini+DEMO_MIN*60000) demoUsada(); })();
 setInterval(()=>{const c=CUR;
