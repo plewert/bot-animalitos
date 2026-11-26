@@ -713,6 +713,17 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
 .regdias .rgx{max-width:340px;width:100%;text-align:center;border:2px solid var(--gold);border-radius:22px;background:linear-gradient(180deg,#1a1405,#0b0f22);padding:22px 18px;display:flex;flex-direction:column;gap:8px;box-shadow:0 0 40px rgba(255,210,63,.35)}
 .regdias .rgx b{font-size:21px;color:var(--gold)} .regdias .rgx span{color:#e8f1ff;font-size:15.5px;line-height:1.4} .regdias .rgx span b{font-size:16px;color:var(--grn)}
 .regdias button{margin-top:8px;border:0;border-radius:999px;padding:11px;font-weight:800;font-size:16px;background:var(--gold);color:#1a1200;cursor:pointer}
+#colHoy .crow{display:flex;gap:5px;overflow-x:auto;padding-bottom:2px}
+#colHoy .cch{flex:0 0 auto;min-width:46px;border-radius:11px;padding:4px 3px;text-align:center;border:2px solid transparent}
+#colHoy .cch small{display:block;font-size:10px;opacity:.85}#colHoy .cch span{font-size:19px}#colHoy .cch b{display:block;font-size:14px}
+#colHoy .r{background:linear-gradient(180deg,#d61f2c,#8e0f18);color:#fff}#colHoy .n{background:linear-gradient(180deg,#2b2f3a,#0c0e14);border-color:#3a4150;color:#fff}#colHoy .v{background:linear-gradient(180deg,#22b04a,#0e6b2a);color:#fff}
+#colHoy .ccnt{display:flex;gap:6px;margin-top:8px;font-size:13.5px;font-weight:700}#colHoy .ccnt span{flex:1;border-radius:10px;padding:6px 4px;text-align:center;background:rgba(255,255,255,.05)}
+#colHoy .cnote{font-size:12.5px;color:var(--muted);margin-top:7px;line-height:1.35}#colHoy .cvac{font-size:13px;color:var(--muted);padding:6px 0}
+#colHoy .czr{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px}#colHoy .cbd{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+#colHoy .ccl{font:inherit;border-radius:10px;display:flex;align-items:center;justify-content:space-between;padding:4px 9px;font-size:13px;opacity:.55;cursor:pointer;border:0}
+#colHoy .ccl b{font-size:14px}#colHoy .ccl span{font-size:16px}
+#colHoy .ccl.on{opacity:1;outline:3px solid var(--gold);box-shadow:0 0 10px rgba(255,210,63,.55)}#colHoy .ccl.sel{opacity:1;outline:3px solid var(--cyan)}
+#colHoy .cinf{margin-top:8px;border:1px solid rgba(46,242,255,.4);border-radius:12px;padding:8px 10px;font-size:13.5px;line-height:1.45;background:rgba(46,242,255,.06)}
 </style>
 <style id="anim4">
 .cdr{display:flex;align-items:center;gap:14px;margin:4px 0 12px;padding:8px 14px;border:2px solid var(--cyan);border-radius:16px;background:rgba(10,16,34,.9);box-shadow:0 0 14px rgba(46,242,255,.35)}
@@ -888,6 +899,7 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
       </div>
 
       <div class="card" id="statsCard" data-view="cuentas" style="grid-area:stats;align-self:start">
+        <div id="colHoy"></div>
         <h2>📋 Resultados de hoy</h2>
         <div id="hoyRes"></div>
         <button class="hbtn" id="hoyResCp" type="button">⧉ Copiar resultados para WhatsApp</button>
@@ -1092,7 +1104,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611250900";
+const BUILD="202611251300";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -2431,7 +2443,7 @@ function cycSeq(l,hasta){ let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]
    Guácharo (77 animales) usa tiempos dos veces más largos para la penúltima (probado 2023-2026: 11,0% → 11,5%). */
 const CYC2_EDG=[24,48,72,96,150,250], CYC2_EDG_G=[48,96,144,192,300,500];
 const cycBin2=(g,E)=>{ if(g>=99999) return 7; for(let i=0;i<E.length;i++) if(g<=E[i]) return i; return 6; };
-const cycDoble=l=>false; /* ⏸ ciclo doble apagado (24/11 noche): poner true para volver a usarlo */
+const cycDoble=l=>true;
 const cycK=(l,g1,g2)=>cycDoble(l)?cycBin(g1)*8+cycBin2(g2,l.id==="guacharo"?CYC2_EDG_G:CYC2_EDG):cycBin(g1);
 function cycLearn(l,seq){ const N=l.order.length, h={}, e={}, li={}, l2={}, S=cycDoble(l)?20:5;
   seq.forEach((n,i)=>{ if(i>300) l.order.forEach(a=>{ const b=cycK(l,a in li?i-li[a]:99999,a in l2?i-l2[a]:99999); e[b]=(e[b]||0)+1/N; if(a===n) h[b]=(h[b]||0)+1; }); if(n in li) l2[n]=li[n]; li[n]=i; });
@@ -2502,6 +2514,9 @@ function senalCalc0(l,st,last,P){
     if(on("sal")&&r>=0){ const p=r<3?3:2; f.push(["🔥 Salidor ("+(cnt[n]||0)+" de "+h.length+")",p]); sc+=p; }
     if(on("ac")&&ac[n]){ const q=acEsp>=2?ac[n]/acEsp:0, p=acEsp>=2?(q>=1.8?3:q>=1.4?2:q>=1.15?1:0):Math.min(ac[n],3);
       if(p){ f.push(["✓ Salió "+ac[n]+(ac[n]===1?" vez":" veces")+" tras el "+last+(acEsp>=2?" (lo normal: "+Math.round(acEsp)+")":""),p]); sc+=p; } }
+    /* 🎰 Tablero (probado 2022-2026): lo pegado al último que salió sale un poco menos, lo lejano un poco más. Solo loterías de 38 */
+    if(l.id!=="guacharo"&&last&&last!=="0"&&last!=="00"&&n!=="0"&&n!=="00"){ const P2=k=>[Math.ceil(+k/3)-1,(+k-1)%3], p=P2(last), q=P2(n), d=Math.max(Math.abs(p[0]-q[0]),Math.abs(p[1]-q[1]));
+      if(d===1){ f.push(["🎰 Pegado al "+last+" en el tablero",-1]); sc-=1; } else if(d>=7){ f.push(["🎰 Lejos del "+last+" en el tablero",1]); sc+=1; } else if(d>=4){ f.push(["🎰 Medio lejos del "+last+" en el tablero",0.5]); sc+=0.5; } }
     const lv=jLevel(st,n);
     { let cy=null; try{ cy=cycInfo(l,st,n); }catch(e){} if(cy){ f.push([cy.lab,cy.p]); sc+=cy.p; } }
     if(on("jaula")&&lv){ f.push(["🔒 "+(lv===2?"Jaula fuerte":"Jaula")+" "+daysSince(st.last[n])+"d",-3]); sc-=3; }
@@ -2974,7 +2989,33 @@ document.addEventListener("click",e=>{
   if(one){ const x=o.R[+one.dataset.i]; if(x) copyTxt(cab+fijTxt(l,x.t)+FOOTER,one,"⧉ Copiar"); }
   else copyTxt(cab+o.R.map((x,i)=>(i+1)+") "+fijTxt(l,x.t)).join("\n")+FOOTER,all,"⧉ Copiar las "+o.R.length+" tripletas");
 });
+/* 🎡 Colores de hoy + tablero de la ruleta (solo loterías de 38) */
+const ROJOS=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const colorDe=n=>(n==="0"||n==="00")?"v":(ROJOS.has(+n)?"r":"n");
+let COLSEL=null;
+function renderColores(){
+  const box=$("colHoy"); if(!box) return; const l=L(), st=S();
+  if(l.id==="guacharo"){ box.innerHTML=""; return; }
+  const td=today(), it=(st.dia&&st.dia.fecha===td?st.dia.items:[])||[];
+  const cnt={r:0,n:0,v:0}; it.forEach(x=>cnt[colorDe(x.num)]++);
+  let racha=0, rc=null; for(let i=it.length-1;i>=0;i--){ const c=colorDe(it[i].num); if(rc==null) rc=c; if(c!==rc) break; racha++; }
+  const NM={r:"rojo",n:"negro",v:"verde"}, NMS={r:"rojos",n:"negros",v:"verdes"};
+  const chips=it.length?it.map(x=>`<div class="cch ${colorDe(x.num)}"><small>${h12(x.hora).replace(/\s*[ap]\.\s*m\./,"")}</small><span>${l.A[x.num]?l.A[x.num][1]:""}</span><b>${x.num}</b></div>`).join(""):`<div class="cvac">Todavía no hay resultados hoy.</div>`;
+  const out=new Set(it.map(x=>x.num));
+  const cel=n=>{ const a=l.A[n]; if(!a) return ""; return `<button type="button" class="ccl ${colorDe(n)}${out.has(n)?" on":""}${COLSEL===n?" sel":""}" data-n="${n}"><b>${n==="0"||n==="00"?n:+n}</b><span>${a[1]}</span></button>`; };
+  let grid=`<div class="czr">${cel("0")}${cel("00")}</div><div class="cbd">`; for(let i=1;i<=36;i++) grid+=cel(String(i).padStart(2,"0")); grid+="</div>";
+  let info=""; if(COLSEL&&l.A[COLSEL]){ const n=COLSEL, a=l.A[n], ds=st.last&&st.last[n]?daysSince(st.last[n]):null;
+    let vec=[]; if(n!=="0"&&n!=="00"){ const P2=k=>[Math.ceil(+k/3)-1,(+k-1)%3], p=P2(n); for(let i=1;i<=36;i++){ const q=P2(i); if(i!==+n&&Math.max(Math.abs(p[0]-q[0]),Math.abs(p[1]-q[1]))===1) vec.push(String(i).padStart(2,"0")); } }
+    info=`<div class="cinf"><b>${a[1]} ${n} ${esc(a[0])}</b> · ${NM[colorDe(n)]}<br>${out.has(n)?"✅ Ya salió hoy":ds==null?"Sin datos de cuándo salió":"Lleva <b>"+ds+" día"+(ds===1?"":"s")+"</b> sin salir"}${vec.length?"<br>Pegados en el tablero: "+vec.map(v=>l.A[v][1]+" "+v).join(" · "):""}</div>`; }
+  box.innerHTML=`<h2>🎡 Colores de hoy · ${esc(l.name)}</h2><div class="crow">${chips}</div>
+    <div class="ccnt"><span>🔴 Rojos ${cnt.r}</span><span>⚫ Negros ${cnt.n}</span><span>🟢 Verdes ${cnt.v}</span></div>
+    ${racha?`<div class="cnote">Racha actual: <b>${racha} ${racha===1?NM[rc]:NMS[rc]}</b>${racha>1?" seguidos":""}. Los colores salen parejo: esto es para ver, no para apostar.</div>`:""}
+    <h2 style="margin-top:14px">🎰 Tablero de la ruleta</h2><div class="ctab">${grid}</div>${info}
+    <div class="cnote">Con borde dorado: los que ya salieron hoy. Toca uno para ver su ficha.</div><div class="hsep"></div>`;
+  box.querySelectorAll(".ccl").forEach(b=>b.onclick=()=>{ COLSEL=COLSEL===b.dataset.n?null:b.dataset.n; renderColores(); });
+}
 function renderHoy(){
+  try{ renderColores(); }catch(e){}
   const box=$("hoyRes"); if(!box) return;
   const td=today(), abiertos=HOYOPEN||{};
   box.innerHTML=hoyLots().map(({l,d})=>{ const u=d[d.length-1];
