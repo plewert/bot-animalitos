@@ -208,7 +208,7 @@ async function leerCuerpo(req) {
   let d = ""; for await (const c of req) { d += c; if (d.length > 5000) break; }
   try { return JSON.parse(d || "{}"); } catch (e) { return {}; }
 }
-const finDe = (ini, d) => ini + (d || DIAS) * 86400000;   // d = días del código (2, 4, 7, 14 o 30)
+const finDe = (ini, d, x) => ini + ((d || DIAS) + (+x || 0)) * 86400000;   // d = días del código (2, 4, 7, 14 o 30) · x = días regalados
 // 🚫 Códigos eliminados desde el panel de admin: dejan de funcionar
 const cyrb53S = (str, seed = 7) => { let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed; for (let i = 0, ch; i < str.length; i++) { ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36); };
 const normCodeS = (c) => { const t = String(c || "").normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g, ""); return t.length === 11 && t.startsWith("BOT") ? "BOT-" + t.slice(3, 7) + "-" + t.slice(7) : String(c || "").trim().toUpperCase(); };
@@ -252,9 +252,9 @@ async function usarCodigo(b) {
     let dias = DIAS; try { const g = await redis(["GET", "gen:" + hash]); if (g) dias = DIAS_OK.includes(+JSON.parse(g).dias) ? +JSON.parse(g).dias : DIAS; } catch (e) {}
     rec = { codigo: String(b.codigo || "").slice(0, 20), dev, ua: String(b.ua || "").slice(0, 20), ini: ahora, uso: ahora, dias };
     await redis(["SET", key, JSON.stringify(rec)]);
-    return { ok: true, fin: finDe(rec.ini, rec.dias) };
+    return { ok: true, fin: finDe(rec.ini, rec.dias, rec.extra) };
   }
-  if (ahora > finDe(rec.ini, rec.dias)) return { ok: false, motivo: "vencido", fin: finDe(rec.ini, rec.dias) };
+  if (ahora > finDe(rec.ini, rec.dias, rec.extra)) return { ok: false, motivo: "vencido", fin: finDe(rec.ini, rec.dias, rec.extra) };
   if (!rec.dev) { // liberado: lo toma este dispositivo, la semana sigue igual
     if (!b.activar) return { ok: false, motivo: "no_activado" };
     rec.dev = dev; rec.ua = String(b.ua || "").slice(0, 20);
@@ -262,7 +262,27 @@ async function usarCodigo(b) {
   if (rec.dev !== dev) return { ok: false, motivo: "en_uso" };
   rec.uso = ahora; if (!rec.codigo && b.codigo) rec.codigo = String(b.codigo).slice(0, 20);
   await redis(["SET", key, JSON.stringify(rec)]);
-  return { ok: true, fin: finDe(rec.ini, rec.dias) };
+  return { ok: true, fin: finDe(rec.ini, rec.dias, rec.extra), reg: rec.reg || null };
+}
+// 🎁 Regalar días: a todos los activos, también a los vencidos hace poco, o a un solo código
+async function regalarDias(b) {
+  const d = Math.max(1, Math.min(60, parseInt(b.dias, 10) || 0)), modo = String(b.modo || "activos"), ahora = Date.now(), DIA = 86400000;
+  let keys = [];
+  if (modo === "uno") { const h = cyrb53S(normCodeS(b.codigo)); if (!(await redis(["GET", "cod:" + h]))) return { ok: false, error: "Ese código no está activado todavía" }; keys = ["cod:" + h]; }
+  else keys = (await redis(["KEYS", "cod:*"])) || [];
+  const vals = keys.length ? await redis(["MGET", ...keys]) : [];
+  let n = 0, rev = 0;
+  for (let i = 0; i < keys.length; i++) {
+    let r; try { r = JSON.parse(vals[i] || "null"); } catch (e) { r = null; } if (!r || !r.ini) continue;
+    const h = keys[i].slice(4); if (await anulado(h)) continue;
+    const fin = finDe(r.ini, r.dias, r.extra), vencido = ahora > fin;
+    if (vencido && modo === "activos") continue;
+    if (vencido && modo === "recientes" && ahora - fin > 7 * DIA) continue;
+    const nf = Math.max(fin, ahora) + d * DIA;
+    r.extra = (nf - r.ini) / DIA - (r.dias || DIAS); r.reg = { d, t: ahora };
+    await redis(["SET", keys[i], JSON.stringify(r)]); n++; if (vencido) rev++;
+  }
+  return { ok: true, dias: d, clientes: n, reactivados: rev };
 }
 // 🎁 Regalo de Navidad: 1 intento por teléfono al día, 10 premios en total, máximo 1 premio por día
 const REGALO = { premios: 10, prob: 200, maxDia: 1 };
@@ -347,7 +367,7 @@ async function suscribir(b) {
   if (!rec || !(await existeCodigo(hash))) return { ok: false, motivo: "sin_codigo" };
   if (await anulado(hash)) { await redis(["DEL", subKey(endpoint)]); return { ok: false, motivo: "anulado" }; }
   if (rec.dev !== dev) return { ok: false, motivo: "en_uso" };
-  const fin = finDe(rec.ini, rec.dias); if (Date.now() > fin) return { ok: false, motivo: "vencido" };
+  const fin = finDe(rec.ini, rec.dias, rec.extra); if (Date.now() > fin) return { ok: false, motivo: "vencido" };
   await redis(["SET", subKey(endpoint), JSON.stringify({ sub, lots, hash, fin, t: Date.now() })]);
   return { ok: true, lots };
 }
@@ -588,7 +608,7 @@ async function listaCodigos() {
     sinUsar: Object.keys(gen).filter((h) => !usadoH.has(h) && !anu[h]).map((h) => ({ hash: h, codigo: gen[h].codigo, t: gen[h].t, gen: !!gen[h].gen, dias: +gen[h].dias || DIAS })).sort((a, b) => (b.t || 0) - (a.t || 0)),
     demos,
     total: CODIGOS.size + Object.keys(gen).filter((h) => !CODIGOS.has(h)).length,
-    usados: keys.map((k, i) => { const r = JSON.parse(vals[i] || "{}"); const fin = finDe(r.ini || 0, r.dias);
+    usados: keys.map((k, i) => { const r = JSON.parse(vals[i] || "{}"); const fin = finDe(r.ini || 0, r.dias, r.extra);
       return { hash: k.slice(4), codigo: r.codigo || "(sin nombre)", ua: r.ua || "", ini: r.ini, fin, uso: r.uso, dias: r.dias || DIAS, libre: !r.dev, estado: anu[k.slice(4)] ? "anulado" : ahora > fin ? "vencido" : "activo" }; })
       .sort((a, b) => (b.ini || 0) - (a.ini || 0)),
   };
@@ -610,6 +630,7 @@ input,button{font:inherit;border-radius:10px;border:1px solid #2b3550;background
 <div id="login"><input id="cl" type="password" placeholder="Clave de administrador"> <button class="b1" id="en">Entrar</button><div id="msg"></div></div>
 <div id="pan" style="display:none"><div class="s" id="res"></div><div class="ebox rbox" id="reg"></div>
 <div class="ebox gbox"><span>➕ Generar códigos nuevos:</span><input id="gn" type="number" min="1" max="50" value="5" style="max-width:70px;flex:none"><span>de</span><select id="gd" style="font:inherit;border-radius:10px;border:1px solid #2b3550;background:#0b1124;color:#e8f1ff;padding:9px 10px"><option value="2">2 días</option><option value="4">4 días</option><option value="7" selected>7 días</option><option value="14">14 días</option><option value="30">30 días</option></select><button class="b1" id="gbtn">Generar</button><div id="gout" style="width:100%"></div></div>
+<div class="ebox gbox"><span>🎁 Regalar</span><input id="rd" type="number" min="1" max="60" value="2" style="max-width:70px;flex:none"><span>días a</span><select id="rm" style="font:inherit;border-radius:10px;border:1px solid #2b3550;background:#0b1124;color:#e8f1ff;padding:9px 10px"><option value="activos">todos los clientes activos</option><option value="recientes">activos + vencidos hace 7 días o menos</option><option value="uno">un solo código</option></select><input id="rc" placeholder="BOT-XXXX-XXXX" style="display:none"><button class="b1" id="rbtn">Regalar</button><span class="s" id="rmsg" style="width:100%"></span></div>
 <div class="ebox"><span>🚫 Eliminar un código (aunque no esté activado):</span><input id="ecod" placeholder="BOT-XXXX-XXXX"><button class="el" id="ebtn">Eliminar</button><span class="s" id="emsg"></span></div>
 <div class="fil" id="fil"></div>
 <input id="bus" placeholder="Buscar código" style="width:100%;margin:6px 0;box-sizing:border-box"><div id="lis"></div>
@@ -644,6 +665,12 @@ document.querySelectorAll(".it .cp").forEach(b=>b.onclick=()=>copiar(b.dataset.c
 document.querySelectorAll(".it .el").forEach(b=>b.onclick=async()=>{if(!confirmar(b,"Eliminar"))return;await api("/admin/api/eliminar",{hash:b.dataset.h});cargar();});
 document.querySelectorAll(".rs").forEach(b=>b.onclick=async()=>{if(!confirmar(b,"Restaurar"))return;await api("/admin/api/restaurar",{hash:b.dataset.h});cargar();});
 document.querySelectorAll(".lb").forEach(b=>b.onclick=async()=>{if(!confirmar(b))return;await api("/admin/api/liberar",{hash:b.dataset.h});cargar();});}
+document.getElementById("rm").onchange=e=>{document.getElementById("rc").style.display=e.target.value==="uno"?"":"none";};
+document.getElementById("rbtn").onclick=async()=>{const m=document.getElementById("rmsg"),d=+document.getElementById("rd").value||0,mo=document.getElementById("rm").value,c=document.getElementById("rc").value;
+if(d<1||d>60){m.textContent="Escribe de 1 a 60 días.";return;} if(mo==="uno"&&!c.trim()){m.textContent="Escribe el código.";return;}
+if(!confirm("¿Regalar "+d+" día"+(d>1?"s":"")+" a "+(mo==="uno"?"el código "+c:mo==="activos"?"todos los clientes activos":"los activos y los vencidos hace 7 días o menos")+"?"))return;
+m.textContent="Regalando…";try{const r=await api("/admin/api/regalar",{dias:d,modo:mo,codigo:c});if(!r.ok){m.textContent="❌ "+(r.error||"No se pudo");return;}
+m.textContent="✅ "+r.dias+" día"+(r.dias>1?"s":"")+" regalado"+(r.dias>1?"s":"")+" a "+r.clientes+" cliente"+(r.clientes===1?"":"s")+(r.reactivados?" ("+r.reactivados+" reactivado"+(r.reactivados>1?"s":"")+")":"")+".";cargar();}catch(e){m.textContent="❌ "+e.message;}};
 document.getElementById("gbtn").onclick=async()=>{const b=document.getElementById("gbtn"),o=document.getElementById("gout"),n=+document.getElementById("gn").value||0;if(n<1||n>50){o.innerHTML='<div class="ve">Escribe un número del 1 al 50.</div>';return;}b.disabled=true;o.innerHTML='<div class="s">Generando…</div>';
 try{const dd=+document.getElementById("gd").value||7;const r=await api("/admin/api/generar",{n,dias:dd});const L=r.codigos||[];o.innerHTML='<div class="gres"><div class="ok"><b>✅ '+L.length+' código'+(L.length>1?"s":"")+' nuevo'+(L.length>1?"s":"")+' de '+(r.dias||dd)+' días listo'+(L.length>1?"s":"")+' (funcionan ya):</b></div><div class="gl">'+L.join("<br>")+'</div><button class="cp" id="gcp">⧉ Copiar '+(L.length>1?"los "+L.length:"")+'</button></div>';document.getElementById("gcp").onclick=e=>copiar(L.join("\\n"),e.target);FIL="sin";cargar();}catch(e){o.innerHTML='<div class="ve">'+e.message+'</div>';}b.disabled=false;};
 document.getElementById("abtn").onclick=async()=>{const m=document.getElementById("amsg"),t=document.getElementById("atx").value;if(!t.trim()){m.textContent="Pega los códigos primero";return;}
@@ -847,13 +874,14 @@ async function futRespuesta() {
       res: m.st === "FINISHED" ? [m.hg, m.ag] : null, ac: m.st === "FINISHED" ? futAcierto(pr, m.hg, m.ag) : null };
   }).sort((x, y) => (x.t < y.t ? -1 : x.t > y.t ? 1 : 0));
   // Cuántas acertó el bot en los últimos 7 días (pronóstico hecho antes del partido)
-  let n = 0, ok = 0, ns = 0, oks = 0;
+  let n = 0, ok = 0, ns = 0, oks = 0, ng = 0, okg = 0;
   for (const id in FUT.preds) {
     const p = FUT.preds[id]; if (!p.res || Date.now() - new Date(p.t).getTime() > 7 * 86400000) continue;
     const a = futAcierto(p, p.res[0], p.res[1]); n++; if (a.r) ok++;
     if (p.k.length === 1) { ns++; if (a.r) oks++; }
+    if (a.g != null) { ng++; if (a.g) okg++; }
   }
-  return { ok: true, at: FUT.winAt, comps: FUT_COMPS, preparando: !FUT.model || FUT.model.n < 50, stats: { n, ok, ns, oks }, partidos };
+  return { ok: true, at: FUT.winAt, comps: FUT_COMPS, preparando: !FUT.model || FUT.model.n < 50, stats: { n, ok, ns, oks, ng, okg }, partidos };
 }
 
 async function futTalVez() { await futCargar(); if (FD_KEY && Date.now() - FUT.builtAt > 12 * 3600000) await futTemporadas(); }
@@ -899,6 +927,7 @@ const server = http.createServer(async (req, res) => {
       if (!CLAVE || req.headers["x-clave"] !== CLAVE) return enviar(res, 401, { error: "Clave incorrecta" });
       if (u.pathname === "/admin/api/lista") return enviar(res, 200, await listaCodigos());
       if (u.pathname === "/admin/api/generar" && req.method === "POST") { const b = await leerCuerpo(req); return enviar(res, 200, { ok: true, codigos: await generarCodigos(b.n, b.dias), dias: DIAS_OK.includes(+b.dias) ? +b.dias : DIAS }); }
+      if (u.pathname === "/admin/api/regalar" && req.method === "POST") { const b = await leerCuerpo(req); return enviar(res, 200, await regalarDias(b)); }
       if (u.pathname === "/admin/api/agregar" && req.method === "POST") { const b = await leerCuerpo(req); return enviar(res, 200, await agregarALista(b.texto)); }
       if (u.pathname === "/admin/api/liberar" && req.method === "POST") {
         const b = await leerCuerpo(req), key = "cod:" + String(b.hash || "");
