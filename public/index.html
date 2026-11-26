@@ -432,7 +432,8 @@
   .demobar a{color:var(--gold);white-space:nowrap;border:1px solid rgba(255,210,63,.6);border-radius:99px;padding:3px 10px;text-decoration:none;font-size:13px}
   body.demo .tab:not([data-id="activo"]){opacity:.45}
   body.demo .tab:not([data-id="activo"])::before{content:"🔒 "}
-  body.demo #triBox>*,body.demo #iaBox>*,body.demo #arBox>*,body.demo #rvBox>*{display:none}
+  body.demo #triBox>*,body.demo #iaBox>*,body.demo #arBox>*,body.demo #rvBox>*,body.demo #tmtBox>*{display:none}
+  body.demo #tmtBox::after{content:"🔒 Las tripletas de mañana y tarde son solo con código.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted);margin-bottom:14px}
   body.demo #rvBox::after{content:"🔒 Revisa tu tripleta es solo con código.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted);margin-bottom:14px}
 body.demo #arBox::after{content:"🔒 Arma tu tripleta es solo con código.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted);margin-bottom:14px}
 body.demo #iaBox::after{content:"🔒 Las tripletas IA son solo con código. Pide el tuyo por WhatsApp.";display:block;border:1px dashed #3a4566;border-radius:12px;padding:14px;text-align:center;color:var(--muted);margin-bottom:14px}
@@ -727,6 +728,26 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
 .rec-n{margin:6px 0 10px;border:1.5px solid var(--grn);background:var(--green-soft);border-radius:14px;padding:9px 12px;font-size:15px;line-height:1.45}.rec-n small{display:block;color:var(--muted);font-size:12.5px}
 .rr.rec{border-color:var(--grn)!important;box-shadow:0 0 14px rgba(45,255,138,.25)}.recb{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:800;color:#04210f;background:var(--grn);border-radius:99px;padding:1px 8px;vertical-align:2px}
 .rec-n.rec-solo{margin:12px 0 14px;font-size:17px}
+
+#tmtBox{margin:0 0 14px}
+.tmt{border:1.5px solid var(--line);border-radius:18px;padding:12px;background:linear-gradient(180deg,#0e1630,#0a1124)}
+.tmt h2{margin:0 0 4px;color:#ffd23f}
+.tmt .tn0{color:var(--muted);font-size:13px;line-height:1.4;margin:0 0 10px}
+.tmtc{border-radius:16px;padding:11px;margin-bottom:11px}
+.tmtc.m{border:1.5px solid #ffb84d;background:linear-gradient(135deg,rgba(255,184,77,.16),rgba(255,184,77,.03))}
+.tmtc.t{border:1.5px solid #ff5fa2;background:linear-gradient(135deg,rgba(255,95,162,.16),rgba(255,95,162,.03))}
+.tmtc.win{border-color:#2dff8a;box-shadow:0 0 22px rgba(45,255,138,.35)}
+.tmth{display:flex;justify-content:space-between;align-items:center;gap:6px;font-weight:800;font-size:15px;margin-bottom:9px}
+.tmth small{font-weight:600;color:#c8d3ee;font-size:12.5px;white-space:nowrap}
+.tmta{display:flex;gap:8px}
+.tmta .a{flex:1;border-radius:14px;padding:9px 4px;text-align:center;background:#11193a;border:1px solid #2a3a63;min-width:0}
+.tmta .a .e{font-size:32px;line-height:1.15}.tmta .a b{display:block;font-size:19px;color:#ffd23f}.tmta .a span{font-size:13px;color:#dfe7fb;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tmta .a i{display:block;margin-top:5px;font-size:11.5px;font-weight:800;font-style:normal;border-radius:99px;padding:2px 0;background:#2a3a63;color:#c8d3ee}
+.tmta .a.hit{border-color:#2dff8a;box-shadow:0 0 14px rgba(45,255,138,.35)}.tmta .a.hit i{background:#2dff8a;color:#03250f}
+.tmts{margin-top:9px;font-size:13px;color:#dfe7fb;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tmts .pkcp{flex:none}
+.tmtl{font-size:12px;color:var(--muted);margin-top:6px}
+.tmtw{font-size:13px;color:var(--muted);text-align:center;padding:10px;border:1px dashed #2a3a63;border-radius:12px}
 </style>
 <style id="anim4">
 .cdr{display:flex;align-items:center;gap:14px;margin:4px 0 12px;padding:8px 14px;border:2px solid var(--cyan);border-radius:16px;background:rgba(10,16,34,.9);box-shadow:0 0 14px rgba(46,242,255,.35)}
@@ -907,6 +928,7 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
         <div id="hoyRes"></div>
         <button class="hbtn" id="hoyResCp" type="button">⧉ Copiar resultados para WhatsApp</button>
         <div class="hsep"></div>
+        <div id="tmtBox"></div>
         <div class="hh"><h2 style="margin:0">🎯 Tripletas de hoy · <span id="hoyTriLot"></span></h2></div>
         <p class="note" style="margin:2px 0 6px">Las que dio el bot hoy. ✓ = ya salió en el día · ⏳ = falta.</p>
         <div class="hbtns"><button class="hbtn sm" id="hoyTriAll" type="button">⧉ Copiar todas</button><button class="hbtn sm gold" id="hoyTriWin" type="button">⧉ Copiar ganadoras</button></div>
@@ -1107,7 +1129,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611261100";
+const BUILD="202611261345";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -1175,7 +1197,7 @@ function rankHtml(l,st,last,arr,P){
 }
 /* los 10 que más han salido (igual que la sección Salidores) */
 function topSalidores(){
-  const l=L(), st=S(), sn=100, h=sn?st.hist.slice(-sn):st.hist.slice();
+  const l=L(), st=window.__STV||S(), sn=100, h=sn?st.hist.slice(-sn):st.hist.slice();
   const cnt={}; l.order.forEach(k=>cnt[k]=0); h.forEach(k=>{if(k in cnt)cnt[k]++;});
   return new Set(l.order.map((k,i)=>[k,cnt[k],i]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]||a[2]-b[2]).slice(0,10).map(r=>r[0]));
 }
@@ -3030,6 +3052,7 @@ function renderHoy(){
   box.innerHTML=hoyLots().map(({l,d})=>{ const u=d[d.length-1];
     return `<details class="hl" data-id="${l.id}" ${abiertos[l.id]||(abiertos[l.id]==null&&l.id===L().id)?"open":""}><summary>${esc(l.name)} · ${d.length} sorteo${d.length===1?"":"s"}<small>${u?"último: "+l.A[u.num][1]+" "+u.num+" "+esc(l.A[u.num][0]):"todavía no hay"}</small></summary>${d.slice().reverse().map(x=>`<div class="r"><span>${h12(x.hora)}</span><b>${l.A[x.num][1]} ${x.num} ${esc(l.A[x.num][0])}</b></div>`).join("")}</details>`; }).join("");
   box.querySelectorAll("details").forEach(d=>d.ontoggle=()=>{HOYOPEN[d.dataset.id]=d.open;});
+  try{ renderTMT(); }catch(e){ console.warn(e); }
   const l=L(); $("hoyTriLot").textContent=l.name;
   const T=triHoy();
   const caja=(o,k)=>`<div class="ht${o.win?" win":""}"><div class="hzh">Tras <b>${l.A[o.x][1]} ${o.x} ${esc(l.A[o.x][0])}</b> (${h12(o.hora)})${o.win?'<span class="hzb">¡GANADORA! 🏆</span>':`<span style="margin-left:auto">falta${o.ok.filter(v=>!v).length>1?"n":""} ${o.ok.filter(v=>!v).length}</span>`}</div>
@@ -3046,6 +3069,43 @@ function renderHoy(){
   try{ renderRev(); }catch(e){}
   try{ renderCyc(); }catch(e){}
   renderCalc();
+}
+
+/* ☀️🌇 Tripletas de la mañana y de la tarde: los 3 primeros de la señal (probado 2 años: +36% mañana, +17% tarde sobre el azar). Quedan fijas en el día */
+function stHasta(l,st,k){ const td=today(), ini=(st.hoy&&st.hoy.fecha===td)?st.hoy.ini:st.hist.length;
+  const hoyN=st.hist.slice(ini), inc=new Set(hoyN.slice(0,k)), last=Object.assign({},st.last||{});
+  let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; }catch(e){}
+  Object.keys(last).forEach(n=>{ if(last[n]!==td||inc.has(n)) return; delete last[n];
+    for(let i=D.length-1;i>=0;i--){ const [f,its]=D[i]; if(f>=td) continue; if((its||[]).some(x=>x[1]===n)){ last[n]=f; break; } } });
+  const dia=st.dia&&st.dia.fecha===td?{fecha:td,items:(st.dia.items||[]).slice(0,k)}:st.dia;
+  return Object.assign({},st,{hist:st.hist.slice(0,ini+k),last,dia}); }
+function tmtCalc(l,st,k){ const v=stHasta(l,st,k), H=v.hist; if(H.length<3) return null; const x=H[H.length-1];
+  window.__STV=v; try{ const P=predict(GD(),x,H[H.length-2]); return senalCalc0(l,v,x,P).slice(0,3).map(r=>r.n); } finally{ window.__STV=null; } }
+function tmtGet(l,st){ const td=today(); let M={}; try{ M=JSON.parse(localStorage.getItem("bot-tmt")||"{}"); }catch(e){}
+  Object.keys(M).forEach(k=>{ if(!k.includes("|"+td)) delete M[k]; });
+  const it=(st.dia&&st.dia.fecha===td?st.dia.items:[]).filter(x=>l.A[x.num]), nM=it.filter(x=>x.hora<"13:00").length;
+  const ini=(st.hoy&&st.hoy.fecha===td)?st.hoy.ini:st.hist.length, nHoy=st.hist.length-ini;
+  const okH=esperaHist(l)!=="wait", km=l.id+"|"+td+"|m", kt=l.id+"|"+td+"|t";
+  if(!M[km]&&okH&&nHoy===it.length){ const r=tmtCalc(l,st,0); if(r&&r.length===3) M[km]=r; }
+  const tardeLista=it.some(x=>x.hora>="13:00")||it.some(x=>x.hora>="12:00"&&x.hora<"13:00");
+  if(!M[kt]&&okH&&tardeLista&&nHoy===it.length){ const r=tmtCalc(l,st,nM); if(r&&r.length===3) M[kt]=r; }
+  try{ localStorage.setItem("bot-tmt",JSON.stringify(M)); }catch(e){}
+  return {m:M[km]||null,t:M[kt]||null,it}; }
+function tmtTxt(l,t,part){ return "🎯 *Tripleta de la "+(part==="m"?"mañana":"tarde")+" · "+l.name+"*\n"+t.map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join(" - ")+"\n⏰ "+(part==="m"?"8:00 am a 12:00 pm":"1:00 pm a 7:00 pm"); }
+function renderTMT(){ const box=$("tmtBox"); if(!box) return; const l=L(), st=S();
+  const o=tmtGet(l,st), it=o.it, man=it.filter(x=>x.hora<"13:00"), tar=it.filter(x=>x.hora>="13:00");
+  const card=(t,part,W,fin)=>{ const cls=part==="m"?"m":"t", tit=part==="m"?"☀️ Tripleta de la mañana":"🌇 Tripleta de la tarde", hr=part==="m"?"8:00 am → 12:00 pm":"1:00 pm → 7:00 pm";
+    if(!t) return `<div class="tmtc ${cls}"><div class="tmth"><span>${tit}</span><small>${hr}</small></div><div class="tmtw">${part==="m"?(esperaHist(l)==="wait"?"Cargando datos…":"Todavía no hay datos para armarla."):"⏳ Sale después del resultado de las 12:00 pm"}</div></div>`;
+    const hit=n=>W.find(x=>x.num===n), k=t.filter(hit).length, win=k===3;
+    return `<div class="tmtc ${cls}${win?" win":""}"><div class="tmth"><span>${tit}</span><small>${hr}</small></div>
+      <div class="tmta">${t.map(n=>{ const h=hit(n); return `<div class="a${h?" hit":""}"><div class="e">${l.A[n][1]}</div><b>${n}</b><span>${esc(l.A[n][0])}</span><i>${h?"✓ "+fmtH12(h.hora):"⏳ falta"}</i></div>`; }).join("")}</div>
+      <div class="tmts"><span>${win?'<b style="color:#2dff8a">🏆 ¡TRIPLETA COMPLETA!</b>':(fin?"Terminó: salieron <b>"+k+" de 3</b>":"Van <b style=\"color:#2dff8a\">"+k+" de 3</b>")}</span><button class="pkcp tmtcp" data-p="${part}" type="button">⧉ Copiar</button></div>
+      <div class="tmtl">🔒 ${part==="m"?"Se armó antes del primer sorteo":"Se armó con el resultado de las 12"} y no cambia en el día.</div></div>`; };
+  box.innerHTML=`<div class="tmt"><h2>🎯 Tripletas del bot · ${esc(l.name)}</h2>
+    <p class="tn0">Los 3 animales más fuertes de la señal (doble ciclo, tablero, guía, salidores, aciertos…) para cada parte del día.</p>
+    ${card(o.m,"m",man,it.some(x=>x.hora>="12:00"))}${card(o.t,"t",tar,it.some(x=>x.hora>="19:00"))}
+    <p class="tn0" style="margin:2px 0 0">📊 Probado 2 años: estos animales salen <b style="color:#2dff8a">36% más</b> que al azar en la mañana y <b style="color:#2dff8a">17% más</b> en la tarde. Sacar los 3 completos sigue siendo difícil.</p></div>`;
+  box.querySelectorAll(".tmtcp").forEach(b=>b.onclick=()=>{ const t=b.dataset.p==="m"?o.m:o.t; if(t) copyTxt(tmtTxt(l,t,b.dataset.p)+FOOTER,b,"⧉ Copiar"); });
 }
 var HOYOPEN={}, CALC={sel:[]};
 try{ const c=JSON.parse(localStorage.getItem("bot-calc")||"{}"); ["cMonto","cPaga","cTMonto","cTPaga"].forEach(k=>{ if(c[k]!=null&&$(k)) $(k).value=c[k]; }); }catch(e){}
