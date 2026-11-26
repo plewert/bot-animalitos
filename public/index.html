@@ -1104,7 +1104,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611251300";
+const BUILD="202611252025";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -2521,7 +2521,7 @@ function senalCalc0(l,st,last,P){
     { let cy=null; try{ cy=cycInfo(l,st,n); }catch(e){} if(cy){ f.push([cy.lab,cy.p]); sc+=cy.p; } }
     if(on("jaula")&&lv){ f.push(["🔒 "+(lv===2?"Jaula fuerte":"Jaula")+" "+daysSince(st.last[n])+"d",-3]); sc-=3; }
     return {n,sc,f};
-  }).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc||l.order.indexOf(a.n)-l.order.indexOf(b.n)).slice(0,6);
+  }).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc||l.order.indexOf(a.n)-l.order.indexOf(b.n)).slice(0,7);
   out.forEach(x=>x.lv=x.sc>=9?5:x.sc>=7?4:x.sc>=5?3:x.sc>=3?2:1);
   return out;
 }
@@ -2598,7 +2598,7 @@ function senalHtml(l,st,last,P){
   const cfg=`<div class="sgcfg" hidden>${SG_DATOS().map(([k,t])=>`<label><input type="checkbox" data-k="${k}" ${off.includes(k)?"":"checked"}> ${t}</label>`).join("")}</div>`;
   if(!R.length) return `<div class="senal"><div class="sgh"><span>📡 Señal</span></div><p class="note" style="margin:6px 0 0">No hay datos suficientes para dar una señal todavía.</p></div>`;
   return `<div class="senal"><div class="sgh"><span>📡 Señal</span><small>tras ${l.A[last][1]} ${last}${horaSalio(st)}</small></div>
-    ${HW==="slow"?HSLOW:""}<div class="sgsub">Los 6 con más puntos juntando todos los datos. Toca uno para ver por qué.</div>
+    ${HW==="slow"?HSLOW:""}<div class="sgsub">Los 7 con más puntos juntando todos los datos. Toca uno para ver por qué.</div>
     ${R.map((x,i)=>`<div class="sgr${i===0?" top":""}"><div class="sgl"><span class="ri">${i+1}</span><span class="re">${l.A[x.n][1]}</span><div class="rn"><b>${x.n}</b> ${esc(l.A[x.n][0])}</div><div><div class="sgb">${[1,2,3,4,5].map(k=>`<i class="${k<=x.lv?"on":""}" style="height:${4+k*3}px"></i>`).join("")}</div><div class="sgt">${SG_TXT()[x.lv]}</div></div></div>
       <div class="sgd">${x.f.map(([t,p])=>`<div class="sgf"><span>${t}</span><span class="b"><i style="width:${Math.min(100,Math.abs(p)*25)}%${p<0?";background:#ff3b5c":""}"></i></span><span class="v">${p>0?"+"+p:p}</span></div>`).join("")}</div></div>`).join("")}
     <div class="sgbtns"><button class="sgcp" type="button">⧉ Copiar señal</button></div><div class="sghue">v${BUILD.slice(-4)} · ${huella(l,st)}</div></div>`;
