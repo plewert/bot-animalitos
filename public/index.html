@@ -1104,7 +1104,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611252025";
+const BUILD="202611252125";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -3127,7 +3127,46 @@ document.addEventListener("click",e=>{
     .fut .fp .ok{background:var(--green-soft);color:var(--grn)}.fut .fp .no{background:var(--red-soft);color:#ff8ea0}
     .fut .fnt{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.45}
     .fut .fmsg{text-align:center;color:var(--muted);padding:18px 6px;font-size:15px}
-    .fut .frf{background:none;border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:3px 10px;font:600 13px "Rajdhani",sans-serif;cursor:pointer;margin-left:auto;letter-spacing:0;text-transform:none}`;
+    .fut .frf{background:none;border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:3px 10px;font:600 13px "Rajdhani",sans-serif;cursor:pointer;margin-left:auto;letter-spacing:0;text-transform:none}
+    .fut .fhero{position:relative;border-radius:20px;padding:18px 14px 14px;margin-bottom:10px;overflow:hidden;background:radial-gradient(260px 160px at 85% 0%,rgba(45,255,138,.35),transparent 70%),linear-gradient(180deg,#0c3b25,#071a14 75%,#060c16);border:1px solid rgba(45,255,138,.3)}
+    .fut .fhero:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 34px,transparent 34px 68px);pointer-events:none}
+    .fut .fln{position:absolute;left:50%;top:-50px;width:150px;height:150px;margin-left:-75px;border:2px solid rgba(255,255,255,.12);border-radius:50%;pointer-events:none}
+    .fut .fhero h2{position:relative;margin:0;font:900 22px Orbitron,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#fff}.fut .fhero h2 span{color:var(--grn)}
+    .fut .fhero p{position:relative;margin:4px 0 12px;font-size:14px;color:#a9c4b6}
+    .fut .fhero .frf{position:absolute;right:12px;top:12px;z-index:2;background:rgba(0,0,0,.35);border-color:rgba(45,255,138,.45);color:#cfe;margin:0;font-size:16px;padding:4px 11px}
+    .fut .fstat{position:relative;display:flex;gap:8px}.fut .fstat div{flex:1;background:rgba(0,0,0,.35);border:1px solid rgba(45,255,138,.35);border-radius:14px;padding:7px 4px;text-align:center}
+    .fut .fstat b{display:block;font:800 19px "Rajdhani",sans-serif;color:var(--grn)}.fut .fstat small{font-size:12px;color:#a9c4b6;line-height:1.2;display:block}
+    .fut .fdays{display:flex;gap:6px;margin:0 0 8px}.fut .fdays button{flex:1;padding:9px 4px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);font:800 14px "Rajdhani",sans-serif;cursor:pointer}
+    .fut .fdays button.on{background:linear-gradient(180deg,#2dff8a,#16b866);color:#04210f;border-color:transparent}
+    .fut .fch{flex-wrap:nowrap;overflow-x:auto;padding-bottom:3px}.fut .fch button{flex:none;display:inline-flex;align-items:center;gap:5px}
+    .fut .fch button.on{background:var(--green-soft);border-color:var(--grn);color:var(--grn)}
+    .fut .fdot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+    .fut .fsec{font:700 12px Orbitron,sans-serif;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;margin:14px 2px 8px}
+    .fut .fstar{border-radius:20px;padding:12px;background:linear-gradient(135deg,rgba(255,210,63,.18),rgba(45,255,138,.07));border:1.5px solid rgba(255,210,63,.6);box-shadow:0 0 26px rgba(255,210,63,.12);margin-bottom:8px}
+    .fut .fstar .fcp{color:#d9c27a}
+    .fut .fvs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:8px 0}
+    .fut .ftm{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}.fut .ftm span{font-weight:800;font-size:15px;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fut .fmid{text-align:center;color:var(--muted);font-size:13px}.fut .fmid b{display:block;color:var(--ink);font-size:16px}.fut .fmid small{display:block}
+    .fut .fcr{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 14px "Rajdhani",sans-serif;color:#fff;letter-spacing:.5px;border:2px solid rgba(255,255,255,.55);box-shadow:inset 0 -4px 0 rgba(0,0,0,.25),0 4px 12px rgba(0,0,0,.4);text-shadow:0 1px 2px rgba(0,0,0,.6);flex:none}
+    .fut .fcr.z{width:32px;height:32px;font-size:11px;border-width:1.5px}
+    .fut .fbig{display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(0,0,0,.35);border-radius:14px;padding:10px 12px}
+    .fut .fbig small{display:block;font-size:12.5px;color:#d9c27a}.fut .fbig b{font:900 19px "Rajdhani",sans-serif;color:var(--gold)}
+    .fut .fring{flex:none;width:58px;height:58px;border-radius:50%;background:conic-gradient(var(--grn) calc(var(--p)*1%),rgba(255,255,255,.1) 0);display:flex;align-items:center;justify-content:center}
+    .fut .fring span{width:46px;height:46px;border-radius:50%;background:#0b1222;display:flex;align-items:center;justify-content:center;font:900 14px "Rajdhani",sans-serif;color:var(--grn)}
+    .fut .fm{border-radius:18px}
+    .fut .fbar{display:flex;height:28px;border-radius:10px;overflow:hidden;font:800 13px "Rajdhani",sans-serif;margin-top:2px}
+    .fut .fbar div{display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden}.fut .fbar .l{background:linear-gradient(90deg,#0ea5c6,#2ef2ff);color:#03161c}.fut .fbar .x{background:#3a4563;color:#dfe6f7}.fut .fbar .v{background:linear-gradient(90deg,#c026d3,#ff4fd8);color:#fff}
+    .fut .flab{display:flex;justify-content:space-between;gap:6px;font-size:11.5px;color:var(--muted);margin-top:3px}.fut .flab span{max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fut .fgo{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12.5px;color:var(--muted)}.fut .fgo .gb{flex:1;height:8px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden}.fut .fgo .gb i{display:block;height:100%;background:linear-gradient(90deg,#ff9f1c,#ffd23f)}
+    .fut .ftg{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.fut .ftg span{font-size:13px;font-weight:800;border-radius:999px;padding:4px 11px}
+    .fut .ftg .t1{background:var(--green-soft);color:var(--grn);border:1px solid rgba(45,255,138,.5)}.fut .ftg .t2{background:rgba(46,242,255,.12);color:#7ff6ff;border:1px solid rgba(46,242,255,.45)}.fut .ftg .t3{background:rgba(255,159,28,.14);color:#ffb14a;border:1px solid rgba(255,159,28,.45)}
+    .fut .fres{display:flex;align-items:center;gap:8px;border-radius:16px;padding:9px 10px;background:rgba(6,10,22,.6);border:1px solid var(--line);margin-bottom:4px}
+    .fut .fres.bien{border-color:rgba(45,255,138,.6)}.fut .fres.mal{border-color:rgba(255,59,92,.45)}
+    .fut .fsc{font:800 16px Orbitron,sans-serif;background:rgba(255,255,255,.08);border-radius:8px;padding:2px 7px;flex:none}
+    .fut .frn{min-width:0;flex:1;line-height:1.2}.fut .frn span{display:block;font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fut .frn small{font-size:11.5px;color:var(--muted)}
+    .fut .fok,.fut .fno,.fut .fsin{flex:none;font-weight:900;font-size:12px;border-radius:8px;padding:4px 7px}.fut .fok{background:var(--grn);color:#04210f}.fut .fno{background:#ff3b5c;color:#fff}.fut .fsin{background:rgba(255,255,255,.06);color:var(--muted);font-weight:700}
+    .fut .fdij{font-size:12.5px;color:var(--muted);margin:0 6px 9px}
+    .fut .fmore{width:100%;margin-top:4px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--cyan);border-radius:12px;padding:9px;font:700 14px "Rajdhani",sans-serif;cursor:pointer}`;
   document.head.appendChild(sty);
 
   const btn=document.createElement("button"); btn.className="tab"; btn.dataset.id="futbol"; btn.style.setProperty("--tc","#ffd23f");
@@ -3147,63 +3186,79 @@ document.addEventListener("click",e=>{
   const PK={"1":"Gana {h}","X":"Empate","2":"Gana {a}","1X":"{h} o empate","X2":"Empate o {a}","12":"No hay empate"};
   const GL={"+":"Más de 2,5 goles","-":"Menos de 2,5 goles","=":"Goles parejos"};
 
+  /* 🎨 Diseño nuevo del panel de fútbol (escudos con iniciales, barras, jugada estrella) */
+  const CCOL={CL:"#3b82f6",PL:"#8b5cf6",PD:"#ef4444",SA:"#2563eb",BL1:"#dc2626",FL1:"#0ea5e9",DED:"#f97316",PPL:"#16a34a",BSA:"#eab308"};
+  const QUITA=/^(fc|cf|ac|sc|ss|as|afc|rc|rcd|cd|ud|sd|ca|club|sporting|real|de|del|la|el|1\.|vfb|vfl|tsg|sv|fk|sk|ogc|stade|olympique|ec|se|cr|sl|sc|us|ssc|bv|psv)$/i;
+  function sigla(n){ const w=String(n||"").replace(/[^\p{L}\p{N} ]/gu," ").split(/\s+/).filter(Boolean); const k=w.filter(x=>!QUITA.test(x)); const t=(k[0]||w[0]||"?");
+    return (t.length>=3?t.slice(0,3):(w[0]||t).length>=3?w[0].slice(0,3):(t+(k[1]||w[1]||"")).slice(0,3)).toUpperCase(); }
+  function tono(n){ let h=0; for(const c of String(n)) h=(h*31+c.charCodeAt(0))>>>0; return h%360; }
+  const escu=(n,z)=>{ const h=tono(n); return `<div class="fcr${z?" z":""}" style="background:linear-gradient(135deg,hsl(${h},70%,48%),hsl(${(h+25)%360},70%,24%))">${esc(sigla(n))}</div>`; };
+  const nomC=c=>esc((DATA.comps||{})[c]||c);
+  const tx=(pr,p)=>PK[pr.k].replace("{h}",esc(p.h)).replace("{a}",esc(p.a));
+  function cab(p){ const fin=!!p.res; return `<div class="fcp"><span><i class="fdot" style="background:${CCOL[p.c]||"#8a9bbd"}"></i>${nomC(p.c)}</span><span>${fin?"Final":/IN_PLAY|PAUSED/.test(p.st)?"⏳ En juego":"⏰ "+hora(p.t)}</span></div>`; }
+  function equipos(p,mid){ return `<div class="fvs"><div class="ftm">${escu(p.h)}<span>${esc(p.h)}</span></div><div class="fmid">${mid}</div><div class="ftm">${escu(p.a)}<span>${esc(p.a)}</span></div></div>`; }
   function partido(p){
     const pr=p.pr, fin=!!p.res, seguro=pr&&pr.k.length===1;
-    const cls=["fm"]; if(seguro) cls.push("st"); if(fin&&p.ac) cls.push(p.ac.r?"bien":"mal");
-    let h=`<div class="${cls.join(" ")}"><div class="fcp"><span>${esc((DATA.comps||{})[p.c]||p.c)}</span><span>${fin?"Final":/IN_PLAY|PAUSED/.test(p.st)?"⏳ En juego":hora(p.t)}</span></div>
-      <div class="ft"><span${fin&&p.res[0]>p.res[1]?' class="gw"':""}>${esc(p.h)}</span>${fin?`<i class="sc">${p.res[0]} - ${p.res[1]}</i>`:"<i>vs</i>"}<span${fin&&p.res[1]>p.res[0]?' class="gw"':""}>${esc(p.a)}</span></div>`;
-    if(pr&&fin&&p.ac){
-      /* ✅ Resultado con "¡ACERTÓ!" como en los animalitos */
-      const txt=PK[pr.k].replace("{h}",esc(p.h)).replace("{a}",esc(p.a)), ic=seguro?"⭐":"🛡️";
-      h+=p.ac.r?`<div class="fac"><span class="bd">✅ ¡ACERTÓ!</span><span>El bot dijo <b>${ic} ${txt} ${pr.kp}%</b></span></div>`
-               :`<div class="ffl"><span class="bd">❌ Falló</span><span>El bot dijo ${ic} ${txt} ${pr.kp}%</span></div>`;
-      h+=`<div class="fck"><span class="${p.ac.r?"y":"n"}">${p.ac.r?"✓ ":""}${ic} ${txt}</span>${p.ac.g==null?"":`<span class="${p.ac.g?"y":"n"}">${p.ac.g?"✓ ":""}⚽ ${GL[pr.g]}</span>`}</div>`;
-    } else if(pr){
-      const [p1,px,p2]=pr.p;
-      if(!fin){
-        /* 📊 Porcentajes: gana local / empate / gana visitante · alta / baja */
-        const mx=Math.max(p1,px,p2), ov=pr.o!=null?pr.o:null, fv=p1===mx?"1":p2===mx?"2":"X";
-        const bx=(c,lab,v,f)=>`<div class="fbx ${c}${f?" fav":""}"><small>${f&&seguro&&pr.k===({l:"1",x:"X",v:"2"})[c]?"⭐ ":""}${lab}</small><b>${v}%</b></div>`;
-        h+=`<div class="fg3">${bx("l","Gana "+esc(p.h),p1,fv==="1")}${bx("x","Empate",px,fv==="X")}${bx("v","Gana "+esc(p.a),p2,fv==="2")}</div>`;
-        if(ov!=null) h+=`<div class="fg2">${bx("al","⚽ Alta (más de 2,5)",ov,pr.g==="+")}${bx("ba","Baja (menos de 2,5)",100-ov,pr.g==="-")}</div>`;
-        const txt=PK[pr.k].replace("{h}",esc(p.h)).replace("{a}",esc(p.a));
-        h+=`<div class="fp" style="margin-top:9px"><span class="xpk">${seguro?"⭐":"🛡️"} ${txt} <em>${pr.kp}%</em></span>`;
-        if(!seguro) h+=`<span class="xgl">Favorito: ${fv==="1"?esc(p.h):fv==="2"?esc(p.a):"Empate"} <em>${mx}%</em></span>`;
-        if(ov!=null&&pr.g!=="=") h+=`<span class="xgl">⚽ ${pr.g==="+"?"Alta":"Baja"} <em>${pr.g==="+"?ov:100-ov}%</em></span>`;
-        return h+`</div></div>`;
-      }
-      h+=`<div class="fb"><div style="width:${p1}%;background:var(--cyan);color:#001">${p1>=9?p1+"%":""}</div><div style="width:${px}%;background:#5b6785">${px>=9?px+"%":""}</div><div style="width:${p2}%;background:var(--mag)">${p2>=9?p2+"%":""}</div></div>`;
-      const txt=PK[pr.k].replace("{h}",esc(p.h)).replace("{a}",esc(p.a));
-      h+=`<div class="fp"><span class="xpk">${seguro?"⭐":"🛡️"} ${txt} <em>${pr.kp}%</em></span><span class="xgl">⚽ ${GL[pr.g]}</span>`;
-      if(fin&&p.ac) h+=`<span class="${p.ac.r?"ok":"no"}">${p.ac.r?"✅ Acertó":"❌ Falló"}</span>`;
+    if(fin){
+      const cls=p.ac?(p.ac.r?" bien":" mal"):"";
+      let h=`<div class="fres${cls}">${escu(p.h,1)}<b class="fsc">${p.res[0]}-${p.res[1]}</b>${escu(p.a,1)}<div class="frn"><span>${esc(p.h)} – ${esc(p.a)}</span><small>${nomC(p.c)}</small></div>`;
+      h+=p.ac?(p.ac.r?`<span class="fok">✅ ¡ACERTÓ!</span>`:`<span class="fno">❌ Falló</span>`):`<span class="fsin">Sin pronóstico</span>`;
       h+=`</div>`;
-    } else if(!fin) h+=`<div class="fnt">Pronóstico en preparación…</div>`;
-    return h+`</div>`;
+      if(pr&&p.ac) h+=`<div class="fdij">El bot dijo ${seguro?"⭐":"🛡️"} ${tx(pr,p)} ${pr.kp}%${p.ac.g==null?"":` · ⚽ ${GL[pr.g]} ${p.ac.g?"✓":"✗"}`}</div>`;
+      return h;
+    }
+    let h=`<div class="fm${seguro?" st":""}">${cab(p)}${equipos(p,"vs")}`;
+    if(!pr) return h+`<div class="fnt">Pronóstico en preparación…</div></div>`;
+    const [p1,px,p2]=pr.p, ov=pr.o!=null?pr.o:null, mx=Math.max(p1,px,p2), fv=p1===mx?"1":p2===mx?"2":"X";
+    h+=`<div class="fbar"><div style="width:${p1}%" class="l">${p1>=12?p1+"%":""}</div><div style="width:${px}%" class="x">${px>=12?px+"%":""}</div><div style="width:${p2}%" class="v">${p2>=12?p2+"%":""}</div></div>
+      <div class="flab"><span>Gana ${esc(p.h)}</span><span>Empate</span><span>Gana ${esc(p.a)}</span></div>`;
+    if(ov!=null) h+=`<div class="fgo"><span>⚽ Alta ${ov}%</span><div class="gb"><i style="width:${ov}%"></i></div><span>Baja ${100-ov}%</span></div>`;
+    h+=`<div class="ftg"><span class="${seguro?"t1":"t2"}">${seguro?"⭐":"🛡️"} ${tx(pr,p)} ${pr.kp}%</span>`;
+    if(!seguro) h+=`<span class="t1">Favorito: ${fv==="1"?esc(p.h):fv==="2"?esc(p.a):"Empate"} ${mx}%</span>`;
+    if(ov!=null&&pr.g!=="=") h+=`<span class="t3">⚽ ${pr.g==="+"?"Alta":"Baja"} ${pr.g==="+"?ov:100-ov}%</span>`;
+    return h+`</div></div>`;
   }
-
+  function estrella(p){ const pr=p.pr; return `<div class="fsec">⭐ Jugada estrella del día</div><div class="fstar">${cab(p)}${equipos(p,`<small>vs</small><b>${hora(p.t)}</b>`)}
+    <div class="fbig"><div><small>El bot recomienda</small><b>⭐ ${tx(pr,p)}</b></div><div class="fring" style="--p:${pr.kp}"><span>${pr.kp}%</span></div></div></div>`; }
+  let VISTA=null;
   function pintar(){
     if(!document.body.classList.contains("futon")) return;
-    let h=`<div class="card fut"><h2>⚽ Pronósticos de fútbol<button class="frf" type="button" data-f="ref">↻ Actualizar</button></h2>`;
-    if(!DATA){ h+=`<div class="fmsg">${CARGANDO?"⏳ Cargando los partidos… la primera vez puede tardar hasta 1 minuto.":ERR||"Toca ↻ Actualizar."}</div></div>`; wrap.innerHTML=h; return; }
-    if(DATA.ok===false){ h+=`<div class="fmsg">${DATA.motivo==="sin_clave"?"⚽ Muy pronto: estamos activando los pronósticos de fútbol.":"No se pudieron cargar los partidos. Intenta en un rato."}</div></div>`; wrap.innerHTML=h; return; }
-    const s=DATA.stats||{};
-    if(s.n) h+=`<div class="fst">📊 Últimos 7 días: acertó <b>${s.ok} de ${s.n}</b> (${Math.round(100*s.ok/s.n)}%)${s.ns?` · ⭐ seguros: <b>${s.oks} de ${s.ns}</b>`:""}</div>`;
-    else if(DATA.preparando) h+=`<div class="fst">⏳ El bot está estudiando las ligas. Los porcentajes se afinan en unos minutos.</div>`;
-    const ps=(DATA.partidos||[]).filter(p=>!/POSTPONED|CANCELLED|SUSPENDED|AWARDED/.test(p.st));
+    let h=`<div class="fut">`;
+    const s=(DATA&&DATA.stats)||{};
+    const ps=DATA&&DATA.ok!==false?(DATA.partidos||[]).filter(p=>!/POSTPONED|CANCELLED|SUSPENDED|AWARDED/.test(p.st)):[];
+    const hoyK=fK.format(new Date()), manK=fK.format(new Date(Date.now()+86400000));
+    const prox=ps.filter(p=>!p.res), fin=ps.filter(p=>p.res).reverse();
+    const nHoy=prox.filter(p=>diaK(p.t)===hoyK).length, nMan=prox.filter(p=>diaK(p.t)===manK).length, nMas=prox.filter(p=>diaK(p.t)>manK).length;
     const comps=[...new Set(ps.map(p=>p.c))];
-    if(comps.length>1) h+=`<div class="fch"><button data-c="todas" class="${COMP==="todas"?"on":""}">Todas</button>${comps.map(c=>`<button data-c="${esc(c)}" class="${COMP===c?"on":""}">${esc((DATA.comps||{})[c]||c)}</button>`).join("")}</div>`;
-    const ver=ps.filter(p=>COMP==="todas"||p.c===COMP);
-    const prox=ver.filter(p=>!p.res), fin=ver.filter(p=>p.res).reverse();
-    if(!prox.length&&!fin.length) h+=`<div class="fmsg">No hay partidos en estos días.</div>`;
-    let dia="";
-    prox.forEach(p=>{ const d=diaK(p.t); if(d!==dia){ dia=d; h+=`<div class="fdia">${esc(diaTxt(p.t))}</div>`; } h+=partido(p); });
-    if(fin.length){ h+=`<div class="fdia">✅ Resultados recientes</div>`;
+    h+=`<div class="fhero"><div class="fln"></div><button class="frf" type="button" data-f="ref">↻</button><h2>⚽ Pronósticos <span>fútbol</span></h2><p>Calculados con IA · se actualizan solos</p>
+      <div class="fstat"><div><b>${s.n?s.ok+" de "+s.n:"—"}</b><small>acertados · 7 días</small></div><div><b>${nHoy+nMan}</b><small>partidos hoy y mañana</small></div><div><b>${comps.length||"—"}</b><small>ligas</small></div></div></div>`;
+    if(!DATA){ h+=`<div class="fmsg">${CARGANDO?"⏳ Cargando los partidos… la primera vez puede tardar hasta 1 minuto.":ERR||"Toca ↻ para actualizar."}</div></div>`; wrap.innerHTML=h; return; }
+    if(DATA.ok===false){ h+=`<div class="fmsg">${DATA.motivo==="sin_clave"?"⚽ Muy pronto: estamos activando los pronósticos de fútbol.":"No se pudieron cargar los partidos. Intenta en un rato."}</div></div>`; wrap.innerHTML=h; return; }
+    if(!VISTA) VISTA=nHoy?"hoy":nMan?"man":nMas?"mas":"res";
+    const T=[["hoy","Hoy",nHoy],["man","Mañana",nMan],["mas","Más días",nMas],["res","Resultados",fin.length]].filter(t=>t[2]||t[0]===VISTA||t[0]==="hoy");
+    h+=`<div class="fdays">${T.map(t=>`<button type="button" data-v="${t[0]}" class="${VISTA===t[0]?"on":""}">${t[1]}${t[2]?" · "+t[2]:""}</button>`).join("")}</div>`;
+    if(comps.length>1) h+=`<div class="fch"><button data-c="todas" class="${COMP==="todas"?"on":""}">Todas</button>${comps.map(c=>`<button data-c="${esc(c)}" class="${COMP===c?"on":""}"><i class="fdot" style="background:${CCOL[c]||"#8a9bbd"}"></i>${nomC(c)}</button>`).join("")}</div>`;
+    const ok=p=>COMP==="todas"||p.c===COMP;
+    if(DATA.preparando&&!s.n) h+=`<div class="fst">⏳ El bot está estudiando las ligas. Los porcentajes se afinan en unos minutos.</div>`;
+    if(VISTA==="res"){
+      const L=fin.filter(ok);
       if(s.n) h+=`<div class="fsum">🎯 Últimos 7 días: <b>${s.ok} de ${s.n}</b> pronósticos acertados${s.ns?`<small>⭐ Seguros: ${s.oks} de ${s.ns}</small>`:""}<div class="br"><i style="width:${Math.round(100*s.ok/s.n)}%"></i></div></div>`;
-      fin.forEach(p=>h+=partido(p)); }
+      h+=L.length?L.map(partido).join(""):`<div class="fmsg">Todavía no hay resultados.</div>`;
+    } else {
+      const L=prox.filter(p=>ok(p)&&(VISTA==="hoy"?diaK(p.t)===hoyK:VISTA==="man"?diaK(p.t)===manK:diaK(p.t)>manK));
+      const est=L.filter(p=>p.pr&&p.pr.k.length===1).sort((a,b)=>b.pr.kp-a.pr.kp)[0];
+      if(est) h+=estrella(est);
+      if(!L.length) h+=`<div class="fmsg">No hay partidos ${VISTA==="hoy"?"hoy":VISTA==="man"?"mañana":"en los próximos días"}${COMP!=="todas"?" en esta liga":""}.</div>`;
+      let dia="";
+      L.filter(p=>p!==est).forEach(p=>{ const d=diaK(p.t); if(d!==dia){ dia=d; h+=`<div class="fsec">📅 ${esc(diaTxt(p.t))}</div>`; } h+=partido(p); });
+      const R=fin.filter(ok).slice(0,3);
+      if(R.length){ h+=`<div class="fsec">✅ Últimos resultados</div>`+R.map(partido).join("")+`<button class="fmore" type="button" data-v="res">Ver todos los resultados ›</button>`; }
+    }
     h+=`<div class="fnt">⭐ = el bot está seguro (en la prueba acertó ~7 de cada 10) · 🛡️ = doble oportunidad (~8 de cada 10).<br>Pronósticos con estadística: ayudan, pero no son garantía. Se actualiza solo; no es en vivo.</div></div>`;
     wrap.innerHTML=h;
   }
-  wrap.addEventListener("click",e=>{ const c=e.target.closest("[data-c]"); if(c){ COMP=c.dataset.c; pintar(); return; }
+  wrap.addEventListener("click",e=>{ const v=e.target.closest("[data-v]"); if(v){ VISTA=v.dataset.v; pintar(); try{ wrap.scrollIntoView({block:"start"}); }catch(_){} return; }
+    const c=e.target.closest("[data-c]"); if(c){ COMP=c.dataset.c; pintar(); return; }
     if(e.target.closest('[data-f="ref"]')) cargar(true); });
 
   async function cargar(forzar){
