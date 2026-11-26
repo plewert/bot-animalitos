@@ -1107,7 +1107,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611261015";
+const BUILD="202611261100";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -3197,7 +3197,7 @@ document.addEventListener("click",e=>{
   const GL={"+":"Más de 2,5 goles","-":"Menos de 2,5 goles","=":"Goles parejos"};
 
   /* 🎨 Diseño nuevo del panel de fútbol (escudos con iniciales, barras, jugada estrella) */
-  const CCOL={CL:"#3b82f6",PL:"#8b5cf6",PD:"#ef4444",SA:"#2563eb",BL1:"#dc2626",FL1:"#0ea5e9",DED:"#f97316",PPL:"#16a34a",BSA:"#eab308"};
+  const CCOL={CL:"#3b82f6",PL:"#8b5cf6",PD:"#ef4444",SA:"#2563eb",BL1:"#dc2626",FL1:"#0ea5e9",DED:"#f97316",PPL:"#16a34a",BSA:"#eab308",GSL:"#0d5eaf"};
   const QUITA=/^(fc|cf|ac|sc|ss|as|afc|rc|rcd|cd|ud|sd|ca|club|sporting|real|de|del|la|el|1\.|vfb|vfl|tsg|sv|fk|sk|ogc|stade|olympique|ec|se|cr|sl|sc|us|ssc|bv|psv)$/i;
   function sigla(n){ const w=String(n||"").replace(/[^\p{L}\p{N} ]/gu," ").split(/\s+/).filter(Boolean); const k=w.filter(x=>!QUITA.test(x)); const t=(k[0]||w[0]||"?");
     return (t.length>=3?t.slice(0,3):(w[0]||t).length>=3?w[0].slice(0,3):(t+(k[1]||w[1]||"")).slice(0,3)).toUpperCase(); }
