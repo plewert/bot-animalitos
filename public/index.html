@@ -1104,7 +1104,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611252125";
+const BUILD="202611260035";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -3161,7 +3161,8 @@ document.addEventListener("click",e=>{
     .fut .ftg{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.fut .ftg span{font-size:13px;font-weight:800;border-radius:999px;padding:4px 11px}
     .fut .ftg .t1{background:var(--green-soft);color:var(--grn);border:1px solid rgba(45,255,138,.5)}.fut .ftg .t2{background:rgba(46,242,255,.12);color:#7ff6ff;border:1px solid rgba(46,242,255,.45)}.fut .ftg .t3{background:rgba(255,159,28,.14);color:#ffb14a;border:1px solid rgba(255,159,28,.45)}
     .fut .fres{display:flex;align-items:center;gap:8px;border-radius:16px;padding:9px 10px;background:rgba(6,10,22,.6);border:1px solid var(--line);margin-bottom:4px}
-    .fut .fres.bien{border-color:rgba(45,255,138,.6)}.fut .fres.mal{border-color:rgba(255,59,92,.45)}
+    .fut .fres.bien{border-color:rgba(45,255,138,.6)}.fut .fres.mal{border-color:rgba(255,59,92,.45)}.fut .fres.medio{border-color:rgba(255,159,28,.6)}
+    .fut .fmed{flex:none;font-weight:900;font-size:12px;border-radius:8px;padding:4px 7px;background:#ff9f1c;color:#2a1500}
     .fut .fsc{font:800 16px Orbitron,sans-serif;background:rgba(255,255,255,.08);border-radius:8px;padding:2px 7px;flex:none}
     .fut .frn{min-width:0;flex:1;line-height:1.2}.fut .frn span{display:block;font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fut .frn small{font-size:11.5px;color:var(--muted)}
     .fut .fok,.fut .fno,.fut .fsin{flex:none;font-weight:900;font-size:12px;border-radius:8px;padding:4px 7px}.fut .fok{background:var(--grn);color:#04210f}.fut .fno{background:#ff3b5c;color:#fff}.fut .fsin{background:rgba(255,255,255,.06);color:var(--muted);font-weight:700}
@@ -3200,11 +3201,12 @@ document.addEventListener("click",e=>{
   function partido(p){
     const pr=p.pr, fin=!!p.res, seguro=pr&&pr.k.length===1;
     if(fin){
-      const cls=p.ac?(p.ac.r?" bien":" mal"):"";
+      const medio=p.ac&&!p.ac.r&&p.ac.g&&pr&&pr.g!=="=";
+      const cls=p.ac?(p.ac.r?" bien":medio?" medio":" mal"):"";
       let h=`<div class="fres${cls}">${escu(p.h,1)}<b class="fsc">${p.res[0]}-${p.res[1]}</b>${escu(p.a,1)}<div class="frn"><span>${esc(p.h)} – ${esc(p.a)}</span><small>${nomC(p.c)}</small></div>`;
-      h+=p.ac?(p.ac.r?`<span class="fok">✅ ¡ACERTÓ!</span>`:`<span class="fno">❌ Falló</span>`):`<span class="fsin">Sin pronóstico</span>`;
+      h+=p.ac?(p.ac.r?`<span class="fok">✅ ¡ACERTÓ!</span>`:medio?`<span class="fmed">⚽ ¡Acertó la ${pr.g==="+"?"alta":"baja"}!</span>`:`<span class="fno">❌ Falló</span>`):`<span class="fsin">Sin pronóstico</span>`;
       h+=`</div>`;
-      if(pr&&p.ac) h+=`<div class="fdij">El bot dijo ${seguro?"⭐":"🛡️"} ${tx(pr,p)} ${pr.kp}%${p.ac.g==null?"":` · ⚽ ${GL[pr.g]} ${p.ac.g?"✓":"✗"}`}</div>`;
+      if(pr&&p.ac) h+=`<div class="fdij">El bot dijo ${seguro?"⭐":"🛡️"} ${tx(pr,p)} ${pr.kp}% ${p.ac.r?"✓":"✗"}${p.ac.g==null?"":` · ⚽ ${GL[pr.g]} ${p.ac.g?"✓":"✗"}`}</div>`;
       return h;
     }
     let h=`<div class="fm${seguro?" st":""}">${cab(p)}${equipos(p,"vs")}`;
@@ -3242,7 +3244,7 @@ document.addEventListener("click",e=>{
     if(DATA.preparando&&!s.n) h+=`<div class="fst">⏳ El bot está estudiando las ligas. Los porcentajes se afinan en unos minutos.</div>`;
     if(VISTA==="res"){
       const L=fin.filter(ok);
-      if(s.n) h+=`<div class="fsum">🎯 Últimos 7 días: <b>${s.ok} de ${s.n}</b> pronósticos acertados${s.ns?`<small>⭐ Seguros: ${s.oks} de ${s.ns}</small>`:""}<div class="br"><i style="width:${Math.round(100*s.ok/s.n)}%"></i></div></div>`;
+      if(s.n) h+=`<div class="fsum">🎯 Últimos 7 días: <b>${s.ok} de ${s.n}</b> pronósticos acertados${s.ns?`<small>⭐ Seguros: ${s.oks} de ${s.ns}</small>`:""}${s.ng?`<small>⚽ Goles (alta/baja): ${s.okg} de ${s.ng}</small>`:""}<div class="br"><i style="width:${Math.round(100*s.ok/s.n)}%"></i></div></div>`;
       h+=L.length?L.map(partido).join(""):`<div class="fmsg">Todavía no hay resultados.</div>`;
     } else {
       const L=prox.filter(p=>ok(p)&&(VISTA==="hoy"?diaK(p.t)===hoyK:VISTA==="man"?diaK(p.t)===manK:diaK(p.t)>manK));
