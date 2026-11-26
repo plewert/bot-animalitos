@@ -746,7 +746,9 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
 .tmta .a.hit{border-color:#2dff8a;box-shadow:0 0 14px rgba(45,255,138,.35)}.tmta .a.hit i{background:#2dff8a;color:#03250f}
 .tmts{margin-top:9px;font-size:13px;color:#dfe7fb;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .tmts .pkcp{flex:none}
-.tmtl{font-size:12px;color:var(--muted);margin-top:6px}
+.tmtl{font-size:12px;color:var(--muted);margin-top:6px}.tmtl b{color:#ffd23f}
+.tmti{font-size:13px;line-height:1.45;color:#dfe7fb;background:rgba(46,242,255,.08);border:1px solid rgba(46,242,255,.4);border-radius:12px;padding:8px 10px;margin:0 0 12px}.tmti b{color:#2ef2ff}
+.tmtbar{height:7px;border-radius:9px;background:#2a3a63;margin-top:8px;overflow:hidden}.tmtbar i{display:block;height:100%;background:linear-gradient(90deg,#ffb84d,#2dff8a)}
 .tmtw{font-size:13px;color:var(--muted);text-align:center;padding:10px;border:1px dashed #2a3a63;border-radius:12px}
 </style>
 <style id="anim4">
@@ -1129,7 +1131,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611261345";
+const BUILD="202611261550";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -3083,28 +3085,30 @@ function tmtCalc(l,st,k){ const v=stHasta(l,st,k), H=v.hist; if(H.length<3) retu
   window.__STV=v; try{ const P=predict(GD(),x,H[H.length-2]); return senalCalc0(l,v,x,P).slice(0,3).map(r=>r.n); } finally{ window.__STV=null; } }
 function tmtGet(l,st){ const td=today(); let M={}; try{ M=JSON.parse(localStorage.getItem("bot-tmt")||"{}"); }catch(e){}
   Object.keys(M).forEach(k=>{ if(!k.includes("|"+td)) delete M[k]; });
-  const it=(st.dia&&st.dia.fecha===td?st.dia.items:[]).filter(x=>l.A[x.num]), nM=it.filter(x=>x.hora<"13:00").length;
+  const it=(st.dia&&st.dia.fecha===td?st.dia.items:[]).filter(x=>l.A[x.num]), nM=it.filter(x=>x.hora<"12:00").length;
   const ini=(st.hoy&&st.hoy.fecha===td)?st.hoy.ini:st.hist.length, nHoy=st.hist.length-ini;
-  const okH=esperaHist(l)!=="wait", km=l.id+"|"+td+"|m", kt=l.id+"|"+td+"|t";
+  const okH=esperaHist(l)!=="wait", km=l.id+"|"+td+"|m8", kt=l.id+"|"+td+"|t8";
   if(!M[km]&&okH&&nHoy===it.length){ const r=tmtCalc(l,st,0); if(r&&r.length===3) M[km]=r; }
-  const tardeLista=it.some(x=>x.hora>="13:00")||it.some(x=>x.hora>="12:00"&&x.hora<"13:00");
+  const tardeLista=it.some(x=>x.hora>="11:00");
   if(!M[kt]&&okH&&tardeLista&&nHoy===it.length){ const r=tmtCalc(l,st,nM); if(r&&r.length===3) M[kt]=r; }
   try{ localStorage.setItem("bot-tmt",JSON.stringify(M)); }catch(e){}
   return {m:M[km]||null,t:M[kt]||null,it}; }
-function tmtTxt(l,t,part){ return "🎯 *Tripleta de la "+(part==="m"?"mañana":"tarde")+" · "+l.name+"*\n"+t.map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join(" - ")+"\n⏰ "+(part==="m"?"8:00 am a 12:00 pm":"1:00 pm a 7:00 pm"); }
+function tmtTxt(l,t,part){ return "🎯 *Tripleta de la "+(part==="m"?"mañana":"tarde")+" · "+l.name+"*\n"+t.map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join(" - ")+"\n⏰ "+(part==="m"?"Jugar antes de las 8:00 am · vale 8 sorteos (hasta las 3:00 pm)":"Jugar antes de las 12:00 pm · vale 8 sorteos (hasta las 7:00 pm)"); }
 function renderTMT(){ const box=$("tmtBox"); if(!box) return; const l=L(), st=S();
-  const o=tmtGet(l,st), it=o.it, man=it.filter(x=>x.hora<"13:00"), tar=it.filter(x=>x.hora>="13:00");
-  const card=(t,part,W,fin)=>{ const cls=part==="m"?"m":"t", tit=part==="m"?"☀️ Tripleta de la mañana":"🌇 Tripleta de la tarde", hr=part==="m"?"8:00 am → 12:00 pm":"1:00 pm → 7:00 pm";
-    if(!t) return `<div class="tmtc ${cls}"><div class="tmth"><span>${tit}</span><small>${hr}</small></div><div class="tmtw">${part==="m"?(esperaHist(l)==="wait"?"Cargando datos…":"Todavía no hay datos para armarla."):"⏳ Sale después del resultado de las 12:00 pm"}</div></div>`;
+  const o=tmtGet(l,st), it=o.it, man=it.slice(0,8), tar=it.filter(x=>x.hora>="12:00").slice(0,8);
+  const card=(t,part,W,fin)=>{ const cls=part==="m"?"m":"t", tit=part==="m"?"☀️ Tripleta de la mañana":"🌇 Tripleta de la tarde", hr=part==="m"?"8 sorteos · 8 am → 3 pm":"8 sorteos · 12 pm → 7 pm";
+    if(!t) return `<div class="tmtc ${cls}"><div class="tmth"><span>${tit}</span><small>${hr}</small></div><div class="tmtw">${part==="m"?(esperaHist(l)==="wait"?"Cargando datos…":"Todavía no hay datos para armarla."):"⏳ Sale con el resultado de las 11:00 am"}</div></div>`;
     const hit=n=>W.find(x=>x.num===n), k=t.filter(hit).length, win=k===3;
     return `<div class="tmtc ${cls}${win?" win":""}"><div class="tmth"><span>${tit}</span><small>${hr}</small></div>
       <div class="tmta">${t.map(n=>{ const h=hit(n); return `<div class="a${h?" hit":""}"><div class="e">${l.A[n][1]}</div><b>${n}</b><span>${esc(l.A[n][0])}</span><i>${h?"✓ "+fmtH12(h.hora):"⏳ falta"}</i></div>`; }).join("")}</div>
-      <div class="tmts"><span>${win?'<b style="color:#2dff8a">🏆 ¡TRIPLETA COMPLETA!</b>':(fin?"Terminó: salieron <b>"+k+" de 3</b>":"Van <b style=\"color:#2dff8a\">"+k+" de 3</b>")}</span><button class="pkcp tmtcp" data-p="${part}" type="button">⧉ Copiar</button></div>
-      <div class="tmtl">🔒 ${part==="m"?"Se armó antes del primer sorteo":"Se armó con el resultado de las 12"} y no cambia en el día.</div></div>`; };
+      <div class="tmts"><span>${win?'<b style="color:#2dff8a">🏆 ¡TRIPLETA COMPLETA!</b>':(fin?"Terminó: salieron <b>"+k+" de 3</b>":"Van <b style=\"color:#2dff8a\">"+k+" de 3</b>"+(W.length?" · sorteo "+W.length+" de 8":""))}</span><button class="pkcp tmtcp" data-p="${part}" type="button">⧉ Copiar</button></div>
+      <div class="tmtbar"><i style="width:${Math.min(100,W.length/8*100)}%"></i></div>
+      <div class="tmtl">⏰ <b>${part==="m"?"Juégala antes de las 8:00 am":"Juégala antes de las 12:00 pm"}</b> · vale hasta el sorteo de las ${part==="m"?"3:00 pm":"7:00 pm"}</div></div>`; };
   box.innerHTML=`<div class="tmt"><h2>🎯 Tripletas del bot · ${esc(l.name)}</h2>
-    <p class="tn0">Los 3 animales más fuertes de la señal (doble ciclo, tablero, guía, salidores, aciertos…) para cada parte del día.</p>
-    ${card(o.m,"m",man,it.some(x=>x.hora>="12:00"))}${card(o.t,"t",tar,it.some(x=>x.hora>="19:00"))}
-    <p class="tn0" style="margin:2px 0 0">📊 Probado 2 años: estos animales salen <b style="color:#2dff8a">36% más</b> que al azar en la mañana y <b style="color:#2dff8a">17% más</b> en la tarde. Sacar los 3 completos sigue siendo difícil.</p></div>`;
+    <p class="tn0">Los 3 animales más fuertes de la señal (doble ciclo, tablero, guía, salidores, aciertos…).</p>
+    <div class="tmti">🎟️ <b>Cada tripleta dura 8 sorteos</b> desde que la juegas. Para ganar tienen que salir los 3 animales dentro de esos 8 sorteos.</div>
+    ${card(o.m,"m",man,man.length>=8)}${card(o.t,"t",tar,tar.length>=8||it.some(x=>x.hora>="19:00"))}
+    <p class="tn0" style="margin:2px 0 0">📊 Probado 2 años en Lotto Activo con 8 sorteos: la de la mañana salió <b style="color:#2dff8a">completa 8 veces</b> (al azar serían 4) y la de la tarde <b style="color:#2dff8a">9 veces</b>.</p></div>`;
   box.querySelectorAll(".tmtcp").forEach(b=>b.onclick=()=>{ const t=b.dataset.p==="m"?o.m:o.t; if(t) copyTxt(tmtTxt(l,t,b.dataset.p)+FOOTER,b,"⧉ Copiar"); });
 }
 var HOYOPEN={}, CALC={sel:[]};
