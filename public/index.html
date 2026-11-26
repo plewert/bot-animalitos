@@ -1040,7 +1040,7 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   <button data-v="panel" class="on"><span>▦</span>Panel</button>
   <button data-v="jugada"><span>➜</span>Jugada</button>
   <button data-v="salidores"><span>🔥</span>Salidores</button>
-  <button data-v="fijas"><span>🎯</span>Fijas</button>
+  <button data-v="fijas"><span>🎯</span>Tripletas</button>
   <button data-v="jaulas"><span>🔒</span>Jaulas</button>
   <button data-v="cuentas"><span>📋</span>Hoy</button>
   <button data-v="guia"><span>📖</span>Guía</button>
@@ -1131,7 +1131,7 @@ const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["gua
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611261550";
+const BUILD="202611261945";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -1895,7 +1895,7 @@ render();
     {sel:"#hcard",v:"salidores",t:"📊 Historial de 1 año",x:"Elige un animal y mira <b>cuándo sale</b>: a qué horas y qué días, con lo esperado al lado. Sale del historial del servidor."},
     {sel:"#jcard",v:"jaulas",t:"Jaulas",x:"Los animales que llevan días sin salir: <b>naranja</b> desde 5 días y <b>rojo</b> desde 12. Puedes cambiar esos límites."},
     {sel:"#hoyRes",v:"cuentas",t:"📋 Resultados de hoy",x:"Los resultados del día de las <b>4 loterías</b> con su hora. Toca una lotería para abrirla o cerrarla, y <b>Copiar resultados</b> los manda a WhatsApp con tu marca."},
-    {sel:"#fijWrap",v:"fijas",t:"🎯 Fijas",x:"Dos secciones de tripletas. Arriba, las <b>5 tripletas más fuertes</b> para hoy, o para mañana después de las 7 p. m. Revisa tu guía, tripletas fijas y grupos de fijos, y les da puntos por salidores, parejas que salen juntas, volteos y Señal; la jaula las baja. Cada una con su <b>Copiar</b>. Abajo, las <b>Tripletas de salidores</b>: se arman con los más salidores que <b>aún no han salido hoy</b> y cambian durante el día."},
+    {sel:"#fijWrap",v:"fijas",t:"🎯 Tripletas",x:"Dos secciones de tripletas. Arriba, las <b>5 tripletas más fuertes</b> para hoy, o para mañana después de las 7 p. m. Revisa tu guía, tripletas fijas y grupos de fijos, y les da puntos por salidores, parejas que salen juntas, volteos y Señal; la jaula las baja. Cada una con su <b>Copiar</b>. Abajo, las <b>Tripletas de salidores</b>: se arman con los más salidores que <b>aún no han salido hoy</b> y cambian durante el día."},
     {sel:"#hoyTri",v:"cuentas",t:"🎯 Tripletas de hoy",x:"Las tripletas que dio el bot en el día, con <b>✓</b> los animales que ya salieron y <b>⏳</b> los que faltan. Las completas salen como <b>¡GANADORA! 🏆</b>. Puedes copiar una, todas o solo las ganadoras."},
     {sel:"#cAni",v:"cuentas",t:"🧮 Calculadora",x:"Pon el monto y lo que paga, toca los animales que jugó el cliente y te dice <b>cuánto cobra</b> por animal y por tripleta. Los montos se quedan guardados."},
     {sel:"#revCard",v:"guia",t:"📊 Revisión de la guía",x:"Cada combinación de tu guía probada contra el año real: <b>✅ aciertan más</b>, <b>⚖️ normal</b> o <b>⚠️ casi nunca</b>, con sus números. No cambia la guía: te ayuda a decidir qué dejar y qué revisar."},
