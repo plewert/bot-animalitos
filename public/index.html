@@ -777,6 +777,7 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   .trow.v1{border-color:rgba(45,255,138,.45)!important}.trow.v2{border-color:#2dff8a!important;box-shadow:0 0 16px rgba(45,255,138,.3)}
   .trow.win{border-color:#ffd23f!important;box-shadow:0 0 22px rgba(255,210,63,.55);background:linear-gradient(90deg,rgba(255,210,63,.14),rgba(45,255,138,.08))!important}
   .trow .tst{margin-left:auto;font-size:11.5px;font-weight:800;color:#2dff8a;white-space:nowrap}.trow.win .tst{color:#ffd23f}
+.sgtag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:700;background:#0e3b2c;color:#4ff0a8;border:1px solid #2bd38a;vertical-align:middle}.rr.sgin{box-shadow:inset 3px 0 0 #2bd38a}.sgnote{font-size:12px;color:#9fb3d1;margin:4px 0 8px}.sgnote b{color:#4ff0a8}
 </style>
 <style id="anim4">
 .cdr{display:flex;align-items:center;gap:14px;margin:4px 0 12px;padding:8px 14px;border:2px solid var(--cyan);border-radius:16px;background:rgba(10,16,34,.9);box-shadow:0 0 14px rgba(46,242,255,.35)}
@@ -1167,7 +1168,7 @@ Object.keys(REGLA_NO).forEach(k=>{ if(REGLA_NO[k].includes("guacharo")&&!REGLA_N
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611271330";
+const BUILD="202611271430";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -1223,16 +1224,17 @@ function esperaHist(l){
 }
 function cargandoBox(){ return `<div class="hwait"><span class="hspin"></span><span>⏳ <b>Cargando datos del servidor…</b><br><small>En unos segundos salen los animales ya en su orden final.</small></span></div>`; }
 const HSLOW='<div class="hslow">⏳ Todavía cargando datos del servidor: estos animales pueden cambiar cuando termine.</div>';
-/* 🎯 Jugada recomendada (probado 2025-2026): los ⭐⭐⭐ entre los 4 primeros (sin jaulas) rinden ×1,2 sobre el azar */
-function recSet(l,st,last,arr,P){ try{ if(!arr||!arr.length||esperaHist(l)==="wait") return new Set(); const rows=rankRows(l,st,last,arr,P); return new Set(rows.filter(r=>!r.lv).slice(0,4).filter(r=>r.st3>=3).map(r=>r.n)); }catch(e){ return new Set(); } }
-function recHtml(l,st,last,arr,P){ const REC=recSet(l,st,last,arr,P); return REC.size?`<div class="rec-n rec-solo">🎯 <b>Jugada recomendada:</b> ${[...REC].map(n=>l.A[n][1]+" "+n).join(" · ")}<small>Los ⭐⭐⭐ entre los 4 primeros · probado: rinden ×1,2 sobre el azar</small></div>`:""; }
+/* 🎯 Jugada recomendada: los ⭐⭐⭐ entre los 4 primeros (sin jaulas) que además están en la 📡 Señal */
+function recSet(l,st,last,arr,P){ try{ if(!arr||!arr.length||esperaHist(l)==="wait") return new Set(); const rows=rankRows(l,st,last,arr,P), SG=senSet(l,st,last,P); return new Set(rows.filter(r=>!r.lv).slice(0,4).filter(r=>r.st3>=3&&SG.has(r.n)).map(r=>r.n)); }catch(e){ return new Set(); } }
+function senSet(l,st,last,P){ try{ if(esperaHist(l)==="wait") return new Set(); return new Set(senalCalc(l,st,last,P).map(x=>x.n)); }catch(e){ return new Set(); } }
+function recHtml(l,st,last,arr,P){ const REC=recSet(l,st,last,arr,P); return REC.size?`<div class="rec-n rec-solo">🎯 <b>Jugada recomendada:</b> ${[...REC].map(n=>l.A[n][1]+" "+n).join(" · ")}<small>Los ⭐⭐⭐ entre los 4 primeros que también están en la 📡 Señal</small></div>`:""; }
 function rankHtml(l,st,last,arr,P){
   const HW=esperaHist(l); if(HW==="wait"&&arr&&arr.length) return `<div class="rank"><div class="rh">◆ Ordenados por señales: el 1 es el más fuerte</div>${cargandoBox()}</div>`;
   const YH=yaHoy(st);
   if(!arr||!arr.length) return "";
   const rows=rankRows(l,st,last,arr,P);
-  const REC=recSet(l,st,last,arr,P);
-  return `<div class="rank"><div class="rh">◆ Ordenados por señales: el 1 es el más fuerte</div>${HW==="slow"?HSLOW:""}${rows.some(r=>YH.has(r.n))?'<div class="yhn">⚠️ Los marcados ya salieron hoy: casi nunca repiten el mismo día.</div>':""}${rows.map((r,i)=>`<div class="rr${i===0&&!r.lv&&r.st3?" top":""}${r.lv?" jl"+r.lv:""}${REC.has(r.n)?" rec":""}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}${r.lv?'<i class="rcage"></i>':""}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${REC.has(r.n)?'<span class="recb">🎯 Recomendado</span>':""}${YH.has(r.n)?'<span class="yhb">⚠️ ya salió hoy</span>':""}${r.tags.length?`<div class="rt">${r.tags.map(t=>`<span${String(t).startsWith("📖")?' class="tg"':""}>${t}</span>`).join("")}</div>`:""}${r.lv?`<div class="rjl">🔒 ${r.lv===2?"Jaula fuerte":"Jaula"} · ${daysSince(st.last[r.n])} días · no jugarlo</div>`:""}</div><span class="rs">${r.lv?"—":"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`;
+  const REC=recSet(l,st,last,arr,P), SG=senSet(l,st,last,P);
+  return `<div class="rank"><div class="rh">◆ Ordenados por señales: el 1 es el más fuerte</div>${HW==="slow"?HSLOW:""}${rows.some(r=>!r.lv&&SG.has(r.n))?'<div class="sgnote"><b>📡 = también está en la Señal</b> · esos son los que más aciertan</div>':""}${rows.some(r=>YH.has(r.n))?'<div class="yhn">⚠️ Los marcados ya salieron hoy: casi nunca repiten el mismo día.</div>':""}${rows.map((r,i)=>`<div class="rr${i===0&&!r.lv&&r.st3?" top":""}${r.lv?" jl"+r.lv:""}${REC.has(r.n)?" rec":""}${!r.lv&&SG.has(r.n)?" sgin":""}"><span class="ri">${i+1}</span><span class="re">${l.A[r.n][1]}${r.lv?'<i class="rcage"></i>':""}</span><div class="rn"><b>${r.n}</b> ${esc(l.A[r.n][0])}${!r.lv&&SG.has(r.n)?'<span class="sgtag">📡 en la Señal</span>':""}${REC.has(r.n)?'<span class="recb">🎯 Recomendado</span>':""}${YH.has(r.n)?'<span class="yhb">⚠️ ya salió hoy</span>':""}${r.tags.length?`<div class="rt">${r.tags.map(t=>`<span${String(t).startsWith("📖")?' class="tg"':""}>${t}</span>`).join("")}</div>`:""}${r.lv?`<div class="rjl">🔒 ${r.lv===2?"Jaula fuerte":"Jaula"} · ${daysSince(st.last[r.n])} días · no jugarlo</div>`:""}</div><span class="rs">${r.lv?"—":"★".repeat(r.st3)+'<i>'+"★".repeat(3-r.st3)+'</i>'}</span></div>`).join("")}</div>`;
 }
 /* los 10 que más han salido (igual que la sección Salidores) */
 function topSalidores(){
@@ -1315,20 +1317,27 @@ function ventanaHtml(st){
 }
 /* ---- ✅ Acierto: si el que salió estaba en el pronóstico o en las señales del sorteo anterior ---- */
 var AC_CACHE={k:"",v:null};
+function ultimaAntes(l,st,y){ try{ const td=today(), H=st.hist, ini=st.hoy&&st.hoy.fecha===td?st.hoy.ini:H.length;
+  for(let i=H.length-2;i>=ini;i--) if(H[i]===y) return td;
+  const D=((HCACHE[l.id]&&HCACHE[l.id].dias)||[]).filter(d=>d[0]<td).sort((a,b)=>a[0]<b[0]?1:-1);
+  for(const [f,it] of D) if(it.some(x=>x[1]===y)) return f;
+}catch(e){} return undefined; }
 function aciertoCalc(l,st){
   const H=st.hist; if(!H||H.length<2) return null;
   const y=H[H.length-1], x=H[H.length-2], k=l.id+"|"+H.length+"|"+x+"|"+y+"|"+(st.last[y]||"");
   if(AC_CACHE.k===k) return AC_CACHE.v;
-  let v=null;
+  let v=null; const yL=st.last[y];
   try{
     st.hist=H.slice(0,-1);
+    /* el que salió todavía no había salido: su "última vez" vuelve a ser la de antes (si no, pierde la jaula y parece que estaba en la Señal) */
+    st.last[y]=ultimaAntes(l,st,y);
     const g=GD(), P=predict(g,x,H[H.length-3]);
     let pr=null; try{ const o=pronCalc(l,st,x,P); const i=o.R.findIndex(r=>r.n===y); if(i>=0) pr={R:o.R,i}; }catch(e){}
     let rk=null; try{ const arr=orden69([...P.now.entries()].sort((a,b)=>l.order.indexOf(a[0])-l.order.indexOf(b[0])),P);
       if(arr.length){ const rows=rankRows(l,st,x,arr,P).filter(r=>!r.lv); const i=rows.findIndex(r=>r.n===y); if(i>=0&&(i<5||rows[i].st3>=3)) rk={rows,i}; } }catch(e){}
     let sg=null; try{ const R=senalCalc(l,st,x,P); const i=R.findIndex(r=>r.n===y); if(i>=0) sg={R,i}; }catch(e){}
     if(pr||rk||sg) v={x,y,pr,rk,sg};
-  }catch(e){} finally{ st.hist=H; }
+  }catch(e){} finally{ st.hist=H; if(yL===undefined) delete st.last[y]; else st.last[y]=yL; }
   AC_CACHE={k,v}; return v;
 }
 function aciertoHtml(l,st){
