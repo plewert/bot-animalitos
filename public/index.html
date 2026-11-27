@@ -770,6 +770,13 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   #dlOv .dlr .b i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2ef2ff,#2dff8a);transition:width .6s}
   #dlOv .dlr.mal .b i{background:#ff9f43}
   #dlOv .dlw{margin-top:12px;padding:10px;border-radius:12px;background:rgba(255,210,63,.1);border:1px solid rgba(255,210,63,.55);font-weight:700;font-size:15px;line-height:1.35}
+
+  /* 💡 tripletas de salidores que se alumbran */
+  .trow .tc.hit{background:linear-gradient(180deg,#123b2a,#0b2418)!important;border-color:#2dff8a!important;box-shadow:0 0 14px rgba(45,255,138,.55);color:#e8fff1!important;position:relative}
+  .trow .tc.hit::after{content:attr(data-h);position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);font-size:9.5px;font-weight:900;background:#2dff8a;color:#03250f;border-radius:99px;padding:0 6px;white-space:nowrap}
+  .trow.v1{border-color:rgba(45,255,138,.45)!important}.trow.v2{border-color:#2dff8a!important;box-shadow:0 0 16px rgba(45,255,138,.3)}
+  .trow.win{border-color:#ffd23f!important;box-shadow:0 0 22px rgba(255,210,63,.55);background:linear-gradient(90deg,rgba(255,210,63,.14),rgba(45,255,138,.08))!important}
+  .trow .tst{margin-left:auto;font-size:11.5px;font-weight:800;color:#2dff8a;white-space:nowrap}.trow.win .tst{color:#ffd23f}
 </style>
 <style id="anim4">
 .cdr{display:flex;align-items:center;gap:14px;margin:4px 0 12px;padding:8px 14px;border:2px solid var(--cyan);border-radius:16px;background:rgba(10,16,34,.9);box-shadow:0 0 14px rgba(46,242,255,.35)}
@@ -1160,7 +1167,7 @@ Object.keys(REGLA_NO).forEach(k=>{ if(REGLA_NO[k].includes("guacharo")&&!REGLA_N
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611271000";
+const BUILD="202611271240";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -1650,28 +1657,40 @@ function renderTri(l,st,hot,n){
   const top=hot.filter(r=>r[1]>0).slice(0,10).map(r=>r[0]);
   if(top.length<3){box.innerHTML="";return;}
   const out=top.filter(salio);
+  /* 💡 Las tripletas quedan fijas en el día (por lotería y por "Otras combinaciones"); cuando sale un animal se alumbra */
+  let TS={}; try{ TS=JSON.parse(localStorage.getItem("bot-trisal")||"{}"); }catch(e){}
+  Object.keys(TS).forEach(k=>{ if(!k.includes("|"+td+"|")) delete TS[k]; });
+  const tsK=l.id+"|"+td+"|"+TRI_SEED, fijo=TS[tsK];
+  const tri=fijo?fijo.tri.map(x=>({t:x.t,g:x.g,grupo:x.grupo})):[];
+  let pend=top.filter(k=>!salio(k));
+  if(pend.length<3){ for(const r of hot){ if(pend.length>=3) break; if(!pend.includes(r[0])&&!salio(r[0])) pend.push(r[0]); } }
+  const extra=pend.filter(k=>!top.includes(k));
+  if(!fijo){
   // 1) Tripletas de grupos: animales del mismo grupo que aún no han salido hoy
-  const tri=[];
   GRUPOS.filter(G=>G.lots.includes(l.id)).forEach(G=>{
     if(tri.length>=3) return;
     const rest=G.a.filter(k=>!salio(k)).sort((x,y)=>rank(x)-rank(y));
     if(rest.length>=3) tri.push({t:rest.slice(0,3),g:true,grupo:G.a});
   });
   // 2) Tripletas de salidores para completar hasta 3
-  let pend=top.filter(k=>!salio(k));
-  if(pend.length<3){ for(const r of hot){ if(pend.length>=3) break; if(!pend.includes(r[0])&&!salio(r[0])) pend.push(r[0]); } }
-  const extra=pend.filter(k=>!top.includes(k));
   if(pend.length>=3&&tri.length<3){
     const pool=pend.slice(0,Math.max(3,Math.min(7,pend.length)));
     const clave=t=>t.slice().sort().join(",");
     const ya=new Set(tri.map(x=>clave(x.t)));
     for(const t of makeTripletas(pool.map((_,i)=>i)).map(t=>t.map(i=>pool[i]))){ if(tri.length>=3) break; if(!ya.has(clave(t))){tri.push({t,g:false});ya.add(clave(t));} }
   }
+  }
+  const itsHoy=(st.dia&&st.dia.fecha===td?st.dia.items:[])||[];
+  let armH=fijo?fijo.h:"";
+  if(!fijo&&tri.length){ const ult=itsHoy.length?itsHoy[itsHoy.length-1].hora:""; armH=ult?("después del de las "+fmtH12(ult)):"antes del primer sorteo";
+    TS[tsK]={h:armH,tri:tri.map(x=>({t:x.t,g:x.g,grupo:x.grupo||null}))}; try{ localStorage.setItem("bot-trisal",JSON.stringify(TS)); }catch(e){} }
+  const horaDe=k=>{ const it=itsHoy.find(x=>x.num===k); if(!it) return ""; const [H,M]=String(it.hora).split(":").map(Number); return (((H+11)%12)+1)+(M?":"+String(M).padStart(2,"0"):"")+(H>=12?"pm":"am"); };
   if(!tri.length){
     box.innerHTML=`<div class="sh" style="color:var(--cyan)">🎯 Tripletas de salidores</div><p class="note">Ya salieron casi todos los animales hoy: no quedan suficientes para armar tripletas.</p>`;
     return;
   }
   const chip=(k,c)=>`<span class="tc ${c}">${l.A[k][1]} ${k}</span>`;
+  const chipT=k=>salio(k)?`<span class="tc ta hit" data-h="✓ ${horaDe(k)}">${l.A[k][1]} ${k}</span>`:chip(k,"ta");
   const linea=t=>t.map(k=>l.A[k][1]+" "+k+" "+l.A[k][0]).join(" - ");
   const etq=x=>x.g?'👥<span class="tx"> Grupo</span>':'🔥<span class="tx"> Salidores</span>';
   box.innerHTML=`<div class="sh" style="color:var(--cyan)">🎯 Tripletas de salidores</div>
@@ -1679,8 +1698,8 @@ function renderTri(l,st,hot,n){
     <div class="tl">❌ Ya salieron hoy (no entran en las tripletas)</div><div class="tchs">${out.length?out.map(k=>chip(k,"tx")).join(""):'<span class="note" style="margin:0">Ninguno todavía</span>'}</div>
     <div class="tl">⏳ Salidores que aún no salen hoy</div><div class="tchs">${pend.map(k=>chip(k,"ta")).join("")}</div>
     ${extra.length?`<div class="note" style="margin:6px 0 0">Se agregaron ${extra.join(", ")} del ranking porque en el top 10 quedaban menos de 3 sin salir.</div>`:""}
-    <div class="tl" style="margin-top:12px">🎯 Tripletas (ninguno ha salido hoy)</div>
-    ${tri.map((x,i)=>`<div class="trow${x.g?" tg":""}"><span class="tn">${i+1}</span>${x.t.map(k=>chip(k,"ta")).join("")}<span class="tgl${x.g?"":" s"}">${etq(x)}</span><button class="tcp" data-i="${i}">⧉</button></div>`).join("")}
+    <div class="tl" style="margin-top:12px">🎯 Tripletas del día (se armaron ${esc(armH)} y no cambian)</div>
+    ${tri.map((x,i)=>{ const k=x.t.filter(salio).length; return `<div class="trow${x.g?" tg":""}${k===3?" win":k===2?" v2":k===1?" v1":""}"><span class="tn">${i+1}</span>${x.t.map(chipT).join("")}<span class="tst">${k===3?"🏆 ¡COMPLETA!":k+" de 3"}</span><span class="tgl${x.g?"":" s"}">${etq(x)}</span><button class="tcp" data-i="${i}">⧉</button></div>`; }).join("")}
     ${tri.some(x=>x.g)?`<div class="note" style="margin:6px 0 0">${tri.filter(x=>x.g).map(x=>"Grupo "+x.grupo.join(" · ")+": "+(x.grupo.filter(salio).length?"ya salió "+x.grupo.filter(salio).join(", ")+"; ":"")+"se eligen los que más han salido.").join("<br>")}</div>`:""}
     <div class="row" style="margin-top:10px"><button class="btn main" id="triCopy">⧉ Copiar tripletas</button><button class="btn" id="triNew">🔄 Otras combinaciones</button></div>
     <p class="note">Cada tripleta necesita que salgan los 3 animales en el día: pasa aproximadamente menos de 2 veces de cada 100, sean salidores, de grupo o no.</p>`;
