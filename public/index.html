@@ -751,6 +751,12 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
 .tmti{font-size:13px;line-height:1.45;color:#dfe7fb;background:rgba(46,242,255,.08);border:1px solid rgba(46,242,255,.4);border-radius:12px;padding:8px 10px;margin:0 0 12px}.tmti b{color:#2ef2ff}
 .tmtbar{height:7px;border-radius:9px;background:#2a3a63;margin-top:8px;overflow:hidden}.tmtbar i{display:block;height:100%;background:linear-gradient(90deg,#ffb84d,#2dff8a)}
 .tmtw{font-size:13px;color:var(--muted);text-align:center;padding:10px;border:1px dashed #2a3a63;border-radius:12px}
+
+  /* 📱 pestañas de loterías: las 6 juntas en 2 filas de 3 */
+  .tab .ts{display:none}
+  body.inapp .tab .tl{display:none} body.inapp .tab .ts{display:inline}
+  body.inapp .tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;overflow:visible!important}
+  body.inapp .tab{padding:7px 2px!important;font-size:10.5px!important;letter-spacing:.03em;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 <style id="anim4">
 .cdr{display:flex;align-items:center;gap:14px;margin:4px 0 12px;padding:8px 14px;border:2px solid var(--cyan);border-radius:16px;background:rgba(10,16,34,.9);box-shadow:0 0 14px rgba(46,242,255,.35)}
@@ -1140,7 +1146,7 @@ Object.keys(REGLA_NO).forEach(k=>{ if(REGLA_NO[k].includes("guacharo")&&!REGLA_N
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611270100";
+const BUILD="202611270105";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -1383,8 +1389,9 @@ $("jparse").onclick=()=>{
 
 /* pestañas */
 const tabs=$("tabs");
+const TAB_CORTO={activo:"Lotto Activo",granjita:"Granjita",guacharo:"Guácharo",chaima:"Chaima",inter:"Lotto Inter"};
 LOTS.forEach(l=>{const b=document.createElement("button"); b.className="tab"; b.style.setProperty("--tc",l.color); b.dataset.id=l.id;
-  b.innerHTML=`${l.name}<small>${l.short}</small>`; b.onclick=()=>{ST.cur=l.id;save();try{history.replaceState(null,"","#"+l.id)}catch(e){};build();}; tabs.appendChild(b);});
+  b.innerHTML=`<span class="tl">${l.name}</span><span class="ts">${TAB_CORTO[l.id]||l.name}</span><small>${l.short}</small>`; b.onclick=()=>{ST.cur=l.id;save();try{history.replaceState(null,"","#"+l.id)}catch(e){};build();}; tabs.appendChild(b);});
 
 function build(){ setTimeout(pintarCuenta,0);
   const l=L(), st=S();
