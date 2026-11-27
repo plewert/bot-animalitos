@@ -757,6 +757,19 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   body.inapp .tab .tl{display:none} body.inapp .tab .ts{display:inline}
   body.inapp .tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;overflow:visible!important}
   body.inapp .tab{padding:7px 2px!important;font-size:10.5px!important;letter-spacing:.03em;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .gdl{margin:10px 0 6px;padding:11px 12px;border-radius:14px;border:1.5px solid rgba(46,242,255,.6);background:rgba(46,242,255,.08);text-align:left;font:600 14px/1.38 Rajdhani,sans-serif;color:#dfe7fb}
+  .gdlh{font:800 11px Orbitron,sans-serif;letter-spacing:.12em;color:#2ef2ff;margin-bottom:4px}
+  #dlOv{position:fixed;inset:0;z-index:10050;background:rgba(3,5,12,.93);display:flex;align-items:center;justify-content:center;padding:18px;font-family:Rajdhani,sans-serif}
+  #dlOv .dlb{width:100%;max-width:380px;border:1.5px solid #2ef2ff;border-radius:20px;padding:18px;background:linear-gradient(180deg,#0e1630,#0a1124);box-shadow:0 0 40px rgba(46,242,255,.25);color:#e8f1ff;text-align:center}
+  #dlOv .dlt{font:900 17px Orbitron,sans-serif;letter-spacing:.06em;margin:4px 0 2px}
+  #dlOv .dls{font-size:14.5px;color:#9fb0d6;margin-bottom:12px}
+  #dlOv .dlr{display:flex;align-items:center;gap:8px;margin:6px 0;font-weight:700;font-size:15px;text-align:left}
+  #dlOv .dlr .n{width:118px}#dlOv .dlr .e{width:22px}
+  #dlOv .dlr .b{flex:1;height:8px;border-radius:9px;background:#2a3a63;overflow:hidden}
+  #dlOv .dlr .b i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2ef2ff,#2dff8a);transition:width .6s}
+  #dlOv .dlr.mal .b i{background:#ff9f43}
+  #dlOv .dlw{margin-top:12px;padding:10px;border-radius:12px;background:rgba(255,210,63,.1);border:1px solid rgba(255,210,63,.55);font-weight:700;font-size:15px;line-height:1.35}
 </style>
 <style id="anim4">
 .cdr{display:flex;align-items:center;gap:14px;margin:4px 0 12px;padding:8px 14px;border:2px solid var(--cyan);border-radius:16px;background:rgba(10,16,34,.9);box-shadow:0 0 14px rgba(46,242,255,.35)}
@@ -872,6 +885,7 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
       <div style="font:600 14.5px/1.3 Rajdhani,sans-serif;color:#c9d6ee">Pronósticos inteligentes: analiza miles de sorteos y partidos reales para decirte qué jugar.</div>
     </div>
     <div class="tagline" style="margin-top:8px">Acceso con código</div>
+    <div class="gdl"><div class="gdlh">📥 IMPORTANTE · PRIMERA VEZ</div>Al entrar, el bot <b style="color:#ffd23f">descarga los registros de los animalitos</b> de todas las loterías. <b style="color:#2dff8a">Mantén el Wi-Fi o los datos encendidos</b> y la sesión abierta hasta que termine (menos de 1 minuto).</div>
     <form id="gform"><input id="gcode" autocomplete="off" placeholder="BOT-XXXX-XXXX"><div class="err" id="gerr"></div>
     <button class="btn main" type="submit">Entrar</button></form>
     <div class="gprecios" id="gprecios"></div>
@@ -1146,7 +1160,7 @@ Object.keys(REGLA_NO).forEach(k=>{ if(REGLA_NO[k].includes("guacharo")&&!REGLA_N
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611270105";
+const BUILD="202611270950";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -2795,14 +2809,34 @@ document.getElementById("gform").addEventListener("submit",async e=>{
   const r=await servidorCodigo(c,true);
   btn.disabled=false; err.style.color="";
   if(r){
-    if(r.ok){ if(!CODES.has(hc)) genAdd(hc); setAct(hc,r.fin-DIAS*86400000); err.textContent=""; unlock(normCode(c),r.fin); avisoRegalo(r); }
+    if(r.ok){ if(!CODES.has(hc)) genAdd(hc); setAct(hc,r.fin-DIAS*86400000); err.textContent=""; unlock(normCode(c),r.fin); avisoRegalo(r); primeraDescarga(); }
     else err.textContent=MSG_COD[r.motivo]||"No se pudo verificar el código. Intenta otra vez.";
     return;
   }
   // Sin servidor disponible: se revisa en este dispositivo como antes
   if(!fijo){err.textContent="No se pudo conectar para verificar el código. Revisa tu internet e intenta otra vez.";return;}
-  const l=check(c,true); if(l.ok){err.textContent="";unlock(normCode(c),l.fin);} else err.textContent=l.msg;
+  const l=check(c,true); if(l.ok){err.textContent="";unlock(normCode(c),l.fin); primeraDescarga();} else err.textContent=l.msg;
 });
+/* 📥 Primera vez en el teléfono: descarga los registros de cada lotería con su barrita */
+async function primeraDescarga(forzar){
+  let ya=null; try{ ya=localStorage.getItem("bot-dl-ok"); }catch(e){} if(ya&&!forzar) return;
+  const items=LOTS.map(l=>({id:l.id,nm:l.id==="inter"?"Lotto Inter":l.name,f:()=>cargarHist(l.id)})).concat([{id:"futbol",nm:"⚽ Fútbol",f:()=>window.futPrecarga?window.futPrecarga(false):null}]);
+  const ov=document.createElement("div"); ov.id="dlOv";
+  ov.innerHTML=`<div class="dlb"><div style="font-size:42px">📥</div><div class="dlt">DESCARGANDO REGISTROS</div><div class="dls">Preparando los datos de cada lotería…</div>
+    ${items.map(it=>`<div class="dlr" data-i="${it.id}"><span class="n">${esc(it.nm)}</span><div class="b"><i></i></div><span class="e">⏳</span></div>`).join("")}
+    <div class="dlw">📶 Mantén el Wi-Fi o los datos encendidos<br>🔓 No cierres el bot hasta que termine</div><button class="btn" id="dlSeguir" style="display:none;margin-top:10px">Seguir al bot</button></div>`;
+  document.body.appendChild(ov);
+  const cerrar=()=>{ try{ ov.remove(); }catch(e){} try{ render(); }catch(e){} };
+  ov.querySelector("#dlSeguir").onclick=cerrar;
+  setTimeout(()=>{ const b=ov.querySelector("#dlSeguir"); if(b) b.style.display="block"; },30000);
+  let malos=0;
+  await Promise.all(items.map(async it=>{ const row=ov.querySelector(`.dlr[data-i="${it.id}"]`), bar=row.querySelector("i");
+    bar.style.width="35%"; const tk=setInterval(()=>{ const w=parseFloat(bar.style.width)||35; if(w<90) bar.style.width=(w+5)+"%"; },700);
+    let ok=true; try{ const r=await it.f(); if(r&&r.err) ok=false; }catch(e){ ok=false; }
+    clearInterval(tk); bar.style.width="100%"; row.querySelector(".e").textContent=ok?"✅":"⚠️"; if(!ok){ malos++; row.classList.add("mal"); } }));
+  if(!malos){ try{ localStorage.setItem("bot-dl-ok","1"); }catch(e){} setTimeout(cerrar,900); }
+  else{ const w=ov.querySelector(".dlw"); w.innerHTML="⚠️ No se pudo descargar todo. Revisa tu Wi-Fi o datos.<br>Puedes seguir y el bot lo intentará de nuevo solo."; ov.querySelector("#dlSeguir").style.display="block"; }
+}
 document.getElementById("gcode").addEventListener("input",()=>{document.getElementById("gerr").textContent="";});
 document.getElementById("salir").onclick=()=>lock("");
 (function(){let c=null;try{c=localStorage.getItem(AKEY)}catch(e){}
@@ -3367,7 +3401,9 @@ document.addEventListener("click",e=>{
       if(j.ok&&j.preparando) setTimeout(()=>cargar(true),3*60000);
     }catch(e){ if(!DATA) ERR="No se pudo conectar. Revisa tu internet y toca ↻ Actualizar."; }
     CARGANDO=false; pintar();
+    return DATA&&DATA.ok?DATA:{err:"red"};
   }
+  window.futPrecarga=cargar;
   function marcar(){ document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b===btn)); try{ $("tagline").textContent="Fútbol · Pronósticos"; }catch(e){} }
   function abrir(){ document.body.classList.add("futon"); marcar(); try{ history.replaceState(null,"","#futbol"); }catch(e){} pintar(); cargar(false); }
   btn.addEventListener("click",abrir);
