@@ -885,7 +885,7 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
       <div style="font:600 14.5px/1.3 Rajdhani,sans-serif;color:#c9d6ee">Pronósticos inteligentes: analiza miles de sorteos y partidos reales para decirte qué jugar.</div>
     </div>
     <div class="tagline" style="margin-top:8px">Acceso con código</div>
-    <div class="gdl"><div class="gdlh">📥 IMPORTANTE · PRIMERA VEZ</div>Al entrar, el bot <b style="color:#ffd23f">descarga los registros de los animalitos</b> de todas las loterías. <b style="color:#2dff8a">Mantén el Wi-Fi o los datos encendidos</b> y la sesión abierta hasta que termine (menos de 1 minuto).</div>
+    <div class="gdl"><div class="gdlh">📥 IMPORTANTE · PRIMERA VEZ</div>Al entrar, el bot <b style="color:#ffd23f">descarga los registros de los animalitos</b> de todas las loterías. <b style="color:#ffd23f">Puede tardar unos minutos según tu internet.</b> <b style="color:#2dff8a">Mantén el Wi-Fi o los datos encendidos</b> y la sesión abierta hasta que termine.</div>
     <form id="gform"><input id="gcode" autocomplete="off" placeholder="BOT-XXXX-XXXX"><div class="err" id="gerr"></div>
     <button class="btn main" type="submit">Entrar</button></form>
     <div class="gprecios" id="gprecios"></div>
@@ -1160,7 +1160,7 @@ Object.keys(REGLA_NO).forEach(k=>{ if(REGLA_NO[k].includes("guacharo")&&!REGLA_N
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611270950";
+const BUILD="202611271000";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -2822,13 +2822,13 @@ async function primeraDescarga(forzar){
   let ya=null; try{ ya=localStorage.getItem("bot-dl-ok"); }catch(e){} if(ya&&!forzar) return;
   const items=LOTS.map(l=>({id:l.id,nm:l.id==="inter"?"Lotto Inter":l.name,f:()=>cargarHist(l.id)})).concat([{id:"futbol",nm:"⚽ Fútbol",f:()=>window.futPrecarga?window.futPrecarga(false):null}]);
   const ov=document.createElement("div"); ov.id="dlOv";
-  ov.innerHTML=`<div class="dlb"><div style="font-size:42px">📥</div><div class="dlt">DESCARGANDO REGISTROS</div><div class="dls">Preparando los datos de cada lotería…</div>
+  ov.innerHTML=`<div class="dlb"><div style="font-size:42px">📥</div><div class="dlt">DESCARGANDO REGISTROS</div><div class="dls">Esto puede tardar unos minutos según tu internet. No cierres el bot.</div>
     ${items.map(it=>`<div class="dlr" data-i="${it.id}"><span class="n">${esc(it.nm)}</span><div class="b"><i></i></div><span class="e">⏳</span></div>`).join("")}
     <div class="dlw">📶 Mantén el Wi-Fi o los datos encendidos<br>🔓 No cierres el bot hasta que termine</div><button class="btn" id="dlSeguir" style="display:none;margin-top:10px">Seguir al bot</button></div>`;
   document.body.appendChild(ov);
   const cerrar=()=>{ try{ ov.remove(); }catch(e){} try{ render(); }catch(e){} };
   ov.querySelector("#dlSeguir").onclick=cerrar;
-  setTimeout(()=>{ const b=ov.querySelector("#dlSeguir"); if(b) b.style.display="block"; },30000);
+  setTimeout(()=>{ const b=ov.querySelector("#dlSeguir"); if(b) b.style.display="block"; },180000);
   let malos=0;
   await Promise.all(items.map(async it=>{ const row=ov.querySelector(`.dlr[data-i="${it.id}"]`), bar=row.querySelector("i");
     bar.style.width="35%"; const tk=setInterval(()=>{ const w=parseFloat(bar.style.width)||35; if(w<90) bar.style.width=(w+5)+"%"; },700);
