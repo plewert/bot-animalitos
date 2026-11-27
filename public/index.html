@@ -485,7 +485,8 @@ body.demo #triBox::after{content:"🔒 Las tripletas son solo con código. Pide 
   .linkbtn.bell{font-size:15px;padding:4px 8px}
   body.inapp .logo{min-width:0;flex:1 1 auto;overflow:hidden} @media(max-width:420px){body.inapp h1{font-size:14.5px!important;letter-spacing:.04em}} body.inapp .logo>div:last-child{min-width:0} body.inapp .logo h1,body.inapp .tagline{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   @media(max-width:560px){.topbar{gap:5px}.topbar .pill{padding:5px 9px;gap:6px}.linkbtn{padding:5px 9px}.linkbtn.bell{padding:3px 7px}}
-  .cdown{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:12px 0 0}
+  .cdown{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:12px 0 0}
+  @media (max-width:380px){.cdown .t{font-size:14px}.cdown .n{font-size:8.5px}}
   .cdown button{border:1px solid var(--line);background:rgba(10,16,34,.7);border-radius:12px;padding:6px 4px;text-align:center;color:var(--ink);cursor:pointer;font-family:inherit}
   .cdown button.on{border-color:var(--cyan);box-shadow:0 0 12px rgba(46,242,255,.25)}
   .cdown .n{display:block;font:700 9.5px "Orbitron",sans-serif;letter-spacing:.06em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1061,6 +1062,10 @@ const ord=n=>["0","00"].concat(Array.from({length:n},(_,i)=>String(i+1).padStart
 // guía de compañeros anterior (Lotto Activo)
 const COMP={"0":["08","12","16"],"00":["05","09","29"],"01":["21","32","35"],"02":["05","30","33"],"03":["01","02","33"],"04":["0","10","16"],"05":["14","17","32"],"06":["10","11","26"],"07":["00","15","24"],"08":["00","12","21"],"09":["07","20","30"],"10":["15","32","33"],"11":["09","20","34"],"12":["0","29","31"],"13":["03","30","34"],"14":["12","20","23"],"15":["10","16","32"],"16":["0","00","22"],"17":["0","02","14"],"18":["0","03","11"],"19":["05","12","16"],"20":["07","12","24"],"21":["01","17","31"],"22":["02","09","25"],"23":["00","22","11"],"24":["0","04","11"],"25":["02","24","32"],"26":["24","27","29"],"27":["03","04","30"],"28":["04","20","35"],"29":["02","15","20"],"30":["31","33","36"],"31":["06","08","32"],"32":["05","06","23"],"33":["10","15","20"],"34":["11","13","36"],"35":["11","25","36"],"36":["11","35"]};
 const compGroups={}; Object.keys(COMP).forEach(k=>compGroups[k]=[COMP[k]]);
+/* 🐙 Loto Chaima: del 00 al 55 son los mismos animales del Guácharo. Usa la guía del Guácharo sin los del 56 al 75 */
+const chOk=n=>n==="0"||n==="00"||(+n>=1&&+n<=55);
+const CHA={}; Object.keys(GUA).filter(chOk).forEach(k=>CHA[k]=GUA[k]);
+const CHA_GUIA={}; Object.keys(DATA.gua).filter(chOk).forEach(k=>{ const v=(DATA.gua[k]||[]).map(g=>g.filter(chOk)).filter(g=>g.length); CHA_GUIA[k]=v; });
 const LOTS=[
  {id:"activo",name:"Lotto Activo",short:"38 animales",color:"#2ef2ff",A:STD,order:ord(36),roulette:true,
    guides:[{id:"comb",name:"Combinaciones",type:"chain",data:DATA.activo}]},
@@ -1068,6 +1073,8 @@ const LOTS=[
    guides:[{id:"comb",name:"Combinaciones",type:"chain",data:DATA.granjita}]},
  {id:"guacharo",name:"Guácharo",short:"77 animales",color:"#ffd23f",A:GUA,order:ord(75),roulette:false,
    guides:[{id:"comb",name:"Combinaciones",type:"group",data:DATA.gua}]},
+ {id:"chaima",name:"Loto Chaima",short:"57 animales",color:"#ff9f43",A:CHA,order:ord(55),roulette:false,
+   guides:[{id:"comb",name:"Combinaciones",type:"group",data:CHA_GUIA}]},
  {id:"inter",name:"Lotto Internacional",short:"38 animales",color:"#ff3df2",A:STD,order:ord(36),roulette:true,
    guides:[{id:"comb",name:"Combinaciones",type:"chain",data:DATA.inter}]}
 ];
@@ -1123,15 +1130,17 @@ const GRUPOS=[
   {lots:["activo","granjita","inter"],a:["02","03","07","20","24","30"]},
   {lots:["activo","granjita","inter"],a:["0","00","08","16","24","32"]}
 ];
+GRUPOS.forEach(G=>{ if(G.lots.includes("guacharo")) G.lots.push("chaima"); });
 function gruposDe(id,x){ return GRUPOS.filter(G=>G.lots.includes(id)&&G.a.includes(x)).map(G=>{const c=[x].concat(G.a.filter(n=>n!==x)); c.grp=true; return c;}); }
 /* ---- se actualiza solo cuando subes una versión nueva ---- */
 const REGLA_TRI={"13":[["0","00","31"]],"0":[["0","22","24"],["0","07","18"],["0","19","28"]],"00":[["13","14","31"],["0","23","32"],["09","11","18"]],"52":[["08","41","72"],["17","52","70"],["07","70","72"]],"18":[["10","15","32"],["0","03","32"],["02","09","20"]],"36":[["0","20","07"],["02","07","15"],["00","24","29"]],"21":[["01","05","09"],["05","19","23"],["02","17","31"]],"01":[["02","22","23"],["09","20","24"],["10","11","14"]],"33":[["0","11","22"],["00","19","24"],["05","10","11"]],"25":[["07","11","35"],["03","30","34"],["02","20","24"]],"16":[["0","00","22"],["23","32","21"],["02","05","27"]],"15":[["02","18","20"],["02","18","26"],["02","18","29"]],"05":[["12","21","23"],["06","09","32"],["06","23","36"]],"22":[["02","09","24"],["05","23","28"],["09","25","34"]],"20":[["0","00","36"],["12","21","32"],["02","06","23"]],"19":[["05","12","21"],["20","07","15"],["0","00","22"]],"32":[["02","05","19"],["05","06","23"],["05","06","32"]]};
 const REGLA_NO={"32":["guacharo"],"19":["guacharo"],"20":["guacharo"],"22":["guacharo"],"05":["guacharo"],"15":["guacharo"],"16":["guacharo"],"25":["guacharo"],"33":["guacharo"],"00":["guacharo"],"0":["guacharo"],"18":["guacharo"],"36":["guacharo"],"21":["guacharo"],"01":["guacharo"]};
+Object.keys(REGLA_NO).forEach(k=>{ if(REGLA_NO[k].includes("guacharo")&&!REGLA_NO[k].includes("chaima")) REGLA_NO[k].push("chaima"); });
 /* 🇻🇪 Todo el bot usa la hora de Venezuela, aunque el teléfono tenga otra zona horaria */
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611261945";
+const BUILD="202611270030";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -1152,7 +1161,7 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden) revisarV
 /* ---- regla 6⇄9 (solo para los animales que están para jugar) ---- */
 const PAR69={"06":["09"],"09":["06"],"16":["19"],"19":["16"],"26":["29"],"29":["26"]};
 const PAR69G={"16":["19","61"],"19":["16","61"],"61":["16","19"]};
-function par69(id,n){ const a=((id==="guacharo"&&PAR69G[n])?PAR69G[n]:(PAR69[n]||[])).slice(); const l=LOTS.find(x=>x.id===id); const v=l?volteo(l,n):null; if(v&&!a.includes(v)) a.push(v); return a; }
+function par69(id,n){ const a=(((id==="guacharo"||id==="chaima")&&PAR69G[n])?PAR69G[n]:(PAR69[n]||[])).slice(); const l=LOTS.find(x=>x.id===id); const v=l?volteo(l,n):null; if(v&&!a.includes(v)) a.push(v); return a; }
 /* ---- los que más señales tienen (en Jugada) ---- */
 function rankRows(l,st,last,arr,P){ return congelar("r",l,st,last,P,arr.map(x=>x[0]).join(",")+"|"+huella(l,st),()=>rankRows0(l,st,last,arr,P)); }
 function rankRows0(l,st,last,arr,P){
@@ -1333,7 +1342,7 @@ const fmtD=ds=>{const [y,m,d]=ds.split("-");return d+"/"+m+"/"+y;};
 // datos de lotoven.com/animalito/lottoactivo/estadisticas/ tomados el 14/11/2026
 const SEED_DATE="2026-11-14";
 const SEED={activo:{"03":"2026-10-25","08":"2026-11-01","34":"2026-11-05","19":"2026-11-08","17":"2026-11-08","06":"2026-11-09","10":"2026-11-10","12":"2026-11-10","21":"2026-11-10","31":"2026-11-11","30":"2026-11-11","33":"2026-11-11","01":"2026-11-11","22":"2026-11-11","0":"2026-11-11","29":"2026-11-12","15":"2026-11-12","28":"2026-11-12","00":"2026-11-12","24":"2026-11-12","11":"2026-11-12","07":"2026-11-13","20":"2026-11-13","32":"2026-11-13","25":"2026-11-13","23":"2026-11-13","35":"2026-11-13","26":"2026-11-13","04":"2026-11-13","09":"2026-11-13","16":"2026-11-13","02":"2026-11-14","13":"2026-11-14","27":"2026-11-14","36":"2026-11-14","18":"2026-11-14","05":"2026-11-14","14":"2026-11-14"}};
-const STATS_URL={activo:"lotoven.com/animalito/lottoactivo/estadisticas",granjita:"la página de estadísticas de La Granjita",guacharo:"la página de estadísticas del Guácharo",inter:"la página de estadísticas de Lotto Internacional"};
+const STATS_URL={activo:"lotoven.com/animalito/lottoactivo/estadisticas",granjita:"la página de estadísticas de La Granjita",guacharo:"la página de estadísticas del Guácharo",chaima:"lotoven.com/animalito/lotochaima/estadisticas",inter:"la página de estadísticas de Lotto Internacional"};
 function jLevel(st,n){const ds=st.last[n]; if(!ds) return 0; const d=daysSince(ds); return d>=12?2:(d>=5?1:0);}
 function renderJaulas(){
   const l=L(), st=S();
@@ -2072,7 +2081,7 @@ function proxSorteo(l){
   d.setDate(d.getDate()+1); d.setHours(PRIMER,min,0,0); return {d,hoy:false};
 }
 function pintarCuenta(){
-  const CD_NOM={activo:"LOTTO ACTIVO",granjita:"GRANJITA",guacharo:"GUÁCHARO",inter:"INTER"};
+  const CD_NOM={activo:"ACTIVO",granjita:"GRANJITA",guacharo:"GUÁCHARO",chaima:"CHAIMA",inter:"INTER"};
   const box=document.getElementById("cdown"); if(!box) return;
   box.innerHTML=LOTS.map(l=>{ const p=proxSorteo(l), ms=p.d-Date.now(), m=Math.ceil(ms/60000);
     const t=!p.hoy?"Mañana":m<60?m+" min":Math.floor(m/60)+" h "+(m%60)+" min";
@@ -2252,13 +2261,13 @@ function patCalc(l){
 }
 /* ===== 🔀 Cruces entre loterías: un animal sale en una lotería y después en otra el mismo día ===== */
 var CRU_CACHE={};
-const CRU_IC={activo:"🎯",granjita:"🌾",guacharo:"🦅",inter:"🌎"};
+const CRU_IC={activo:"🎯",granjita:"🌾",guacharo:"🦅",chaima:"🐙",inter:"🌎"};
 function cruNom(id){ const l=LOTS.find(x=>x.id===id); return l?l.name:id; }
 function cruCalc(){
   const D={}; let key="";
   try{ LOTS.forEach(l=>{ const d=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]; D[l.id]=d; key+=l.id+d.length+(d.length?d[d.length-1][0]+d[d.length-1][1].length:"")+"|"; }); }catch(e){ return {falta:true,conf:[],fail:[],tot:0}; }
   if(CRU_CACHE[key]) return CRU_CACHE[key];
-  const ids=LOTS.map(l=>l.id).filter(id=>D[id].length>=150);
+  const ids=LOTS.map(l=>l.id).filter(id=>id!=="chaima"&&D[id].length>=150);
   if(ids.length<2){ return {falta:true,conf:[],fail:[],tot:0}; }
   const comun=LOTS[0].order.filter(n=>LOTS.every(l=>l.A[n]));
   const por={}; ids.forEach(id=>{ por[id]={}; D[id].forEach(([f,it])=>{ por[id][f]=it.slice().sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0); }); });
@@ -2477,7 +2486,7 @@ function cycSeq(l,hasta){ let D=[]; try{ D=(HCACHE[l.id]&&HCACHE[l.id].dias)||[]
 const CYC2_EDG=[24,48,72,96,150,250], CYC2_EDG_G=[48,96,144,192,300,500];
 const cycBin2=(g,E)=>{ if(g>=99999) return 7; for(let i=0;i<E.length;i++) if(g<=E[i]) return i; return 6; };
 const cycDoble=l=>true;
-const cycK=(l,g1,g2)=>cycDoble(l)?cycBin(g1)*8+cycBin2(g2,l.id==="guacharo"?CYC2_EDG_G:CYC2_EDG):cycBin(g1);
+const cycK=(l,g1,g2)=>cycDoble(l)?cycBin(g1)*8+cycBin2(g2,(l.id==="guacharo"||l.id==="chaima")?CYC2_EDG_G:CYC2_EDG):cycBin(g1);
 function cycLearn(l,seq){ const N=l.order.length, h={}, e={}, li={}, l2={}, S=cycDoble(l)?20:5;
   seq.forEach((n,i)=>{ if(i>300) l.order.forEach(a=>{ const b=cycK(l,a in li?i-li[a]:99999,a in l2?i-l2[a]:99999); e[b]=(e[b]||0)+1/N; if(a===n) h[b]=(h[b]||0)+1; }); if(n in li) l2[n]=li[n]; li[n]=i; });
   const t={}; Object.keys(e).forEach(b=>t[b]=((h[b]||0)+S)/(e[b]+S)); return t; }
@@ -2548,7 +2557,7 @@ function senalCalc0(l,st,last,P){
     if(on("ac")&&ac[n]){ const q=acEsp>=2?ac[n]/acEsp:0, p=acEsp>=2?(q>=1.8?3:q>=1.4?2:q>=1.15?1:0):Math.min(ac[n],3);
       if(p){ f.push(["✓ Salió "+ac[n]+(ac[n]===1?" vez":" veces")+" tras el "+last+(acEsp>=2?" (lo normal: "+Math.round(acEsp)+")":""),p]); sc+=p; } }
     /* 🎰 Tablero (probado 2022-2026): lo pegado al último que salió sale un poco menos, lo lejano un poco más. Solo loterías de 38 */
-    if(l.id!=="guacharo"&&last&&last!=="0"&&last!=="00"&&n!=="0"&&n!=="00"){ const P2=k=>[Math.ceil(+k/3)-1,(+k-1)%3], p=P2(last), q=P2(n), d=Math.max(Math.abs(p[0]-q[0]),Math.abs(p[1]-q[1]));
+    if(l.roulette&&last&&last!=="0"&&last!=="00"&&n!=="0"&&n!=="00"){ const P2=k=>[Math.ceil(+k/3)-1,(+k-1)%3], p=P2(last), q=P2(n), d=Math.max(Math.abs(p[0]-q[0]),Math.abs(p[1]-q[1]));
       if(d===1){ f.push(["🎰 Pegado al "+last+" en el tablero",-1]); sc-=1; } else if(d>=7){ f.push(["🎰 Lejos del "+last+" en el tablero",1]); sc+=1; } else if(d>=4){ f.push(["🎰 Medio lejos del "+last+" en el tablero",0.5]); sc+=0.5; } }
     const lv=jLevel(st,n);
     { let cy=null; try{ cy=cycInfo(l,st,n); }catch(e){} if(cy){ f.push([cy.lab,cy.p]); sc+=cy.p; } }
@@ -3028,7 +3037,7 @@ const colorDe=n=>(n==="0"||n==="00")?"v":(ROJOS.has(+n)?"r":"n");
 let COLSEL=null;
 function renderColores(){
   const box=$("colHoy"); if(!box) return; const l=L(), st=S();
-  if(l.id==="guacharo"){ box.innerHTML=""; return; }
+  if(!l.roulette){ box.innerHTML=""; return; }
   const td=today(), it=(st.dia&&st.dia.fecha===td?st.dia.items:[])||[];
   const cnt={r:0,n:0,v:0}; it.forEach(x=>cnt[colorDe(x.num)]++);
   let racha=0, rc=null; for(let i=it.length-1;i>=0;i--){ const c=colorDe(it[i].num); if(rc==null) rc=c; if(c!==rc) break; racha++; }
