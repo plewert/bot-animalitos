@@ -1140,7 +1140,7 @@ Object.keys(REGLA_NO).forEach(k=>{ if(REGLA_NO[k].includes("guacharo")&&!REGLA_N
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611270030";
+const BUILD="202611270100";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -1836,10 +1836,13 @@ function renderMbar(){
     const mv=volteo(l,last);
     const acB=aciertoBadge(l,st);
     const YHm=yaHoy(st);
+    /* 🐙 Loto Chaima: arriba van los 3 más fuertes de la señal (probado 1 año: ×1,38 sobre el azar); la guía sola no acierta más que el azar */
+    let S3=[]; if(l.id==="chaima"){ try{ if(esperaHist(l)!=="wait") S3=senalCalc0(l,st,last,P).slice(0,3).map(r=>r.n); }catch(e){} }
+    const s3H=S3.length?`<div class="pdesc">📡 Los 3 más fuertes de la señal:</div><div class="pks">${S3.map(n=>`<span class="c">${l.A[n][1]} ${n}${YHm.has(n)?YA_B:""}</span>`).join("")}</div>`:"";
     mb.innerHTML=`<div class="top"><span${acB?' class="hitS"':""}>Salió <b>${l.A[last][1]} ${last} ${esc(l.A[last][0])}</b>${acB}</span>${mv?`<span class="mvol">⇄ Volteo: <b>${l.A[mv][1]} ${mv}</b></span>`:""}</div>${acB?aciertoStrip(l,st):""}
       <div class="acts" id="macts"><button class="undo cp" id="mcopy">⧉ Copiar</button></div>
       <div class="acts conf" id="mconf" style="display:none"><span>¿Borrar todo lo marcado en ${esc(l.name)}?</span><button class="undo" id="mno">Cancelar</button><button class="undo yes" id="myes">Sí, limpiar</button></div>
-      ${arr.length?'<div class="pdesc">🎯 Animales para jugar en el próximo sorteo:</div>':""}
+      ${s3H}${arr.length?(S3.length?'<div class="pdesc">📖 Según la guía:</div>':'<div class="pdesc">🎯 Animales para jugar en el próximo sorteo:</div>'):""}
       <div class="pks" data-w="1">${arr.length?arr.map(([n,c])=>`<span class="${cs.has(n)?"c":""}${P.vadd.has(n)?" v69":""}${YHm.has(n)?" yh":""}">${P.vadd.has(n)?"⇄ ":""}${l.A[n][1]} ${n}${P.vadd.has(n)?" 🔥":""}${c>1?" ×"+c:""}${YHm.has(n)?YA_B:""}</span>`).join(""):'<span style="color:var(--muted);background:none;border:0;font-weight:500">Sin combinaciones para este animal</span>'}</div>${arr.some(([n])=>YHm.has(n))?'<div class="yhn">⚠️ Los tachados ya salieron hoy: casi nunca repiten el mismo día.</div>':""}${arr.length?ventanaHtml(st):""}`;
     mb.insertAdjacentHTML("beforeend",vfHtml(l,last,true));
     const acs=mb.querySelector(".acstrip"); if(acs) acs.onclick=()=>{ try{ setView("jugada"); }catch(e){} setTimeout(()=>{ const w=document.querySelector("#pred .acw"); if(w) w.scrollIntoView({behavior:"smooth",block:"center"}); },80); };
@@ -1848,7 +1851,7 @@ function renderMbar(){
     $("mno").onclick=()=>{$("mconf").style.display="none";$("macts").style.display="flex";};
     $("myes").onclick=()=>{const st=S(); st.hist=[]; st.lastUndo=[]; st.hoy=null; save(); render();};
     $("mcopy").onclick=()=>{
-      const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+horaSalio(st)+"\n\n"+(arr.length?"🎯 *Animales para jugar en el próximo sorteo:*\n"+arr.map(([n])=>(P.vadd.has(n)?"⇄ ":"")+l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+ventanaTxt(st):"Sin combinaciones para este animal")+(mv?"\n\n⇄ *Volteo:* "+l.A[mv][1]+" "+mv+" "+l.A[mv][0]:"")
+      const txt="🎰 *"+l.name+"*\nSalió: "+l.A[last][1]+" "+last+" "+l.A[last][0]+horaSalio(st)+"\n\n"+(S3.length?"📡 *Los 3 más fuertes de la señal:*\n"+S3.map(n=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+"\n\n📖 *Según la guía:*\n"+(arr.length?arr.map(([n])=>l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n"):"—")+ventanaTxt(st):"")+(S3.length?"":arr.length?"🎯 *Animales para jugar en el próximo sorteo:*\n"+arr.map(([n])=>(P.vadd.has(n)?"⇄ ":"")+l.A[n][1]+" "+n+" "+l.A[n][0]).join("\n")+ventanaTxt(st):"Sin combinaciones para este animal")+(mv?"\n\n⇄ *Volteo:* "+l.A[mv][1]+" "+mv+" "+l.A[mv][0]:"")
         +FOOTER;
       const btn=$("mcopy");
       const done=ok=>{btn.classList.toggle("ok",ok);btn.textContent=ok?"✓ ¡Copiado!":"No se pudo copiar";clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.classList.remove("ok");btn.textContent="⧉ Copiar";},2000);};
