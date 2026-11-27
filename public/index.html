@@ -1167,12 +1167,12 @@ Object.keys(REGLA_NO).forEach(k=>{ if(REGLA_NO[k].includes("guacharo")&&!REGLA_N
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611271240";
+const BUILD="202611271330";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
   try{ if(location.protocol!=="https:") return;
-    if(!forzar&&Date.now()-VER_ULT<2*60000) return; VER_ULT=Date.now();
+    if(Date.now()-VER_ULT<(forzar?10000:60000)) return; VER_ULT=Date.now();
     let nueva=null;
     try{ const r=await fetch("version.json?nc="+Date.now(),{cache:"no-store"}); if(r.ok){ const j=await r.json(); if(j&&j.build) nueva=String(j.build); } }catch(e){}
     if(nueva===null){ // sin version.json: como antes, pero como mucho 1 vez cada 6 horas
@@ -1182,8 +1182,9 @@ async function revisarVersion(forzar){
     if(nueva&&nueva>BUILD){ location.replace(location.pathname+"?v="+nueva); }
   }catch(e){}
 }
-setTimeout(()=>revisarVersion(),1500); setInterval(()=>revisarVersion(),2*60000);
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden) revisarVersion(); });
+setTimeout(()=>revisarVersion(),1500); setInterval(()=>revisarVersion(),60000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) revisarVersion(true); });
+window.addEventListener("focus",()=>revisarVersion(true)); window.addEventListener("pageshow",e=>{ if(e.persisted) revisarVersion(true); });
 /* al llegar un resultado nuevo también se revisa si hay versión nueva */
 /* ---- regla 6⇄9 (solo para los animales que están para jugar) ---- */
 const PAR69={"06":["09"],"09":["06"],"16":["19"],"19":["16"],"26":["29"],"29":["26"]};

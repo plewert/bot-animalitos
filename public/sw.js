@@ -2,7 +2,7 @@
 // 📴 Siempre intenta traer la versión más nueva del servidor. Si no hay conexión
 // (o se corta), abre la última copia guardada del bot en el teléfono.
 const API = "https://bot-animalitos-api.onrender.com";
-const APP = "app-v1";
+const APP = "app-v1"; // sw 202611271330
 const FIJOS = ["manifest.json", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => { self.skipWaiting(); e.waitUntil(caches.open(APP).then((c) => c.addAll(FIJOS)).catch(() => {})); });
@@ -49,9 +49,16 @@ async function guardarCache(nombre, val) {
 
 async function mostrarAvisos() {
   let ult = {};
-  try { const r = await fetch(API + "/api/avisos/ultimos", { cache: "no-store" }); ult = (await r.json()).ultimos || {}; } catch (e) {}
+  let ver = null;
+  try { const r = await fetch(API + "/api/avisos/ultimos", { cache: "no-store" }); const j = await r.json(); ult = j.ultimos || {}; ver = j.ver || null; } catch (e) {}
   const prefs = await leerCache("prefs", null);
   const vistos = await leerCache("vistos", {});
+  // 🔄 Aviso de versión nueva (lo manda el administrador desde su panel)
+  if (ver && ver.clave && vistos.__ver !== ver.clave && Date.now() - ver.ts < 3600000) {
+    vistos.__ver = ver.clave; await guardarCache("vistos", vistos);
+    await self.registration.showNotification("🔄 Hay una versión nueva del bot", { body: "Ábrelo para actualizarlo.", icon: "icon-192.png", badge: "icon-192.png", tag: "bot-version", renotify: true, data: { lot: "" } });
+    return;
+  }
   const lista = Object.values(ult).filter((x) => x && x.clave && vistos[x.lot] !== x.clave && Date.now() - x.ts < 3 * 3600000 && (!prefs || prefs.includes(x.lot)));
   if (!lista.length) {
     await self.registration.showNotification("Bot de Animalitos", { body: "Hay un resultado nuevo. Toca para ver qué jugar.", icon: "icon-192.png", badge: "icon-192.png", tag: "bot-aviso" });
