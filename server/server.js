@@ -64,11 +64,12 @@ function hoyVE() {
   return p; // YYYY-MM-DD
 }
 
-async function leer(url) {
+const NAVEGADOR = { "User-Agent": "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36", "Accept": "text/html,application/xhtml+xml", "Accept-Language": "es-VE,es;q=0.9" };
+async function leer(url, comoNavegador) {
   const c = cache.get(url);
   if (c && Date.now() - c.t < MINUTOS_CACHE * 60000) return c.html;
   const r = await fetch(url, {
-    headers: { "User-Agent": "Mozilla/5.0 (BotAnimalitos)", "Accept": "text/html" },
+    headers: comoNavegador ? NAVEGADOR : { "User-Agent": "Mozilla/5.0 (BotAnimalitos)", "Accept": "text/html" },
     signal: AbortSignal.timeout(15000),
   });
   if (!r.ok) throw new Error("La página respondió " + r.status);
@@ -218,17 +219,46 @@ function resultadosDeHtml(html, lot, fuente) {
   }
   return { lot, que: "resultados", activo: true, hoy: hoyVE(), total: r.length, datos: r, fuente: fuente || "lotoven" };
 }
-// 🛟 Respaldo: loteriadehoy.com (solo resultados del día)
+// 🛟 Respaldos (solo resultados del día): 1) elgrandatero.com.ve (una página con todas)  2) loteriadehoy.com
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-async function datosRespaldo(lot) {
+const sinAcento = (t) => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+function esDeOtroDia(txt) {
+  const [y, mo, d] = hoyVE().split("-").map(Number), t = sinAcento(txt);
+  const f1 = [...t.matchAll(/(\d{1,2}) de (enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre) de (\d{4})/g)].map((m) => [+m[1], MESES.indexOf(m[2]) + 1, +m[3]]);
+  const f2 = [...t.matchAll(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g)].map((m) => [+m[1], +m[2], +m[3]]);
+  const fs = [...f1, ...f2]; if (!fs.length) return false;
+  return !fs.some(([dd, mm, yy]) => dd === d && mm === mo && yy === y);
+}
+const GD_URL = "https://elgrandatero.com.ve/resultados-de-animalitos";
+const GD_NOM = { activo: "loto activo", granjita: "la granjita", guacharo: "guacharo activo", chaima: "loto chaima", selva: "selva plus", inter: "loto activo internacional" };
+const GD_OTRAS = ["guacharito millonario", "granja millonaria", "el granjazo", "chance animal a", "chance animal b", "chance b", "jungla millonaria", "monje millonario", "la ricachona", "centena animalitos", "centena plus", "bestia activa", "mega animal 40", "loto rey", "lotto rey", "prioritarias", "otras loterias"];
+const GD_TODAS = [...Object.values(GD_NOM), ...GD_OTRAS];
+const titulo = (linea) => { const t = sinAcento(linea).replace(/^resultados (de )?/, "").replace(/[:#*]/g, "").trim(); return GD_TODAS.includes(t) ? t : null; };
+async function respaldoGD(lot) {
+  const nom = GD_NOM[lot]; if (!nom) throw new Error("Sin respaldo");
+  const html = await leer(GD_URL, true), lineas = aTexto(html).split("\n");
+  if (esDeOtroDia(lineas.slice(0, 80).join(" "))) return { lot, que: "resultados", activo: true, hoy: hoyVE(), total: 0, datos: [], fuente: "elgrandatero", mensaje: "Muestra otro día" };
+  let mejor = null;
+  for (let i = 0; i < lineas.length; i++) {
+    if (titulo(lineas[i]) !== nom) continue;
+    let j = i + 1; while (j < lineas.length && !titulo(lineas[j])) j++;
+    const r = resultadosDeHtml(lineas.slice(i + 1, j).join("\n"), lot, "elgrandatero");
+    if (!mejor || r.total > mejor.total) mejor = r;
+  }
+  return mejor || { lot, que: "resultados", activo: true, hoy: hoyVE(), total: 0, datos: [], fuente: "elgrandatero", mensaje: "No encontré la lotería en la página" };
+}
+async function respaldoLDH(lot) {
   const f = FUENTES[lot]; if (!f || !f.respaldo) throw new Error("Sin respaldo");
-  const html = await leer(f.respaldo);
-  // Si la página dice una fecha y no es la de hoy, sus resultados no son de hoy
-  const txt = aTexto(html).toLowerCase(), [y, mo, d] = hoyVE().split("-").map(Number);
-  const fechas = [...txt.matchAll(/(\d{1,2}) de (enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre) de (\d{4})/g)];
-  if (fechas.length && !fechas.some((m) => +m[1] === d && MESES.indexOf(m[2]) === mo - 1 && +m[3] === y))
-    return { lot, que: "resultados", activo: true, hoy: hoyVE(), total: 0, datos: [], fuente: "respaldo", mensaje: "El respaldo aún muestra otro día" };
-  return resultadosDeHtml(html, lot, "respaldo");
+  const html = await leer(f.respaldo, true);
+  if (esDeOtroDia(aTexto(html))) return { lot, que: "resultados", activo: true, hoy: hoyVE(), total: 0, datos: [], fuente: "loteriadehoy", mensaje: "Muestra otro día" };
+  return resultadosDeHtml(html, lot, "loteriadehoy");
+}
+async function datosRespaldo(lot) {
+  let mejor = null, err = null;
+  for (const fn of [respaldoGD, respaldoLDH]) {
+    try { const r = await fn(lot); if (r.total > 0) return r; mejor = mejor || r; } catch (e) { err = e; }
+  }
+  if (mejor) return mejor; throw err || new Error("Sin respaldo");
 }
 const aMin = (h) => { const [a, b] = String(h).split(":").map(Number); return a * 60 + b; };
 // ¿Lotoven está atrasada? (en horario de sorteos, su último resultado tiene más de 70 minutos)
@@ -1128,14 +1158,14 @@ const server = http.createServer(async (req, res) => {
       let html = `<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:sans-serif;background:#0b1020;color:#e8f1ff;padding:14px"><h2>Prueba del servidor · ${hoyVE()}</h2>`;
       for (const lot of Object.keys(FUENTES)) {
         html += `<h3 style="color:#2ef2ff">${FUENTES[lot].nombre}</h3>`;
-        for (const que of ["estadisticas", "resultados", "respaldo"]) {
+        for (const que of ["estadisticas", "resultados", "respaldo 1 (elgrandatero)", "respaldo 2 (loteriadehoy)"]) {
           try {
-            const d = que === "respaldo" ? await datosRespaldo(lot) : await datosLotoven(lot, que);
+            const d = que.startsWith("respaldo 1") ? await respaldoGD(lot) : que.startsWith("respaldo 2") ? await respaldoLDH(lot) : await datosLotoven(lot, que);
             if (!d.activo) { html += `<p>${que}: <i>sin enlace</i></p>`; continue; }
             const muestra = que === "estadisticas"
               ? Object.entries(d.datos).slice(0, 6).map(([n, v]) => `${n} ${v.nombre} · ${v.fecha}`).join("<br>")
               : d.datos.map(x => `${x.hora} → ${x.num} ${x.nombre}`).join("<br>");
-            html += `<p><b>${que === "respaldo" ? "respaldo (loteriadehoy)" : que === "resultados" ? "resultados (lotoven)" : que}</b>: ${d.total} encontrados ${d.total ? "✅" : "⚠️"}${d.mensaje ? " · " + d.mensaje : ""}<br><small>${muestra || "nada"}</small></p>`;
+            html += `<p><b>${que === "resultados" ? "resultados (lotoven)" : que}</b>: ${d.total} encontrados ${d.total ? "✅" : "⚠️"}${d.mensaje ? " · " + d.mensaje : ""}<br><small>${muestra || "nada"}</small></p>`;
           } catch (e) { html += `<p><b>${que}</b>: ❌ ${String(e.message || e)}</p>`; }
         }
       }
@@ -1155,4 +1185,4 @@ if (require.main === module) {
   if (FD_KEY) { setTimeout(() => futTalVez().catch(() => {}), 90000); setInterval(() => futTalVez().catch(() => {}), 3 * 3600000); }
 }
 
-module.exports = { datos, datosRespaldo, datosLotoven, atrasado, futRespuesta, futModelo, futPred, futVentana, futTemporadas, FUT, futAcierto, bajarDia, historial, completarHistorial, HIST, parseEstadisticas, parseResultados, aTexto, hoyVE, horaVE, vigilar, empujar, suscribir, ultimos, enviarAvisos };
+module.exports = { datos, datosRespaldo, respaldoGD, respaldoLDH, datosLotoven, atrasado, futRespuesta, futModelo, futPred, futVentana, futTemporadas, FUT, futAcierto, bajarDia, historial, completarHistorial, HIST, parseEstadisticas, parseResultados, aTexto, hoyVE, horaVE, vigilar, empujar, suscribir, ultimos, enviarAvisos };
