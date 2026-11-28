@@ -1168,7 +1168,7 @@ Object.keys(REGLA_NO).forEach(k=>{ if(REGLA_NO[k].includes("guacharo")&&!REGLA_N
 (function(){ try{ const _D=Date; const off=()=>(new _D().getTimezoneOffset()-240)*60000; if(new _D().getTimezoneOffset()===240) return;
   class VE extends _D{ constructor(...a){ if(a.length) super(...a); else super(_D.now()+off()); } }
   VE.now=()=>_D.now()+off(); VE.parse=_D.parse; VE.UTC=_D.UTC; window.Date=VE; }catch(e){} })();
-const BUILD="202611271730";
+const BUILD="202611272125";
 /* 🔄 ¿hay versión nueva? Se revisa con version.json (menos de 1 KB), no con la página entera */
 let VER_ULT=0;
 async function revisarVersion(forzar){
@@ -1949,7 +1949,7 @@ render();
     {sel:"#panelCard",v:"panel",t:"Panel",x:"Todos los animales. En <b>dorado ★</b> lo que manda jugar la guía, en cian el que salió, y con <b>barrotes</b> los que llevan días sin salir."},
     {sel:"#lockBtn",v:"panel",t:"🤖 Resultados automáticos",x:"Los resultados los carga <b>el bot solo</b>, apenas salen. Nadie puede marcarlos a mano, así todos ven lo mismo."},
     {sel:"#pred .pkhead",v:"jugada",t:"Animales para jugar",x:"Lo que toca jugar en el próximo sorteo, con su botón <b>Copiar</b>. Aquí entran tu guía, tus <b>grupos de fijos</b> (Perro, Caballo, Rana, Gato, Toro, Perico, Ratón…) y los <b>volteos ⇄</b> salidores. Las que tienen <b>rejas</b> son jaula: <b>no jugarlas</b>. Un <b>×2</b> indica que sale en varias combinaciones."},
-    {sel:"#pred .pron",v:"jugada",t:"🎯 Pronóstico",x:"El resumen más fácil: los <b>3 animales más fuertes</b> para el próximo sorteo, con el porqué en etiquetas: 📖 guía, ⇄ volteo, 📈 salidor, 🔁 pareja fuerte, ⏰ salidor a esa hora, 🔥 caliente esta semana y 🐾☠ felino o veneno. Las barras <b>rojas</b> marcan el más fuerte. <b>Copiar pronóstico</b> lo manda a WhatsApp."},
+    {sel:"#pred .pron",v:"jugada",t:"🎯 Pronóstico",x:"El resumen más fácil: los <b>3 animales más fuertes</b> para el próximo sorteo, con el porqué en etiquetas: 📖 guía, ⇄ volteo, 📈 salidor, 🔁 pareja fuerte, 🔄 en su punto y 🐾☠ felino o veneno. Las barras <b>rojas</b> marcan el más fuerte. <b>Copiar pronóstico</b> lo manda a WhatsApp."},
     {sel:"#pred .rank",v:"jugada",t:"Señales",x:"<b>Los que más señales tienen ⭐</b> y <b>📡 Señal</b> juntan todos los datos: guía, salidores, aciertos, volteos, jaulas y venenos/felinos. Toca un animal de la Señal para ver sus puntos."},
     {sel:"#pred .trih",v:"jugada",t:"🎯 Tripletas",x:"Las tripletas del animal que salió: <b>Tripleta 1, 2, 3…</b> Primero salen las <b>tripletas fijas</b> (Mono, Delfín, Ballena, Burro, Culebra, Gallo, Carnero, Pulpo) y la <b>Combinación del Pulpo</b> en Guácharo; luego las de tu guía. Cada una tiene su <b>Copiar</b>, y <b>Copiar todas</b> las manda juntas."},
     {sel:"#scard",v:"salidores",t:"Salidores",x:"El ranking de los animales que <b>más</b> y <b>menos</b> han salido, cada lista con su <b>Copiar</b>. "},
@@ -2654,7 +2654,7 @@ function pronCalc0(l,st,last,P){
     const r=top.indexOf(n); if(on("sal")&&r>=0){ sc+=r<3?3:2; t.push(["c","📈 Salidor",r<3?3:2]); }
     if(on("ac")&&acEsp>=2&&ac[n]){ const q=ac[n]/acEsp; if(q>=1.4){ sc+=q>=1.8?3:2; t.push(["p","🔁 Pareja fuerte del "+last,q>=1.8?3:2]); } }
     /* "⏰ Salidor a esta hora" quitado: en la prueba de 2 años restaba aciertos */
-    if(nd>=30&&(c7[n]||0)>=3&&c7[n]>=2*(cy[n]/nd*7)){ sc+=2; t.push(["c","🔥 Caliente esta semana",2]); }
+    /* "🔥 Caliente esta semana" quitado: probado 3 años, el pronóstico acierta más sin él en las 5 loterías */
     { let cy=null; try{ cy=cycInfo(l,st,n); }catch(e){} if(cy){ sc+=cy.p*1.5; t.push([cy.p>0?"y":"z",cy.lab,cy.p]); } }
     let jd=0; if(on("jaula")&&jLevel(st,n)){ sc-=3; jd=daysSince(st.last[n]); }
     return {n,sc,t,jd};
