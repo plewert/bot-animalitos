@@ -31,11 +31,6 @@ const FUENTES = {
     estadisticas: "https://lotoven.com/animalito/lotochaima/estadisticas/",
     resultados: "https://lotoven.com/animalito/lotochaima/resultados/",
   },
-  selva: {
-    nombre: "Selva Plus",
-    estadisticas: "https://lotoven.com/animalito/selvaplus/estadisticas/",
-    resultados: "https://lotoven.com/animalito/selvaplus/resultados/",
-  },
   inter: {
     nombre: "Lotto Internacional",
     estadisticas: "https://lotoven.com/animalito/lottoactivordint/estadisticas/",
@@ -46,7 +41,7 @@ const MINUTOS_CACHE = 5;           // cada cuánto se vuelve a leer la página c
 const ZONA = "America/Caracas";     // hora de Venezuela
 // =========================================================
 
-const MAX_NUM = { activo: 36, granjita: 36, guacharo: 75, chaima: 55, inter: 36, selva: 99 };
+const MAX_NUM = { activo: 36, granjita: 36, guacharo: 75, chaima: 55, inter: 36 };
 const cache = new Map();
 
 function horaVE() {
