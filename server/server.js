@@ -15,33 +15,44 @@ const FUENTES = {
     nombre: "Lotto Activo",
     estadisticas: "https://lotoven.com/animalito/lottoactivo/estadisticas/",
     resultados: "https://lotoven.com/animalito/lottoactivo/resultados/",
+    respaldo: "https://loteriadehoy.com/animalito/lottoactivo/resultados/",
   },
   granjita: {
     nombre: "La Granjita",
     estadisticas: "https://lotoven.com/animalito/lagranjita/estadisticas/",
     resultados: "https://lotoven.com/animalito/lagranjita/resultados/",
+    respaldo: "https://loteriadehoy.com/animalito/lagranjita/resultados/",
   },
   guacharo: {
     nombre: "Guácharo",
     estadisticas: "https://lotoven.com/animalito/guacharoactivo/estadisticas/",
     resultados: "https://lotoven.com/animalito/guacharoactivo/resultados/",
+    respaldo: "https://loteriadehoy.com/animalito/guacharoactivo/resultados/",
   },
   chaima: {
     nombre: "Loto Chaima",
     estadisticas: "https://lotoven.com/animalito/lotochaima/estadisticas/",
     resultados: "https://lotoven.com/animalito/lotochaima/resultados/",
+    respaldo: "https://loteriadehoy.com/animalito/lotochaima/resultados/",
+  },
+  selva: {
+    nombre: "Selva Plus",
+    estadisticas: "https://lotoven.com/animalito/selvaplus/estadisticas/",
+    resultados: "https://lotoven.com/animalito/selvaplus/resultados/",
+    respaldo: "https://loteriadehoy.com/animalito/selvaplus/resultados/",
   },
   inter: {
     nombre: "Lotto Internacional",
     estadisticas: "https://lotoven.com/animalito/lottoactivordint/estadisticas/",
     resultados: "https://lotoven.com/animalito/lottoactivordint/resultados/",
+    respaldo: "https://loteriadehoy.com/animalito/lottoactivordint/resultados/",
   },
 };
 const MINUTOS_CACHE = 5;           // cada cuánto se vuelve a leer la página como máximo
 const ZONA = "America/Caracas";     // hora de Venezuela
 // =========================================================
 
-const MAX_NUM = { activo: 36, granjita: 36, guacharo: 75, chaima: 55, inter: 36 };
+const MAX_NUM = { activo: 36, granjita: 36, guacharo: 75, chaima: 55, inter: 36, selva: 99 };
 const cache = new Map();
 
 function horaVE() {
@@ -166,6 +177,17 @@ function enviar(res, code, obj, tipo) {
 }
 
 async function datos(lot, que) {
+  if (que !== "resultados" || !FUENTES[lot] || !FUENTES[lot].respaldo) return datosLotoven(lot, que);
+  let principal = null, err = null;
+  try { principal = await datosLotoven(lot, que); } catch (e) { err = e; }
+  if (principal && !atrasado(principal)) return principal;
+  let resp = null;
+  try { resp = await datosRespaldo(lot); } catch (e) {}
+  if (resp && resp.total > (principal ? principal.total : 0)) return resp;
+  if (principal) return principal;
+  throw err || new Error("Sin resultados");
+}
+async function datosLotoven(lot, que) {
   const f = FUENTES[lot];
   if (!f) throw new Error("Lotería desconocida");
   let url = f[que];
@@ -182,15 +204,38 @@ async function datos(lot, que) {
     const d = parseEstadisticas(html, lot);
     return { lot, que, activo: true, hoy: hoyVE(), total: Object.keys(d).length, datos: d };
   }
+  return resultadosDeHtml(html, lot);
+}
+// Lee el HTML de resultados y quita lo que sea de ayer
+function resultadosDeHtml(html, lot, fuente) {
   const r = parseResultados(html, lot);
   // Si la página todavía muestra sorteos con hora posterior a la hora actual,
   // son de AYER (pasa después de medianoche): no se entregan como de hoy.
   const ahora = horaVE();
   const margen = (h) => { const [a, b] = h.split(":").map(Number); return a * 60 + b; };
   if (r.length && r.some(x => margen(x.hora) > margen(ahora) + 20)) {
-    return { lot, que, activo: true, hoy: hoyVE(), total: 0, datos: [], mensaje: "La página aún muestra los sorteos de ayer" };
+    return { lot, que: "resultados", activo: true, hoy: hoyVE(), total: 0, datos: [], fuente: fuente || "lotoven", mensaje: "La página aún muestra los sorteos de ayer" };
   }
-  return { lot, que, activo: true, hoy: hoyVE(), total: r.length, datos: r };
+  return { lot, que: "resultados", activo: true, hoy: hoyVE(), total: r.length, datos: r, fuente: fuente || "lotoven" };
+}
+// 🛟 Respaldo: loteriadehoy.com (solo resultados del día)
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+async function datosRespaldo(lot) {
+  const f = FUENTES[lot]; if (!f || !f.respaldo) throw new Error("Sin respaldo");
+  const html = await leer(f.respaldo);
+  // Si la página dice una fecha y no es la de hoy, sus resultados no son de hoy
+  const txt = aTexto(html).toLowerCase(), [y, mo, d] = hoyVE().split("-").map(Number);
+  const fechas = [...txt.matchAll(/(\d{1,2}) de (enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre) de (\d{4})/g)];
+  if (fechas.length && !fechas.some((m) => +m[1] === d && MESES.indexOf(m[2]) === mo - 1 && +m[3] === y))
+    return { lot, que: "resultados", activo: true, hoy: hoyVE(), total: 0, datos: [], fuente: "respaldo", mensaje: "El respaldo aún muestra otro día" };
+  return resultadosDeHtml(html, lot, "respaldo");
+}
+const aMin = (h) => { const [a, b] = String(h).split(":").map(Number); return a * 60 + b; };
+// ¿Lotoven está atrasada? (en horario de sorteos, su último resultado tiene más de 70 minutos)
+function atrasado(r) {
+  const ah = aMin(horaVE()); if (ah < aMin("08:40") || ah > aMin("20:45")) return false;
+  if (!r || !r.datos || !r.datos.length) return true;
+  return ah - aMin(r.datos[r.datos.length - 1].hora) > 70;
 }
 
 
@@ -1083,14 +1128,14 @@ const server = http.createServer(async (req, res) => {
       let html = `<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:sans-serif;background:#0b1020;color:#e8f1ff;padding:14px"><h2>Prueba del servidor · ${hoyVE()}</h2>`;
       for (const lot of Object.keys(FUENTES)) {
         html += `<h3 style="color:#2ef2ff">${FUENTES[lot].nombre}</h3>`;
-        for (const que of ["estadisticas", "resultados"]) {
+        for (const que of ["estadisticas", "resultados", "respaldo"]) {
           try {
-            const d = await datos(lot, que);
+            const d = que === "respaldo" ? await datosRespaldo(lot) : await datosLotoven(lot, que);
             if (!d.activo) { html += `<p>${que}: <i>sin enlace</i></p>`; continue; }
             const muestra = que === "estadisticas"
               ? Object.entries(d.datos).slice(0, 6).map(([n, v]) => `${n} ${v.nombre} · ${v.fecha}`).join("<br>")
               : d.datos.map(x => `${x.hora} → ${x.num} ${x.nombre}`).join("<br>");
-            html += `<p><b>${que}</b>: ${d.total} encontrados ${d.total ? "✅" : "⚠️"}${d.mensaje ? " · " + d.mensaje : ""}<br><small>${muestra || "nada"}</small></p>`;
+            html += `<p><b>${que === "respaldo" ? "respaldo (loteriadehoy)" : que === "resultados" ? "resultados (lotoven)" : que}</b>: ${d.total} encontrados ${d.total ? "✅" : "⚠️"}${d.mensaje ? " · " + d.mensaje : ""}<br><small>${muestra || "nada"}</small></p>`;
           } catch (e) { html += `<p><b>${que}</b>: ❌ ${String(e.message || e)}</p>`; }
         }
       }
@@ -1110,4 +1155,4 @@ if (require.main === module) {
   if (FD_KEY) { setTimeout(() => futTalVez().catch(() => {}), 90000); setInterval(() => futTalVez().catch(() => {}), 3 * 3600000); }
 }
 
-module.exports = { futRespuesta, futModelo, futPred, futVentana, futTemporadas, FUT, futAcierto, bajarDia, historial, completarHistorial, HIST, parseEstadisticas, parseResultados, aTexto, hoyVE, horaVE, vigilar, empujar, suscribir, ultimos, enviarAvisos };
+module.exports = { datos, datosRespaldo, datosLotoven, atrasado, futRespuesta, futModelo, futPred, futVentana, futTemporadas, FUT, futAcierto, bajarDia, historial, completarHistorial, HIST, parseEstadisticas, parseResultados, aTexto, hoyVE, horaVE, vigilar, empujar, suscribir, ultimos, enviarAvisos };
